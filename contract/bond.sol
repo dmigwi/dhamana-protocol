@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-/// @author dmigwi: (migwindungu0@gmail.com)
+/// @author dmigwi: (migwindungu0@gmail.com) @2023
 /// @title Bond Contract.
 contract BondContract {
 
@@ -33,7 +33,7 @@ contract BondContract {
     // xrp => represents Ripple
     // usdt => represents Tether Coin.
     // dcr => represents Decred Coin.
-    enum CurrencyType { usd, btc, eth, etc, xrp, usdt, dcr}
+    enum CurrencyType { usd, btc, eth, etc, xrp, usdt, dcr }
 
     // Bond describes the collection of information that make up a bond. 
     struct Bond {
