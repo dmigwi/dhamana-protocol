@@ -1,4 +1,6 @@
 module.exports = {
+    contracts_directory: "./contracts",
+    migrations_directory: "./contracts/migrations",
     networks: {
       development: {
         host: "127.0.0.1",

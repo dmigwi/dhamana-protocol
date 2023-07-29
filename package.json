@@ -4,10 +4,10 @@
   "description": "Contains implementation used to run dhamana app on OSL sapphire paratime",
   "main": "truffle-config.js",
   "directories": {
-    "test": "test"
+    "test": "contracts/tests/chat.test.js"
   },
   "scripts": {
-    "test": "./node_modules/.bin/truffle test",
+    "test": "./node_modules/.bin/truffle test ./contracts/tests/chat.test.js",
     "ganache": "./node_modules/.bin/ganache"
   },
   "repository": {
