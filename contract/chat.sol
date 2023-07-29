@@ -7,7 +7,17 @@ import "./bond.sol";
 /// @title Chat Contract.
 contract chatContract {
 
-    enum sectionTag { Introduction, Security, Appendix }
+    /// @param sectionTag describes the various message types are expected from all
+    /// people interacting with the bond via chat messages. 
+    /// @param InitConversation => describes the bond conversation during the
+    ///                      negotiation stage for potential bond holders, and
+    ///                      messages by the issuer till the terms are agreed upon. 
+    /// @param Introduction => describes the message sent by the issuer describing their
+    ///                  motivation to issue a bond.
+    /// @param Security => describes the message sent by the issuer describing the
+    ///              collateral the issuer is willing to commit as proof of them
+    ///              honoring their end of the deal.
+    enum sectionTag { InitConversation, Introduction, Security, Appendix }
 
     // newBondCreated creates new event showing the a new contract has been created.
     event newBondCreated(address _contractAddress, uint timestamp);
@@ -17,12 +27,16 @@ contract chatContract {
     event finalBondTerms(uint32 _principal, uint8 _couponRate, uint32 _couponDate,
         uint32 _maturityDate);
 
+    // newChatMessage creates a new event when a new message as part of the
+    // negotiation chat is received.
+    event newChatMessage(address _sender);
+
     // Creates a bonds mapping to their contract address.
     mapping (address => BondContract) bonds;
 
     struct messageInfo {
-        address sender;     // Address of the message sender.
-        string message;     // Actual encrypted message sent.
+        address sender;   // Address of the message sender.
+        string message;   // Actual encrypted message sent.
         uint timestamp;   // Time when message was received.
     }
 
@@ -88,7 +102,12 @@ contract chatContract {
             "no more messages are allowed"
         );
 
-        conversation.push(messageInfo({sender: msg.sender, message: _message, timestamp: block.timestamp}));
+        // Messages not part of the negotiations shouldn't get to the chat.
+        if (_tag == sectionTag.InitConversation) {
+            conversation.push(messageInfo({sender: msg.sender, message: _message, timestamp: block.timestamp}));
+
+            emit newChatMessage(msg.sender);
+        }
 
         if (issuer != msg.sender) {
             return;  // The bond issue did not send the current message, ignore further update.

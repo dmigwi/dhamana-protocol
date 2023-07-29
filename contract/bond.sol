@@ -5,34 +5,35 @@ pragma solidity ^0.8.0;
 /// @title Bond Contract.
 contract BondContract {
 
-    // StatusChoice describes the various stages a bond must pass through.
-    // Negotiating => Open to the public, potential bond holder can their
-    //                counter proposal hoping to be selected.
-    // HolderSelection => The issuer select a potential holder from all of those
-    //                who have expessed interest in taking up the bond.
-    // TermsAgreement => Both the issuer and the selected holder agree on the
-    //                 final terms of the bond. On the two parties to the bond
-    //                 have access to the bond. Security and Appendix section
-    //                 are added at this stage.
-    // ContractSigned => Once the final version of the terms are agreed, the final
-    //                 document is hashed with the holders keys.
-    // BondReselling => The bond holder can re-advertise his bond to anyone else.
-    // BondFinalised => The issuer has fulfilled his obligation to pay all the amount
-    //              in full as agreed on in the terms
+    /// @param StatusChoice describes the various stages a bond must pass through.
+    /// @param Negotiating => Open to the public, potential bond holder can their
+    ///              counter proposal hoping to be selected.
+    /// @param HolderSelection => The issuer select a potential holder from all
+    ///              of those who have expessed interest in taking up the bond.
+    /// @param TermsAgreement => Both the issuer and the selected holder agree
+    ///               on the final terms of the bond. Only the two parties
+    ///               have access to the bond. Security and Appendix section
+    ///               can be added at this stage.
+    /// @param ContractSigned => Once the final version of the terms are agreed,
+    ///                the final document version is hashed with the holders keys.
+    /// @param BondReselling => The bond holder can re-advertise his bond to
+    ///                anyone else
+    /// @param BondFinalised => The issuer has fulfilled his obligation to pay
+    ///            all the amount in full as agreed on in the terms
     enum StatusChoice { 
             Negotiating, HolderSelection, TermsAgreement,
             ContractSigned, BondReselling, BondFinalised 
         }
 
-    // CurrencyType defines the various types of currency types supported in the
-    // bond declaration.
-    // usd => represents the fiat type.
-    // btc => represents Bitcoin.
-    // eth => represents Ethereum.
-    // etc => represents Ethereum Classic.
-    // xrp => represents Ripple
-    // usdt => represents Tether Coin.
-    // dcr => represents Decred Coin.
+    /// @param @param CurrencyType defines the various types of currency types 
+    /// supported in the bond declaration.
+    /// @param usd => represents the fiat type.
+    /// @param btc => represents Bitcoin.
+    /// @param eth => represents Ethereum.
+    /// @param etc => represents Ethereum Classic.
+    /// @param xrp => represents Ripple
+    /// @param usdt => represents Tether Coin.
+    /// @param dcr => represents Decred Coin.
     enum CurrencyType { usd, btc, eth, etc, xrp, usdt, dcr }
 
     // Bond describes the collection of information that make up a bond. 
@@ -93,7 +94,17 @@ contract BondContract {
     modifier onlyIssuerAllowed {
        require (
             msg.sender == bond.issuer,
-            "Only the bond issue can make changes"
+            "Only the bond issuer can introduce changes"
+        );
+        _;
+    }
+
+    // bondAlreadyFinalised checks if checks if the Bond has been finalised. 
+    // Once finalised no more changes are accepted.
+    modifier bondAlreadyFinalised {
+        require(
+            bond.status == StatusChoice.BondFinalised,
+            "Bond already finalised"
         );
         _;
     }
@@ -102,7 +113,7 @@ contract BondContract {
     // this change. 
     function setBodyInfo(
         CurrencyType _currency, uint32 _principal, uint8 _couponRate,
-        uint32 _couponDate, uint32 _maturityDate) public onlyIssuerAllowed {
+        uint32 _couponDate, uint32 _maturityDate) public onlyIssuerAllowed bondAlreadyFinalised {
         bond.currency = _currency;
         bond.principal = _principal;
         bond.couponRate = _couponRate;
@@ -112,12 +123,12 @@ contract BondContract {
 
     // setStatus sets the bond status. Can be triggered by both the issuer and the
     // the holder.
-    function setStatus(StatusChoice _status) public {
+    function setStatus(StatusChoice _status) public bondAlreadyFinalised {
         bond.status = _status;
     }
 
     // setBondHolder sets the bond holder after negotiations are complete.
-    function setBondHolder(address payable _holder) public {
+    function setBondHolder(address payable _holder) public bondAlreadyFinalised {
         require(msg.sender != _holder, "Bond issuer cannot be the holder too");
         require(bond.status == StatusChoice.Negotiating, "Cannot set holder during negotiations");
 
@@ -125,17 +136,17 @@ contract BondContract {
     }
 
     // setIntro sets the introduction description. Only the issuer can do this.
-    function setIntro(string memory _intro) public onlyIssuerAllowed {
+    function setIntro(string memory _intro) public onlyIssuerAllowed bondAlreadyFinalised {
         bond.intro = _intro;
     }
 
     // setSecurity sets the security information. Only the issuer can do this. 
-    function setSecurity(string memory _security) public onlyIssuerAllowed {
+    function setSecurity(string memory _security) public onlyIssuerAllowed bondAlreadyFinalised {
         bond.security = _security;
     }
 
     // setAppendix sets the Appendix information. Only the issuer can do this.
-    function setAppendix(string memory _appendix) public onlyIssuerAllowed {
+    function setAppendix(string memory _appendix) public onlyIssuerAllowed bondAlreadyFinalised {
         bond.appendix = _appendix;
     }
 }
