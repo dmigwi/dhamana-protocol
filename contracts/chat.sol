@@ -20,12 +20,12 @@ contract chatContract {
     enum sectionTag { InitConversation, Introduction, Security, Appendix }
 
     // newBondCreated creates new event showing the a new contract has been created.
-    event newBondCreated(address _contractAddress, uint timestamp);
+    event newBondCreated(address contractAddress, uint timestamp);
 
     // finalBondTerms creates a new bonds with final terms once the terms are
     // agreed upon by both parties.
-    event finalBondTerms(uint32 _principal, uint8 _couponRate, uint32 _couponDate,
-        uint32 _maturityDate);
+    event finalBondTerms(uint32 principal, uint8 couponRate, uint32 couponDate,
+        uint32 maturityDate);
 
     // newChatMessage creates a new event when a new message as part of the
     // negotiation chat is received.
@@ -44,7 +44,7 @@ contract chatContract {
     messageInfo[] conversation;
 
     // createBond creates a new bond associated with the user who calls it.
-    function createBond() external returns (address) {
+    function createBond() external {
         BondContract bond = new BondContract();
         address bondAddress = address(bond);
 
@@ -52,22 +52,20 @@ contract chatContract {
         bonds[bondAddress] = bond;
 
         emit newBondCreated(bondAddress, block.timestamp);
-
-        return bondAddress;
     }
 
     function updateBodyInfo(
         address _contract, BondContract.CurrencyType _currency,
         uint32 _principal, uint8 _couponRate, uint32 _couponDate,
         uint32 _maturityDate
-    ) external {
+    ) public {
         BondContract bond = bonds[_contract];
         require(bond != new BondContract(), "invalid contract address provided");
 
         bond.setBodyInfo(_currency, _principal, _couponRate, _couponDate, _maturityDate);
     }
 
-    function updateBondStatus(address _contract, BondContract.StatusChoice _status) external {
+    function updateBondStatus(address _contract, BondContract.StatusChoice _status) public {
         BondContract bondC = bonds[_contract];
         require(bondC != new BondContract(), "invalid contract address provided");
 
@@ -83,7 +81,7 @@ contract chatContract {
     }
 
     // addMessage handles the messages received that finally make up the bond.
-    function addMessage(address _contract, sectionTag _tag, string memory _message) external {
+    function addMessage(address _contract, sectionTag _tag, string memory _message) public {
         BondContract bondC = bonds[_contract];
         require(bondC != new BondContract(), "invalid contract address provided");
 
@@ -124,7 +122,7 @@ contract chatContract {
 
     // updateBondholder sets the bond holder address after the negotiation stage
     // is complete.
-    function updateBondholder(address _contract, address payable _holder) external {
+    function updateBondholder(address _contract, address payable _holder) public {
         BondContract bondC = bonds[_contract];
         require(bondC != new BondContract(), "invalid contract address provided");
 
