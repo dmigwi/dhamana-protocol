@@ -20,24 +20,33 @@ contract chatContract {
     enum sectionTag { InitConversation, Introduction, Security, Appendix }
 
     // newBondCreated creates new event showing the a new contract has been created.
-    event newBondCreated(address contractAddress, uint timestamp);
+    event newBondCreated(address sender, address contractAddress, uint timestamp);
 
     // finalBondTerms creates a new bonds with final terms once the terms are
     // agreed upon by both parties.
     event finalBondTerms(uint32 principal, uint8 couponRate, uint32 couponDate,
-        uint32 maturityDate);
+        uint32 maturityDate, BondContract.CurrencyType currency);
 
     // newChatMessage creates a new event when a new message as part of the
     // negotiation chat is received.
     event newChatMessage(address _sender);
 
+    // bondUnderDispute creates an event to mark the specified bond is under
+    // dispute. This information is exposed to the world so as to prevent 
+    // malicious characters from misuing the bond system. 
+    event bondUnderDispute(address sender, address bondAddress);
+
+    // bondDisputeResolved creates an event showing the sender has more disputes
+    // to resolve in the said bond. 
+    event bondDisputeResolved(address sender, address bondAddress);
+
     // Creates a bonds mapping to their contract address.
     mapping (address => BondContract) bonds;
 
     struct messageInfo {
-        address sender;   // Address of the message sender.
-        string message;   // Actual encrypted message sent.
-        uint timestamp;   // Time when message was received.
+        address sender;         // Address of the message sender.
+        string message;         // Actual encrypted message sent.
+        uint256 timestamp;      // Time when message was received.
     }
 
     // conversation defines an array of messages info sent during bond negotiation. 
@@ -45,46 +54,50 @@ contract chatContract {
 
     // createBond creates a new bond associated with the user who calls it.
     function createBond() external {
-        BondContract bond = new BondContract();
+        BondContract bond = new BondContract(msg.sender);
         address bondAddress = address(bond);
 
         // Append the new contract created. 
         bonds[bondAddress] = bond;
 
-        emit newBondCreated(bondAddress, block.timestamp);
+        emit newBondCreated(msg.sender, bondAddress, block.timestamp);
     }
 
     function updateBodyInfo(
-        address _contract, BondContract.CurrencyType _currency,
-        uint32 _principal, uint8 _couponRate, uint32 _couponDate,
-        uint32 _maturityDate
-    ) public {
+        address _contract, uint32 _principal, uint8 _couponRate, uint32 _couponDate,
+        uint32 _maturityDate, BondContract.CurrencyType _currency
+    ) external {
         BondContract bond = bonds[_contract];
-        require(bond != new BondContract(), "invalid contract address provided");
-
-        bond.setBodyInfo(_currency, _principal, _couponRate, _couponDate, _maturityDate);
+       
+        bond.setBodyInfo(_currency, _principal, _couponRate, _couponDate, _maturityDate, msg.sender);
     }
 
-    function updateBondStatus(address _contract, BondContract.StatusChoice _status) public {
+    function updateBondStatus(address _contract, BondContract.StatusChoice _status) external {
         BondContract bondC = bonds[_contract];
-        require(bondC != new BondContract(), "invalid contract address provided");
 
         bondC.setStatus(_status);
+
+        // Shares this publicly to prevent malicious freezing of the bond.
+        if (_status != BondContract.StatusChoice.BondInDispute) {
+            emit bondUnderDispute(msg.sender, _contract);
+        }
 
         // If the terms have been agreed upon create an event displaying the 
         // bond body information.
         if (_status == BondContract.StatusChoice.TermsAgreement) {
-            (,,,,uint32 principal,uint8 couponRate, uint32 couponDate,uint32 maturityDate,,,) = bondC.bond();
+            (
+                ,,,, uint32 principal, uint8 couponRate, uint32 couponDate,
+                uint32 maturityDate, BondContract.CurrencyType currency,,
+            ) = bondC.bond();
 
-            emit finalBondTerms(principal, couponRate,couponDate,maturityDate);
+            emit finalBondTerms(principal, couponRate, couponDate, maturityDate, currency);
         }
     }
 
     // addMessage handles the messages received that finally make up the bond.
-    function addMessage(address _contract, sectionTag _tag, string memory _message) public {
+    function addMessage(address _contract, sectionTag _tag, string memory _message) external {
         BondContract bondC = bonds[_contract];
-        require(bondC != new BondContract(), "invalid contract address provided");
-
+       
         (,address payable issuer,, BondContract.StatusChoice status,,,,,,,) = bondC.bond();
 
         // Potential bond holders can only sent messages at negotiating stage.  
@@ -112,20 +125,28 @@ contract chatContract {
         }
 
         if (_tag == sectionTag.Introduction) {
-            bondC.setIntro(_message);
+            bondC.setIntro(_message, msg.sender);
         } else if (_tag == sectionTag.Security) {
-            bondC.setSecurity(_message);
+            bondC.setSecurity(_message, msg.sender);
         } else if (_tag == sectionTag.Appendix) {
-            bondC.setAppendix(_message);
+            bondC.setAppendix(_message, msg.sender);
         }
     }
 
     // updateBondholder sets the bond holder address after the negotiation stage
     // is complete.
-    function updateBondholder(address _contract, address payable _holder) public {
+    function updateBondholder(address _contract, address payable _holder) external {
         BondContract bondC = bonds[_contract];
-        require(bondC != new BondContract(), "invalid contract address provided");
 
         bondC.setBondHolder(_holder);
+    }
+
+    // signBondStatus allows the parties involved to sign the current bond status.
+    function signBondStatus(address _contract) external {
+        BondContract bondC = bonds[_contract];
+
+        bondC.signBondStatus(msg.sender);
+
+        emit bondDisputeResolved(msg.sender, _contract);
     }
 }
