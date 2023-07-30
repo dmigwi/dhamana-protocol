@@ -17,6 +17,9 @@ contract chatContract {
     /// @param Security => describes the message sent by the issuer describing the
     ///              collateral the issuer is willing to commit as proof of them
     ///              honoring their end of the deal.
+    /// @param Appendix => describes any other information that is crucial to
+    ///               complete. This information my include but limited to financial
+    ///               financial transaction information between the two parties.
     enum sectionTag { InitConversation, Introduction, Security, Appendix }
 
     // newBondCreated creates new event showing the a new contract has been created.
@@ -94,16 +97,27 @@ contract chatContract {
         }
     }
 
+    event messageSender(address issuer, address holder, address _sender);
+
     // addMessage handles the messages received that finally make up the bond.
     function addMessage(address _contract, sectionTag _tag, string memory _message) external {
         BondContract bondC = bonds[_contract];
        
-        (,address payable issuer,, BondContract.StatusChoice status,,,,,,,) = bondC.bond();
+        (,address payable issuer,address payable holder, BondContract.StatusChoice status,,,,,,,) = bondC.bond();
 
-        // Potential bond holders can only sent messages at negotiating stage.  
+        // The choosen bond holder and the issuer can send messages till the bond is finalised.
+        if (msg.sender != issuer && msg.sender != holder) {
+            emit messageSender(issuer, holder, msg.sender);
+            // Potential bond holders can only sent messages at negotiating stage.
+            require (
+                status == BondContract.StatusChoice.Negotiating,
+                "Potential holders cannot comment past negotiating stage"
+            );
+        }
+
         require (
-            status != BondContract.StatusChoice.Negotiating && issuer != msg.sender,
-            "Only bond issuers can comment past negotiating stage"
+            status != BondContract.StatusChoice.BondFinalised,
+            "No more comments are allowed after the bond is finalised"
         );
 
         // Messages not part of the negotiations shouldn't get to the chat.
@@ -113,9 +127,7 @@ contract chatContract {
             emit newChatMessage(msg.sender);
         }
 
-        if (issuer != msg.sender) {
-            return;  // The bond issue did not send the current message, ignore further update.
-        }
+        // Only the bond issuer can make this encrypted messages edits below. 
 
         if (_tag == sectionTag.Introduction) {
             bondC.setIntro(_message, msg.sender);
@@ -127,11 +139,12 @@ contract chatContract {
     }
 
     // updateBondHolder allows setting of the bond holder address after
-    // the negotiation stage is complete.
+    // the negotiation stage is complete. Only the bond hold can select the
+    // a holder from the interested people.
     function updateBondHolder(address _contract, address _holder) external {
         BondContract bondC = bonds[_contract];
 
-        bondC.setBondHolder(payable(_holder));
+        bondC.setBondHolder(payable(_holder), payable(msg.sender));
     }
 
     // signBondStatus allows the parties involved to sign the current bond status.

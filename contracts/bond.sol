@@ -18,13 +18,17 @@ contract BondContract {
     ///               on the final terms of the bond. Only the two parties
     ///               have access to the bond. Security and Appendix section
     ///               can be added at this stage.
+    /// @param ContractSigned => Once the final version of the terms are agreed, the final
+    ///                 document is hashed with the holders keys. Unless disputes
+    ///                 the bond might spend most of its life time on this status
+    ///                 until its finalised
     /// @param BondReselling => The bond holder can re-advertise his bond to
     ///                anyone else.
     /// @param BondFinalised => The issuer has fulfilled his obligation to pay
     ///            all the amount in full as agreed on in the terms
     enum StatusChoice { 
             Negotiating, HolderSelection, BondInDispute, TermsAgreement,
-                BondReselling, BondFinalised
+                ContractSigned, BondReselling, BondFinalised
         }
 
     /// @param @param CurrencyType defines the various types of currency types 
@@ -183,12 +187,16 @@ contract BondContract {
     }
 
     // setBondHolder sets the bond holder after negotiations are complete.
-    // Once bond terms are agreed, the bond issuer cannot change the
-    function setBondHolder(address payable _holder) public bondDetailsInDispute bondAlreadyFinalised {
+    // Once selected, the bond issuer cannot replace the holder. 
+    // only the bond issuer can select a bond holder from the interested people.
+    function setBondHolder(
+        address payable _holder, address payable _sender
+    ) public bondDetailsInDispute onlyIssuerAllowed(_sender) {
         require(bond.issuer != _holder, "Bond issuer cannot be the holder too");
+
         require(
-            uint8(bond.status) <= uint8(StatusChoice.Negotiating), 
-            "Cannot set holder during negotiations"
+            uint8(bond.status) == uint8(StatusChoice.HolderSelection), 
+            "Only set during the HolderSelection status"
         );
 
         bond.holder = _holder;
