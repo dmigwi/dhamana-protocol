@@ -10,21 +10,21 @@ contract BondContract {
     ///              counter proposal hoping to be selected.
     /// @param HolderSelection => The issuer select a potential holder from all
     ///              of those who have expessed interest in taking up the bond.
-    /// @param TermsAgreement => Both the issuer and the selected holder agree
-    ///               on the final terms of the bond. Only the two parties
-    ///               have access to the bond. Security and Appendix section
-    ///               can be added at this stage.
     /// @param BondInDispute => signals that a trusted entity between the parties
     ///                to the bond should lead the meditation process. 
     ///                Once in this stage, all parties involved must approval any
     ///                further status change.
+    /// @param TermsAgreement => Both the issuer and the selected holder agree
+    ///               on the final terms of the bond. Only the two parties
+    ///               have access to the bond. Security and Appendix section
+    ///               can be added at this stage.
     /// @param BondReselling => The bond holder can re-advertise his bond to
-    ///                anyone else
+    ///                anyone else.
     /// @param BondFinalised => The issuer has fulfilled his obligation to pay
     ///            all the amount in full as agreed on in the terms
     enum StatusChoice { 
-            Negotiating, HolderSelection, TermsAgreement,
-            BondInDispute, BondReselling, BondFinalised 
+            Negotiating, HolderSelection, BondInDispute, TermsAgreement,
+                BondReselling, BondFinalised
         }
 
     /// @param @param CurrencyType defines the various types of currency types 
@@ -47,7 +47,7 @@ contract BondContract {
     // signedBondStatuses holds the list of all bond statuses signed (approved)
     // by either of current party to this bond. Signed status to previous parties
     // are removed immediately they are detected.
-    mapping(bytes32 signature => uint256 timestamp) signedBondStatuses;
+    mapping(bytes32 => uint256) signedBondStatuses;
 
     // Bond describes the collection of information that make up a bond. 
     struct Bond {
@@ -128,8 +128,20 @@ contract BondContract {
     // they reconcile by signing the BondInDispute status.
     modifier bondDetailsInDispute {
         require(
-            bond.status == StatusChoice.BondInDispute && !signaturesExists(),
-            "Bond disputes not resolved by all the parties"
+            !(bond.status == StatusChoice.BondInDispute && !signaturesExists()),
+            "Bond disputes not yet resolved by all the parties"
+        );
+        _;
+    }
+
+    // termsUpdateDisabled prevents further terms edit since the version of the
+    // terms have been agreed upon.
+    // Terms only possible fully or partially only on this bond statuses only:
+    // Negotiating, HolderSelection, BondInDispute, TermsAgreement
+    modifier termsUpdateDisabled {
+        require(
+            uint(bond.status) <= uint(BondContract.StatusChoice.TermsAgreement),
+            "Bond terms update is disabled"
         );
         _;
     }
@@ -139,7 +151,7 @@ contract BondContract {
     function setBodyInfo(
         CurrencyType _currency, uint32 _principal, uint8 _couponRate,
         uint32 _couponDate, uint32 _maturityDate, address _sender
-    ) public onlyIssuerAllowed(_sender) bondDetailsInDispute bondAlreadyFinalised {
+    ) public onlyIssuerAllowed(_sender) bondDetailsInDispute termsUpdateDisabled {
         bond.currency = _currency;
         bond.principal = _principal;
         bond.couponRate = _couponRate;
@@ -152,13 +164,13 @@ contract BondContract {
     function setStatus(StatusChoice _status) public bondDetailsInDispute bondAlreadyFinalised {
         // past the negotiating stage, a holder must be set.
         require(
-            _status != StatusChoice.Negotiating && bond.issuer == address(0), 
+            !(uint8(_status) > uint8(StatusChoice.HolderSelection) && bond.holder == address(0)), 
             "Missing bond holder address"
         );
 
         // past holder selection stage, all bond body information must be set. 
         require(
-            uint8(_status) >= uint8(StatusChoice.HolderSelection) && isBondBodySet(),
+            !(uint8(_status) > uint8(StatusChoice.HolderSelection) && isAnyBondBodyFieldEmpty()),
             "Bond body fields may contain empty values"
         );
 
@@ -174,7 +186,10 @@ contract BondContract {
     // Once bond terms are agreed, the bond issuer cannot change the
     function setBondHolder(address payable _holder) public bondDetailsInDispute bondAlreadyFinalised {
         require(bond.issuer != _holder, "Bond issuer cannot be the holder too");
-        require(bond.status == StatusChoice.Negotiating, "Cannot set holder during negotiations");
+        require(
+            uint8(bond.status) <= uint8(StatusChoice.Negotiating), 
+            "Cannot set holder during negotiations"
+        );
 
         bond.holder = _holder;
     }
@@ -182,37 +197,37 @@ contract BondContract {
     // setIntro sets the introduction description. Only the issuer can do this.
     function setIntro(
         string memory _intro, address _sender
-    ) public bondDetailsInDispute onlyIssuerAllowed(_sender) bondAlreadyFinalised {
+    ) public bondDetailsInDispute termsUpdateDisabled onlyIssuerAllowed(_sender) {
         bond.intro = _intro;
     }
 
     // setSecurity sets the security information. Only the issuer can do this. 
     function setSecurity(
         string memory _security, address _sender
-    ) public bondDetailsInDispute onlyIssuerAllowed(_sender) bondAlreadyFinalised {
+    ) public bondDetailsInDispute termsUpdateDisabled onlyIssuerAllowed(_sender) {
         bond.security = _security;
     }
 
     // setAppendix sets the Appendix information. Only the issuer can do this.
     function setAppendix(
         string memory _appendix, address _sender
-    ) public bondDetailsInDispute onlyIssuerAllowed(_sender) bondAlreadyFinalised {
+    ) public bondDetailsInDispute termsUpdateDisabled onlyIssuerAllowed(_sender) {
         bond.appendix = _appendix;
     }
 
-    // isBondBodySet confirms that all the bond body information has been set
-    // with non-empty values.
-    function isBondBodySet() internal view  returns (bool) {
-        return bond.principal > 0 && bond.couponRate > 0 &&
-            bond.couponDate > 0 && bond.maturityDate > 0;
+    // isAnyBondBodyFieldEmpty returns true if either of; principal, couponRate,
+    // couponDate or maturityDate are empty.
+    function isAnyBondBodyFieldEmpty() internal view  returns (bool) {
+        return bond.principal == 0 || bond.couponRate == 0 ||
+            bond.couponDate == 0 || bond.maturityDate == 0;
     }
 
     // signBondStatus returns the signed status by the sender. Can only be called 
     // from outside this contract since it sets the signed status signature 
     // against its block timestamp.
-    function signBondStatus(address _sender) external {
-        require (
-            _sender != bond.issuer && _sender == bond.holder,
+    function signBondStatus(address payable _sender) external {
+         require (
+            _sender == bond.issuer || _sender == bond.holder,
             "Unknown bond status signer address used"
         );
 

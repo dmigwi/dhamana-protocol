@@ -29,7 +29,7 @@ contract chatContract {
 
     // newChatMessage creates a new event when a new message as part of the
     // negotiation chat is received.
-    event newChatMessage(address _sender);
+    event newChatMessage(address sender);
 
     // bondUnderDispute creates an event to mark the specified bond is under
     // dispute. This information is exposed to the world so as to prevent 
@@ -78,7 +78,7 @@ contract chatContract {
         bondC.setStatus(_status);
 
         // Shares this publicly to prevent malicious freezing of the bond.
-        if (_status != BondContract.StatusChoice.BondInDispute) {
+        if (_status == BondContract.StatusChoice.BondInDispute) {
             emit bondUnderDispute(msg.sender, _contract);
         }
 
@@ -106,13 +106,6 @@ contract chatContract {
             "Only bond issuers can comment past negotiating stage"
         );
 
-        // Bond issues can only make changes till the TermsAgreement stage. Past here
-        // the contract is considered binding and cannot be editted.
-        require (
-            uint(status) > uint(BondContract.StatusChoice.TermsAgreement),
-            "no more messages are allowed"
-        );
-
         // Messages not part of the negotiations shouldn't get to the chat.
         if (_tag == sectionTag.InitConversation) {
             conversation.push(messageInfo({sender: msg.sender, message: _message, timestamp: block.timestamp}));
@@ -133,19 +126,19 @@ contract chatContract {
         }
     }
 
-    // updateBondholder sets the bond holder address after the negotiation stage
-    // is complete.
-    function updateBondholder(address _contract, address payable _holder) external {
+    // updateBondHolder allows setting of the bond holder address after
+    // the negotiation stage is complete.
+    function updateBondHolder(address _contract, address _holder) external {
         BondContract bondC = bonds[_contract];
 
-        bondC.setBondHolder(_holder);
+        bondC.setBondHolder(payable(_holder));
     }
 
     // signBondStatus allows the parties involved to sign the current bond status.
     function signBondStatus(address _contract) external {
         BondContract bondC = bonds[_contract];
 
-        bondC.signBondStatus(msg.sender);
+        bondC.signBondStatus(payable(msg.sender));
 
         emit bondDisputeResolved(msg.sender, _contract);
     }
