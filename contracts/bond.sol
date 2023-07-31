@@ -178,8 +178,18 @@ contract BondContract {
             "Bond body fields may contain empty values"
         );
 
-        // removes the previous signatures if they existed.
-        if (_status == StatusChoice.BondInDispute) {
+        // If setting the new status to ContractSigned, TermsAgreement must be
+        // signed by both parties. To set ContractSigned status, the previous
+        // status must be TermsAgreement and have it signed.
+        if (_status == StatusChoice.ContractSigned) {
+            require(
+                !(bond.status == StatusChoice.TermsAgreement && !signaturesExists()),
+                "TermsAgreement must be signed before setting ContractSigned"
+            );
+        }
+
+        // Removes the prev signatures for BondInDispute and TermsAgreement statuses if they exist.
+        if (_status == StatusChoice.BondInDispute || _status == StatusChoice.TermsAgreement) {
             deleteSignatures();
         }
        

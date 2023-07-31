@@ -8,10 +8,10 @@ import "./bond.sol";
 contract chatContract {
 
     /// @param sectionTag describes the various message types are expected from all
-    /// people interacting with the bond via chat messages. 
+    /// people interacting with the bond via chat messages.
     /// @param InitConversation => describes the bond conversation during the
     ///                      negotiation stage for potential bond holders, and
-    ///                      messages by the issuer till the terms are agreed upon. 
+    ///                      messages by the issuer till the terms are agreed upon.
     /// @param Introduction => describes the message sent by the issuer describing their
     ///                  motivation to issue a bond.
     /// @param Security => describes the message sent by the issuer describing the
@@ -35,12 +35,12 @@ contract chatContract {
     event newChatMessage(address sender);
 
     // bondUnderDispute creates an event to mark the specified bond is under
-    // dispute. This information is exposed to the world so as to prevent 
-    // malicious characters from misuing the bond system. 
+    // dispute. This information is exposed to the world so as to prevent
+    // malicious characters from misuing the bond system.
     event bondUnderDispute(address sender, address bondAddress);
 
     // bondDisputeResolved creates an event showing the sender has more disputes
-    // to resolve in the said bond. 
+    // to resolve in the said bond.
     event bondDisputeResolved(address sender, address bondAddress);
 
     // Creates a bonds mapping to their contract address.
@@ -52,7 +52,7 @@ contract chatContract {
         uint256 timestamp;      // Time when message was received.
     }
 
-    // conversation defines an array of messages info sent during bond negotiation. 
+    // conversation defines an array of messages info sent during bond negotiation.
     messageInfo[] conversation;
 
     // createBond creates a new bond associated with the user who calls it.
@@ -60,7 +60,7 @@ contract chatContract {
         BondContract bond = new BondContract(msg.sender);
         address bondAddress = address(bond);
 
-        // Append the new contract created. 
+        // Append the new contract created.
         bonds[bondAddress] = bond;
 
         emit newBondCreated(msg.sender, bondAddress, block.timestamp);
@@ -71,7 +71,7 @@ contract chatContract {
         uint32 _maturityDate, BondContract.CurrencyType _currency
     ) external {
         BondContract bond = bonds[_contract];
-       
+
         bond.setBodyInfo(_currency, _principal, _couponRate, _couponDate, _maturityDate, msg.sender);
     }
 
@@ -85,7 +85,7 @@ contract chatContract {
             emit bondUnderDispute(msg.sender, _contract);
         }
 
-        // If the terms have been agreed upon create an event displaying the 
+        // If the terms have been agreed upon create an event displaying the
         // bond body information.
         if (_status == BondContract.StatusChoice.TermsAgreement) {
             (
@@ -102,7 +102,7 @@ contract chatContract {
     // addMessage handles the messages received that finally make up the bond.
     function addMessage(address _contract, sectionTag _tag, string memory _message) external {
         BondContract bondC = bonds[_contract];
-       
+
         (,address payable issuer,address payable holder, BondContract.StatusChoice status,,,,,,,) = bondC.bond();
 
         // The choosen bond holder and the issuer can send messages till the bond is finalised.
@@ -127,7 +127,7 @@ contract chatContract {
             emit newChatMessage(msg.sender);
         }
 
-        // Only the bond issuer can make this encrypted messages edits below. 
+        // Only the bond issuer can make this encrypted messages edits below.
 
         if (_tag == sectionTag.Introduction) {
             bondC.setIntro(_message, msg.sender);
@@ -153,6 +153,11 @@ contract chatContract {
 
         bondC.signBondStatus(payable(msg.sender));
 
-        emit bondDisputeResolved(msg.sender, _contract);
+        (,,, BondContract.StatusChoice status,,,,,,,) = bondC.bond();
+
+        // If status signed is the BondInDispute emit its event.
+        if (status == BondContract.StatusChoice.BondInDispute) {
+            emit bondDisputeResolved(msg.sender, _contract);
+        }
     }
 }
