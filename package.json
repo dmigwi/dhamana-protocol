@@ -1,1 +1,26 @@
-{}
+{
+  "name": "dhamana-protocol",
+  "version": "1.0.0",
+  "description": "Contains implementation used to run dhamana app on OSL sapphire paratime",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "contracts/tests/chat.test.js"
+  },
+  "scripts": {
+    "compile": "./node_modules/.bin/truffle compile",
+    "test": "./node_modules/.bin/truffle test ./contracts/tests/chat.test.js",
+    "ganache": "./node_modules/.bin/ganache"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dmigwi/dhamana-protocol"
+  },
+  "author": "dmigwi",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "ganache": "^7.9.0",
+    "truffle": "^5.11.1",
+    "truffle-assertions": "^0.9.2",
+    "web3": "^4.0.3"
+  }
+}
