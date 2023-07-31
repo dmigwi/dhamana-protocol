@@ -11,6 +11,8 @@ on:
       - 'contracts/**'
     branches:
       - main
+  
+
 jobs:
   run-tests:
     runs-on: ubuntu-latest
@@ -21,19 +23,15 @@ jobs:
 
         ports:
           - 8545:8545
-          - 8546:8546
 
         options: >-
-          --health-cmd "ganache --version"
+          --health-cmd "curl -kv http://127.0.0.1:8545/ || true"
           --health-interval 30s
           --health-timeout 10s
           --health-retries 5
-          --health-start-period 30s
+          --health-start-period 90s
 
     steps:
-      - name: Confirm that ganache is running
-        run: curl -kv http://127.0.0.1:8545/ || true
-
       - name: Checkout code
         uses: actions/checkout@v3
 

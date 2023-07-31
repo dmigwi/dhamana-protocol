@@ -8,7 +8,7 @@ import "./bond.sol";
 contract chatContract {
 
     /// @param sectionTag describes the various message types are expected from all
-    /// people interacting with the bond via chat messages.
+    ///                      people interacting with the bond via chat messages.
     /// @param InitConversation => describes the bond conversation during the
     ///                      negotiation stage for potential bond holders, and
     ///                      messages by the issuer till the terms are agreed upon.
