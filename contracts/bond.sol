@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: ISC
 pragma solidity ^0.8.10;
 
 /// @author dmigwi: (migwindungu0@gmail.com) @2023
