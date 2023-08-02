@@ -1,3 +1,4 @@
+const { expectRevert } = require('@openzeppelin/test-helpers');
 const chatContract = artifacts.require("../chat/chatContract");
 const truffleAssert = require("truffle-assertions");
 
@@ -48,7 +49,7 @@ contract("ChatContract",  (accounts) => {
         );
 
         it("should revert if the sender detected is not the bond issuer", async () => {
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBodyInfo(this.contractAddr, principal, couponRate,
                     couponDate, maturityDate, currency, {from: fakeOwner}),
                 "Only the bond issuer can introduce changes"
@@ -73,7 +74,7 @@ contract("ChatContract",  (accounts) => {
 
             await this.chat.updateBondStatus(this.contractAddr, bondInDispute);
 
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBodyInfo(this.contractAddr, principal, couponRate,
                     couponDate, maturityDate, currency),
                 "Bond disputes not yet resolved by all the parties"
@@ -90,7 +91,7 @@ contract("ChatContract",  (accounts) => {
 
             await this.chat.updateBondStatus(this.contractAddr, bondReselling);
 
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBodyInfo(this.contractAddr, principal, couponRate,
                     couponDate, maturityDate, currency),
                 "Bond terms update is disabled"
@@ -115,7 +116,7 @@ contract("ChatContract",  (accounts) => {
             );
 
             // dispute cannot be initiated without two people.
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBondStatus(this.contractAddr, bondInDispute),
                 "Missing bond holder address"
             );
@@ -129,7 +130,7 @@ contract("ChatContract",  (accounts) => {
                     couponDate, 0, currency)
             );
 
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBondStatus(this.contractAddr, termsAgreement),
                 "Bond body fields may contain empty values"
             );
@@ -149,7 +150,7 @@ contract("ChatContract",  (accounts) => {
             });
 
             // Attempting to change status without resolving the dispute first should fail.
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBondStatus(this.contractAddr, termsAgreement),
                 "Bond disputes not yet resolved by all the parties"
             );
@@ -175,7 +176,7 @@ contract("ChatContract",  (accounts) => {
             });
 
             // Attempting status change should still fail.
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBondStatus(this.contractAddr, termsAgreement),
                 "Bond disputes not yet resolved by all the parties"
             );
@@ -221,7 +222,7 @@ contract("ChatContract",  (accounts) => {
             truffleAssert.eventEmitted(newdata, 'finalBondTerms');
 
             // Setting the contract signed should fail since required signatures don't exist.
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBondStatus(this.contractAddr, contractSigned),
                 "TermsAgreement must be signed before setting ContractSigned"
             );
@@ -243,7 +244,7 @@ contract("ChatContract",  (accounts) => {
             await truffleAssert.passes(this.chat.updateBondStatus(this.contractAddr, bondFinalised));
 
             // finalised bond should not accept any more status changes.
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBondStatus(this.contractAddr, holderSelection),
                 "Bond already finalised"
             );
@@ -274,7 +275,7 @@ contract("ChatContract",  (accounts) => {
 
         it("should block potential bond holders from sending messages past negotiation stage", async () => {
             await this.chat.updateBondStatus(this.contractAddr, holderSelection)
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.addMessage(this.contractAddr, initChat, chatMsg, {from: holder2}),
                 "Potential holders cannot comment past negotiating stage"
             );
@@ -310,15 +311,15 @@ contract("ChatContract",  (accounts) => {
             await truffleAssert.passes(this.chat.addMessage(this.contractAddr, security, chatMsg, {from: owner}));
             await truffleAssert.passes(this.chat.addMessage(this.contractAddr, appendix, chatMsg, {from: owner}));
 
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.addMessage(this.contractAddr, intro, chatMsg, {from: holder}),
                 "Only the bond issuer can introduce changes"
             );
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.addMessage(this.contractAddr, security, chatMsg, {from: holder}),
                 "Only the bond issuer can introduce changes"
             );
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.addMessage(this.contractAddr, appendix, chatMsg, {from: holder}),
                 "Only the bond issuer can introduce changes"
             );
@@ -327,7 +328,7 @@ contract("ChatContract",  (accounts) => {
         it("should revert if issuer chats/messages are sent once the bond has been finalised", async () => {
             await this.chat.updateBondStatus(this.contractAddr, 6);
 
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.addMessage(this.contractAddr, security, chatMsg, {from: owner}),
                 "No more comments are allowed after the bond is finalised"
             );
@@ -336,7 +337,7 @@ contract("ChatContract",  (accounts) => {
         it("should revert if issuer contact messages are sent once the bond is in dispute", async () => {
             await this.chat.updateBondStatus(this.contractAddr, bondInDispute);
 
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.addMessage(this.contractAddr, security, chatMsg, {from: owner}),
                 "Bond disputes not yet resolved by all the parties"
             );
@@ -358,7 +359,7 @@ contract("ChatContract",  (accounts) => {
 
         it("should revert if the issuer attempts to set themselves as the holder", async () => {
             await this.chat.updateBondStatus(this.contractAddr, holderSelection);
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBondHolder(this.contractAddr, owner),
                 "Bond issuer cannot be the holder too"
             );
@@ -366,7 +367,7 @@ contract("ChatContract",  (accounts) => {
 
         it("should revert if a holder is not set during holderSelection status", async () => {
             await this.chat.updateBondStatus(this.contractAddr, negotiating);
-            await truffleAssert.reverts(
+            await expectRevert(
                 this.chat.updateBondHolder(this.contractAddr, holder),
                 "Only set during the HolderSelection status"
             );

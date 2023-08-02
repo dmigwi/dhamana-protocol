@@ -55,6 +55,11 @@ contract chatContract {
     // conversation defines an array of messages info sent during bond negotiation.
     messageInfo[] conversation;
 
+    // Potential bond holders cannot comment past negotiating stage in the chat.
+    // Potential => used to mean people who have shown interest in the bond via
+    // commenting in the chat but haven't been selected by the issuer.
+    error PotentialHoldersOnlyCommentInNegotiatingStage();
+
     // createBond creates a new bond associated with the user who calls it.
     function createBond() external {
         BondContract bond = new BondContract(msg.sender);
@@ -108,17 +113,15 @@ contract chatContract {
         // The choosen bond holder and the issuer can send messages till the bond is finalised.
         if (msg.sender != issuer && msg.sender != holder) {
             emit messageSender(issuer, holder, msg.sender);
-            // Potential bond holders can only sent messages at negotiating stage.
-            require (
-                status == BondContract.StatusChoice.Negotiating,
-                "Potential holders cannot comment past negotiating stage"
-            );
+            // Potential bond holders can only send messages during negotiating stage.
+            if (status != BondContract.StatusChoice.Negotiating) {
+                revert PotentialHoldersOnlyCommentInNegotiatingStage();
+            }
         }
 
-        require (
-            status != BondContract.StatusChoice.BondFinalised,
-            "No more comments are allowed after the bond is finalised"
-        );
+        if (status == BondContract.StatusChoice.BondFinalised) {
+            revert BondContract.ActivitiesDisabledOnFinalisedBond();
+        }
 
         // Messages not part of the negotiations shouldn't get to the chat.
         if (_tag == sectionTag.InitConversation) {
