@@ -39,11 +39,10 @@ contract("ChatContract",  (accounts) => {
 
     describe("Test update bond body information", () => {
         beforeEach(async () => {
-                this.chat = chatContract.new({from: owner});
+                this.chat = await chatContract.new({from: owner});
+                let data = await this.chat.createBond();
 
-                let data = this.chat.createBond();
                 truffleAssert.eventEmitted(data, 'newBondCreated');
-
                 this.contractAddr = data.logs[0].args.contractAddress;
             }
         );
@@ -66,7 +65,7 @@ contract("ChatContract",  (accounts) => {
 
         it("should revert if editting is attempted when the bond is dispute", async () => {
             await this.chat.updateBondStatus(this.contractAddr, holderSelection);
-            await this.chat.updateBondHolder(this.contractAddr, accounts[2]);
+            await this.chat.updateBondHolder(this.contractAddr, holder1);
             await truffleAssert.passes(
                 this.chat.updateBodyInfo(this.contractAddr, principal, couponRate,
                     couponDate, maturityDate, currency)
@@ -83,7 +82,7 @@ contract("ChatContract",  (accounts) => {
 
         it("should revert if terms update are initiated past TermsAgreement status", async () => {
             await this.chat.updateBondStatus(this.contractAddr, holderSelection);
-            await this.chat.updateBondHolder(this.contractAddr, accounts[2]);
+            await this.chat.updateBondHolder(this.contractAddr, holder1);
             await truffleAssert.passes(
                 this.chat.updateBodyInfo(this.contractAddr, principal, couponRate,
                     couponDate, maturityDate, currency)
@@ -103,10 +102,9 @@ contract("ChatContract",  (accounts) => {
 
         beforeEach(async () => {
             this.chat = await chatContract.new({from: owner});
-
             let data = await this.chat.createBond();
-            truffleAssert.eventEmitted(data, 'newBondCreated');
 
+            truffleAssert.eventEmitted(data, 'newBondCreated');
             this.contractAddr = data.logs[0].args.contractAddress;
         });
 
@@ -201,7 +199,7 @@ contract("ChatContract",  (accounts) => {
             );
 
             // Set the TermsAgreement bond status.
-        let newdata =  await this.chat.updateBondStatus(this.contractAddr, termsAgreement);
+            let newdata =  await this.chat.updateBondStatus(this.contractAddr, termsAgreement);
 
             truffleAssert.eventEmitted(newdata, 'finalBondTerms', (ev) => {
                 return ev.principal == principal && ev.couponRate == couponRate &&
@@ -256,10 +254,9 @@ contract("ChatContract",  (accounts) => {
 
         beforeEach(async () => {
             this.chat = await chatContract.new({from: owner});
-
             let data = await this.chat.createBond();
-            truffleAssert.eventEmitted(data, 'newBondCreated');
 
+            truffleAssert.eventEmitted(data, 'newBondCreated');
             this.contractAddr = data.logs[0].args.contractAddress;
 
             await truffleAssert.passes(this.chat.updateBondStatus(this.contractAddr, holderSelection));
@@ -350,10 +347,9 @@ contract("ChatContract",  (accounts) => {
 
         beforeEach(async () => {
             this.chat = await chatContract.new({from: owner});
-
             let data = await this.chat.createBond();
-            truffleAssert.eventEmitted(data, 'newBondCreated');
 
+            truffleAssert.eventEmitted(data, 'newBondCreated');
             this.contractAddr = data.logs[0].args.contractAddress;
 
             await this.chat.updateBodyInfo(this.contractAddr, principal, couponRate,
@@ -386,10 +382,9 @@ contract("ChatContract",  (accounts) => {
 
         beforeEach(async () => {
             this.chat = await chatContract.new({from: owner});
-
             let data = await this.chat.createBond();
-            truffleAssert.eventEmitted(data, 'newBondCreated');
 
+            truffleAssert.eventEmitted(data, 'newBondCreated');
             this.contractAddr = data.logs[0].args.contractAddress;
 
             await this.chat.updateBodyInfo(this.contractAddr, principal, couponRate,
