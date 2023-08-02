@@ -9,17 +9,18 @@
   "scripts": {
     "compile": "./node_modules/.bin/truffle compile",
     "test": "./node_modules/.bin/truffle test ./contracts/tests/chat.test.js",
-    "ganache": "./node_modules/.bin/ganache"
+    "ganache": "./node_modules/.bin/ganache",
+    "deploy_sapphire_testnet": "./node_modules/.bin/truffle migrate --network sapphire_testnet",
+    "deploy_sapphire_mainnet": "./node_modules/.bin/truffle migrate --network sapphire_mainnet"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/dmigwi/dhamana-protocol"
   },
   "author": "dmigwi",
-  "license": "GPL-3.0",
+  "license": "ISC",
   "devDependencies": {
     "@truffle/hdwallet-provider": "^2.1.13",
-    "ganache": "^7.9.0",
     "truffle": "^5.11.1",
     "truffle-assertions": "^0.9.2",
     "web3": "^4.0.3"

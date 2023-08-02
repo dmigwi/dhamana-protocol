@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: ISC
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.13;
 
 /// @author dmigwi: (migwindungu0@gmail.com) @2023
 /// @title Bond Contract.
@@ -99,6 +99,8 @@ contract BondContract {
         string appendix;
     }
 
+    // sapphire requires public variables to have an explicitly defined getter
+    // so as to guarrantee privacy.
     Bond public bond;
 
     // Once created the issuer address cannot be changed. Accepts a sender address
@@ -106,6 +108,12 @@ contract BondContract {
     constructor(address _sender) {
         bond.issuer = payable(_sender);
         bond.status = StatusChoice.Negotiating;
+    }
+
+    // getBond satisfies the requirement to have an explicitly defined getter
+    // method for all public variables declared. 
+    function getBond() external view returns (Bond memory) {
+        return bond;
     }
 
     // onlyIssuerAllowed restricts bond changes edits to only the issuer.
