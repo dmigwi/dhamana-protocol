@@ -1,5 +1,5 @@
 const { expectRevert } = require('@openzeppelin/test-helpers');
-const chatContract = artifacts.require("../chat/chatContract");
+const chatContract = artifacts.require("../chat/ChatContract");
 const truffleAssert = require("truffle-assertions");
 
 // Bond fields

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: ISC
 pragma solidity ^0.8.13;
 
-import "./bond.sol";
+import { BondContract } from "./bond.sol";
 
 /// @author dmigwi: (migwindungu0@gmail.com) @2023
 /// @title Chat Contract.
-contract chatContract {
+contract ChatContract {
 
-    /// @param sectionTag describes the various message types are expected from all
+    /// @param MessageTag describes the various message types are expected from all
     ///                      people interacting with the bond via chat messages.
     /// @param InitConversation => describes the bond conversation during the
     ///                      negotiation stage for potential bond holders, and
@@ -20,40 +20,40 @@ contract chatContract {
     /// @param Appendix => describes any other information that is crucial to
     ///               complete. This information my include but limited to financial
     ///               financial transaction information between the two parties.
-    enum sectionTag { InitConversation, Introduction, Security, Appendix }
+    enum MessageTag { InitConversation, Introduction, Security, Appendix }
 
-    // newBondCreated creates new event showing the a new contract has been created.
-    event newBondCreated(address sender, address contractAddress, uint timestamp);
+    // NewBondCreated creates new event showing the a new contract has been created.
+    event NewBondCreated(address sender, address bondAddress, uint timestamp);
 
-    // finalBondTerms creates a new bonds with final terms once the terms are
+    // FinalBondTerms creates a new bonds with final terms once the terms are
     // agreed upon by both parties.
-    event finalBondTerms(uint32 principal, uint8 couponRate, uint32 couponDate,
+    event FinalBondTerms(uint32 principal, uint8 couponRate, uint32 couponDate,
         uint32 maturityDate, BondContract.CurrencyType currency);
 
-    // newChatMessage creates a new event when a new message as part of the
+    // NewChatMessage creates a new event when a new message as part of the
     // negotiation chat is received.
-    event newChatMessage(address sender);
+    event NewChatMessage(address sender);
 
-    // bondUnderDispute creates an event to mark the specified bond is under
+    // BondUnderDispute creates an event to mark the specified bond is under
     // dispute. This information is exposed to the world so as to prevent
     // malicious characters from misuing the bond system.
-    event bondUnderDispute(address sender, address bondAddress);
+    event BondUnderDispute(address sender, address bondAddress);
 
-    // bondDisputeResolved creates an event showing the sender has more disputes
+    // BondDisputeResolved creates an event showing the sender has more disputes
     // to resolve in the said bond.
-    event bondDisputeResolved(address sender, address bondAddress);
+    event BondDisputeResolved(address sender, address bondAddress);
 
     // Creates a bonds mapping to their contract address.
-    mapping (address => BondContract) bonds;
+    mapping (address => BondContract) private bonds;
 
-    struct messageInfo {
+    struct MessageInfo {
         address sender;         // Address of the message sender.
         string message;         // Actual encrypted message sent.
         uint256 timestamp;      // Time when message was received.
     }
 
     // conversation defines an array of messages info sent during bond negotiation.
-    messageInfo[] conversation;
+    MessageInfo[] private conversation;
 
     // Potential bond holders cannot comment past negotiating stage in the chat.
     // Potential => used to mean people who have shown interest in the bond via
@@ -68,7 +68,7 @@ contract chatContract {
         // Append the new contract created.
         bonds[bondAddress] = bond;
 
-        emit newBondCreated(msg.sender, bondAddress, block.timestamp);
+        emit NewBondCreated(msg.sender, bondAddress, uint256(block.timestamp));
     }
 
     function updateBodyInfo(
@@ -87,7 +87,7 @@ contract chatContract {
 
         // Shares this publicly to prevent malicious freezing of the bond.
         if (_status == BondContract.StatusChoice.BondInDispute) {
-            emit bondUnderDispute(msg.sender, _contract);
+            emit BondUnderDispute(msg.sender, _contract);
         }
 
         // If the terms have been agreed upon create an event displaying the
@@ -98,21 +98,18 @@ contract chatContract {
                 uint32 maturityDate, BondContract.CurrencyType currency,,
             ) = bondC.bond();
 
-            emit finalBondTerms(principal, couponRate, couponDate, maturityDate, currency);
+            emit FinalBondTerms(principal, couponRate, couponDate, maturityDate, currency);
         }
     }
 
-    event messageSender(address issuer, address holder, address _sender);
-
     // addMessage handles the messages received that finally make up the bond.
-    function addMessage(address _contract, sectionTag _tag, string memory _message) external {
+    function addMessage(address _contract, MessageTag _tag, string memory _message) external {
         BondContract bondC = bonds[_contract];
 
         (,address payable issuer,address payable holder, BondContract.StatusChoice status,,,,,,,) = bondC.bond();
 
         // The choosen bond holder and the issuer can send messages till the bond is finalised.
         if (msg.sender != issuer && msg.sender != holder) {
-            emit messageSender(issuer, holder, msg.sender);
             // Potential bond holders can only send messages during negotiating stage.
             if (status != BondContract.StatusChoice.Negotiating) {
                 revert PotentialHoldersOnlyCommentInNegotiatingStage();
@@ -124,19 +121,19 @@ contract chatContract {
         }
 
         // Messages not part of the negotiations shouldn't get to the chat.
-        if (_tag == sectionTag.InitConversation) {
-            conversation.push(messageInfo({sender: msg.sender, message: _message, timestamp: block.timestamp}));
+        if (_tag == MessageTag.InitConversation) {
+            conversation.push(MessageInfo({sender: msg.sender, message: _message, timestamp: block.timestamp}));
 
-            emit newChatMessage(msg.sender);
+            emit NewChatMessage(msg.sender);
         }
 
         // Only the bond issuer can make this encrypted messages edits below.
 
-        if (_tag == sectionTag.Introduction) {
+        if (_tag == MessageTag.Introduction) {
             bondC.setIntro(_message, msg.sender);
-        } else if (_tag == sectionTag.Security) {
+        } else if (_tag == MessageTag.Security) {
             bondC.setSecurity(_message, msg.sender);
-        } else if (_tag == sectionTag.Appendix) {
+        } else if (_tag == MessageTag.Appendix) {
             bondC.setAppendix(_message, msg.sender);
         }
     }
@@ -160,7 +157,7 @@ contract chatContract {
 
         // If status signed is the BondInDispute emit its event.
         if (status == BondContract.StatusChoice.BondInDispute) {
-            emit bondDisputeResolved(msg.sender, _contract);
+            emit BondDisputeResolved(msg.sender, _contract);
         }
     }
 }

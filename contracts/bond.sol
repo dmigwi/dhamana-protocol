@@ -43,15 +43,15 @@ contract BondContract {
     enum CurrencyType { usd, btc, eth, etc, xrp, usdt, dcr }
 
     // issuerKey defines the key used to identify data signed by the bond issuer.
-    string issuerKey = "0x00000000f937";
+    string internal issuerKey = "0x00000000f937";
 
     // holderKey defines the key used to identify data signed by the bond holder.
-    string holderKey = "0x000000017d29";
+    string internal holderKey = "0x000000017d29";
 
     // signedBondStatuses holds the list of all bond statuses signed (approved)
     // by either of current party to this bond. Signed status to previous parties
     // are removed immediately they are detected.
-    mapping(bytes32 => uint256) signedBondStatuses;
+    mapping(bytes32 => uint256) private signedBondStatuses;
 
     // Bond describes the collection of information that make up a bond.
     struct Bond {
@@ -313,7 +313,7 @@ contract BondContract {
 
     // signaturesExists confirms if the required bond status has been signed
     // by all the parties involved.
-    function signaturesExists() view internal returns (bool) {
+    function signaturesExists() internal view returns (bool) {
         bytes32 issuerSignature = bondStatusSignature(bond.issuer, bond.status);
         bytes32 holderSignature = bondStatusSignature(bond.holder, bond.status);
 
