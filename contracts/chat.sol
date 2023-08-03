@@ -55,11 +55,6 @@ contract ChatContract {
     // conversation defines an array of messages info sent during bond negotiation.
     MessageInfo[] private conversation;
 
-    // Potential bond holders cannot comment past negotiating stage in the chat.
-    // Potential => used to mean people who have shown interest in the bond via
-    // commenting in the chat but haven't been selected by the issuer.
-    error PotentialHoldersOnlyCommentInNegotiatingStage();
-
     // createBond creates a new bond associated with the user who calls it.
     function createBond() external {
         BondContract bond = new BondContract(msg.sender);
@@ -108,17 +103,21 @@ contract ChatContract {
 
         (,address payable issuer,address payable holder, BondContract.StatusChoice status,,,,,,,) = bondC.bond();
 
-        // The choosen bond holder and the issuer can send messages till the bond is finalised.
+         // The choosen bond holder and the issuer can send messages till the bond is finalised.
         if (msg.sender != issuer && msg.sender != holder) {
-            // Potential bond holders can only send messages during negotiating stage.
-            if (status != BondContract.StatusChoice.Negotiating) {
-                revert PotentialHoldersOnlyCommentInNegotiatingStage();
-            }
+            // Potential bond holders cannot comment past negotiating stage in the chat.
+            // Potential is used to refer to people who have shown interest in the
+            // bond via commenting in the chat but haven't been selected by the issuer.
+            require (
+                status == BondContract.StatusChoice.Negotiating,
+                "Only negotiation chat is general"
+            );
         }
 
-        if (status == BondContract.StatusChoice.BondFinalised) {
-            revert BondContract.ActivitiesDisabledOnFinalisedBond();
-        }
+        require (
+            status != BondContract.StatusChoice.BondFinalised,
+            "Edits disabled on finalized Bond"
+        );
 
         // Messages not part of the negotiations shouldn't get to the chat.
         if (_tag == MessageTag.InitConversation) {

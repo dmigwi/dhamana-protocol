@@ -34,17 +34,18 @@ contract("ChatContract",  (accounts) => {
             const chat = await chatContract.new({from: owner});
             let data = await chat.createBond();
 
-            truffleAssert.eventEmitted(data, 'newBondCreated', (ev) => { return true });
+            truffleAssert.eventEmitted(data, 'NewBondCreated', (ev) => { return true });
         });
     });
 
     describe("Test update bond body information", () => {
-        beforeEach(async () => {
+        console.log()
+        beforeEach( async () => {
                 this.chat = await chatContract.new({from: owner});
                 let data = await this.chat.createBond();
 
-                truffleAssert.eventEmitted(data, 'newBondCreated');
-                this.contractAddr = data.logs[0].args.contractAddress;
+                truffleAssert.eventEmitted(data, 'NewBondCreated');
+                this.contractAddr = data.logs[0].args.bondAddress;
             }
         );
 
@@ -105,8 +106,8 @@ contract("ChatContract",  (accounts) => {
             this.chat = await chatContract.new({from: owner});
             let data = await this.chat.createBond();
 
-            truffleAssert.eventEmitted(data, 'newBondCreated');
-            this.contractAddr = data.logs[0].args.contractAddress;
+            truffleAssert.eventEmitted(data, 'NewBondCreated');
+            this.contractAddr = data.logs[0].args.bondAddress;
         });
 
         it("should revert if status is to be set past holderselection before setting the holder's address", async () => {
@@ -145,7 +146,7 @@ contract("ChatContract",  (accounts) => {
             // mark the current bond as under dispute.
             let txInfo = await this.chat.updateBondStatus(this.contractAddr, bondInDispute);
 
-            truffleAssert.eventEmitted(txInfo, 'bondUnderDispute', (ev) => {
+            truffleAssert.eventEmitted(txInfo, 'BondUnderDispute', (ev) => {
                 return ev.sender == owner &&  ev.bondAddress == this.contractAddr
             });
 
@@ -165,13 +166,13 @@ contract("ChatContract",  (accounts) => {
             // mark the current bond as under dispute.
             let txInfo = await this.chat.updateBondStatus(this.contractAddr, bondInDispute);
 
-            truffleAssert.eventEmitted(txInfo, 'bondUnderDispute', (ev) => {
+            truffleAssert.eventEmitted(txInfo, 'BondUnderDispute', (ev) => {
                 return ev.sender == owner &&  ev.bondAddress == this.contractAddr
             });
 
             // Issuer resolves the dispute on his end.
             let issuerData = await this.chat.signBondStatus(this.contractAddr, {from: owner});
-            truffleAssert.eventEmitted(issuerData, 'bondDisputeResolved', (ev) => {
+            truffleAssert.eventEmitted(issuerData, 'BondDisputeResolved', (ev) => {
                 return ev.sender == owner && ev.bondAddress == this.contractAddr
             });
 
@@ -183,7 +184,7 @@ contract("ChatContract",  (accounts) => {
 
             // holder resolves the dispute on his end.
             let holderData = await this.chat.signBondStatus(this.contractAddr, {from: holder});
-            truffleAssert.eventEmitted(holderData, 'bondDisputeResolved', (ev) => {
+            truffleAssert.eventEmitted(holderData, 'BondDisputeResolved', (ev) => {
                 return ev.sender == holder && ev.bondAddress == this.contractAddr;
             });
 
@@ -202,7 +203,7 @@ contract("ChatContract",  (accounts) => {
             // Set the TermsAgreement bond status.
             let newdata =  await this.chat.updateBondStatus(this.contractAddr, termsAgreement);
 
-            truffleAssert.eventEmitted(newdata, 'finalBondTerms', (ev) => {
+            truffleAssert.eventEmitted(newdata, 'FinalBondTerms', (ev) => {
                 return ev.principal == principal && ev.couponRate == couponRate &&
                     ev.couponDate == couponDate && ev.maturityDate == maturityDate &&
                     ev.currency == currency;
@@ -219,7 +220,7 @@ contract("ChatContract",  (accounts) => {
 
             // Set the TermsAgreement bond status.
             let newdata =  await this.chat.updateBondStatus(this.contractAddr, termsAgreement);
-            truffleAssert.eventEmitted(newdata, 'finalBondTerms');
+            truffleAssert.eventEmitted(newdata, 'FinalBondTerms');
 
             // Setting the contract signed should fail since required signatures don't exist.
             await expectRevert(
@@ -257,8 +258,8 @@ contract("ChatContract",  (accounts) => {
             this.chat = await chatContract.new({from: owner});
             let data = await this.chat.createBond();
 
-            truffleAssert.eventEmitted(data, 'newBondCreated');
-            this.contractAddr = data.logs[0].args.contractAddress;
+            truffleAssert.eventEmitted(data, 'NewBondCreated');
+            this.contractAddr = data.logs[0].args.bondAddress;
 
             await truffleAssert.passes(this.chat.updateBondStatus(this.contractAddr, holderSelection));
             await truffleAssert.passes(this.chat.updateBondHolder(this.contractAddr, holder));
@@ -284,7 +285,7 @@ contract("ChatContract",  (accounts) => {
         it("should allow potential bond holders to only send messages during negotiation stage", async () => {
             let txInfo = await this.chat.addMessage(this.contractAddr, initChat, chatMsg, {from: holder1})
 
-            truffleAssert.eventEmitted(txInfo, 'newChatMessage', (ev) => {
+            truffleAssert.eventEmitted(txInfo, 'NewChatMessage', (ev) => {
                 return ev.sender == holder1;
             });
         })
@@ -295,13 +296,13 @@ contract("ChatContract",  (accounts) => {
             // issuer can send a message during TermsAgreement status.
             let issuerInfo = await this.chat.addMessage(this.contractAddr, initChat, chatMsg, {from: owner})
 
-            truffleAssert.eventEmitted(issuerInfo, 'newChatMessage', (ev) => {
+            truffleAssert.eventEmitted(issuerInfo, 'NewChatMessage', (ev) => {
                 return ev.sender == owner;
             });
 
             let holderInfo = await this.chat.addMessage(this.contractAddr, initChat, chatMsg, {from: holder})
 
-            truffleAssert.eventEmitted(holderInfo, 'newChatMessage', (ev) => {
+            truffleAssert.eventEmitted(holderInfo, 'NewChatMessage', (ev) => {
                 return ev.sender == holder;
             });
         });
@@ -350,8 +351,8 @@ contract("ChatContract",  (accounts) => {
             this.chat = await chatContract.new({from: owner});
             let data = await this.chat.createBond();
 
-            truffleAssert.eventEmitted(data, 'newBondCreated');
-            this.contractAddr = data.logs[0].args.contractAddress;
+            truffleAssert.eventEmitted(data, 'NewBondCreated');
+            this.contractAddr = data.logs[0].args.bondAddress;
 
             await this.chat.updateBodyInfo(this.contractAddr, principal, couponRate,
                 couponDate, maturityDate, currency);
@@ -385,8 +386,8 @@ contract("ChatContract",  (accounts) => {
             this.chat = await chatContract.new({from: owner});
             let data = await this.chat.createBond();
 
-            truffleAssert.eventEmitted(data, 'newBondCreated');
-            this.contractAddr = data.logs[0].args.contractAddress;
+            truffleAssert.eventEmitted(data, 'NewBondCreated');
+            this.contractAddr = data.logs[0].args.bondAddress;
 
             await this.chat.updateBodyInfo(this.contractAddr, principal, couponRate,
                 couponDate, maturityDate, currency);
@@ -400,7 +401,7 @@ contract("ChatContract",  (accounts) => {
 
             let issuerData = await this.chat.signBondStatus(this.contractAddr);
 
-            truffleAssert.eventEmitted(issuerData, "bondDisputeResolved", (ev) => {
+            truffleAssert.eventEmitted(issuerData, "BondDisputeResolved", (ev) => {
                 return ev.sender = owner && ev.bondAddress == this.contractAddr;
             });
         });
@@ -408,7 +409,7 @@ contract("ChatContract",  (accounts) => {
         it("should not emit dispute resolved event when not signing BondInDispute Status", async () => {
             let txInfo = await this.chat.signBondStatus(this.contractAddr, {from: holder});
 
-            truffleAssert.eventNotEmitted(txInfo, "bondDisputeResolved");
+            truffleAssert.eventNotEmitted(txInfo, "BondDisputeResolved");
         });
     });
 });

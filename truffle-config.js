@@ -8,7 +8,7 @@ module.exports = {
     networks: {
       development: {
         provider: () =>
-          sapphire.wrap(
+          // sapphire.wrap(
             new HDWalletProvider({
               // 5 accounts are created and all are necessary for the successful running of tests.
               // To startup the local sapphire network, the following command is used:
@@ -16,7 +16,7 @@ module.exports = {
               mnemonic: { phrase: mnemonicPhrase },
               providerOrUrl: "http://localhost:8545"
             }),
-          ),
+          // ),
         network_id: 0x5afd,
       },
       sapphire_mainnet: {

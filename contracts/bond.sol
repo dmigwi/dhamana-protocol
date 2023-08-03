@@ -116,60 +116,54 @@ contract BondContract {
         return bond;
     }
 
-    // OnlyIssuerBondEditsAllowed is used to restricts bond changes to only be
-    // introduced by the issuer on select functionality.
-    error OnlyIssuerBondEditsAllowed();
+    // onlyIssuerAllowed restricts bond changes edits to only the issuer.
+    modifier onlyIssuerAllowed(address _sender) {
+       require (
+            _sender == bond.issuer,
+            "Edits only added by Bond Issuer"
+        );
+        _;
+    }
 
-    // ActivitiesDisabledOnFinalisedBond confirms that no more changes/activities
-    // are allowed from any person, including the the holder and issuer.
-    error ActivitiesDisabledOnFinalisedBond();
+    // BondAlreadyFinalised checks if checks if the Bond has been finalised.
+    // Once finalised no more changes are accepted.
+    modifier BondAlreadyFinalised {
+        require(
+            bond.status != StatusChoice.BondFinalised,
+            "Edits disabled on finalized Bond"
+        );
+        _;
+    }
 
-    // BondDetailsInDispute is used to show the current bond is in disputed between
+    // bondDetailsInDispute checks if the current bond is being disputed between
     // the parties involved. This prevents further actions on the bond until
     // they reconcile by signing the BondInDispute status.
-    error BondDetailsInDispute();
+    modifier bondDetailsInDispute {
+        require(
+            !(bond.status == StatusChoice.BondInDispute && !signaturesExists()),
+            "Some Bond dispute(s) are pending"
+        );
+        _;
+    }
 
-    // TermsUpdateDisabled prevents further terms edit since the version of the
+    // termsUpdateDisabled prevents further terms edit since the version of the
     // terms have been agreed upon.
-    // Terms edidt is only possible fully or partially only on this bond statuses only:
+    // Terms only possible fully or partially only on this bond statuses only:
     // Negotiating, HolderSelection, BondInDispute, TermsAgreement
-    error TermsUpdateDisabled();
-
-    // MissingBondHolderAddress indicates that the bond holder address was expected
-    // but it not yet set.
-    error MissingBondHolderAddress();
-
-    // EmptyBondBodyFieldsFound indicates that empty bond fields were not expected.
-    error EmptyBondBodyFieldsFound();
-
-    // BondIssuerCannotBeAHolder returned if the bond issuer tries to assign themselves
-    // as a holder of their bond.
-    error BondIssuerCannotBeAHolder();
-
-    // HolderOnlySetOnHolderselection prevents reassignment of the holder unless
-    // its on the Holderselection bond status.
-    error HolderOnlySetOnHolderselection();
-
-    // UnknownBondStatusSigner indicates the signer address used neither belongs
-    // to the bond issuer or the holder thus not allowed to sign a status.
-    error UnknownBondStatusSigner();
+    modifier termsUpdateDisabled {
+        require(
+            uint(bond.status) <= uint(BondContract.StatusChoice.TermsAgreement),
+            "Bond terms update is disabled"
+        );
+        _;
+    }
 
     // setBodyInfo updates the body information. Only the bond issuer can make
     // this change.
     function setBodyInfo(
         CurrencyType _currency, uint32 _principal, uint8 _couponRate,
         uint32 _couponDate, uint32 _maturityDate, address _sender
-    ) public {
-        if (_sender != bond.issuer) revert OnlyIssuerBondEditsAllowed();
-
-        if (bond.status == StatusChoice.BondInDispute && !signaturesExists()) {
-            revert BondDetailsInDispute();
-        }
-
-        if (uint(bond.status) > uint(BondContract.StatusChoice.TermsAgreement)) {
-            revert TermsUpdateDisabled();
-        }
-
+    ) public onlyIssuerAllowed(_sender) bondDetailsInDispute termsUpdateDisabled {
         bond.currency = _currency;
         bond.principal = _principal;
         bond.couponRate = _couponRate;
@@ -179,32 +173,27 @@ contract BondContract {
 
     // setStatus sets the bond status. Can be triggered by both the issuer and the
     // the holder.
-    function setStatus(StatusChoice _status) public {
-        if (bond.status == StatusChoice.BondInDispute && !signaturesExists()) {
-            revert BondDetailsInDispute();
-        }
-
-        if (bond.status == StatusChoice.BondFinalised) {
-            revert ActivitiesDisabledOnFinalisedBond();
-        }
-
+    function setStatus(StatusChoice _status) public bondDetailsInDispute BondAlreadyFinalised {
         // past the negotiating stage, a holder must be set.
-        if (uint8(_status) > uint8(StatusChoice.HolderSelection) && bond.holder == address(0)) {
-            revert MissingBondHolderAddress();
-        }
+        require(
+            !(uint8(_status) > uint8(StatusChoice.HolderSelection) && bond.holder == address(0)),
+            "Missing bond holder address"
+        );
 
         // past holder selection stage, all bond body information must be set.
-        if (uint8(_status) > uint8(StatusChoice.HolderSelection) && isAnyBondBodyFieldEmpty()) {
-            revert EmptyBondBodyFieldsFound();
-        }
+        require(
+            !(uint8(_status) > uint8(StatusChoice.HolderSelection) && isAnyBondBodyFieldEmpty()),
+            "Empty Bond body fields exists"
+        );
 
         // If setting the new status to ContractSigned, TermsAgreement must be
         // signed by both parties. To set ContractSigned status, the previous
         // status must be TermsAgreement and have it signed.
         if (_status == StatusChoice.ContractSigned) {
-            if (uint(bond.status) > uint(BondContract.StatusChoice.TermsAgreement)) {
-                revert TermsUpdateDisabled();
-            }
+            require(
+                !(bond.status == StatusChoice.TermsAgreement && !signaturesExists()),
+                "Terms agreed on not fully signed"
+            );
         }
 
         // Removes the prev signatures for BondInDispute and TermsAgreement statuses if they exist.
@@ -218,64 +207,37 @@ contract BondContract {
     // setBondHolder sets the bond holder after negotiations are complete.
     // Once selected, the bond issuer cannot replace the holder.
     // only the bond issuer can select a bond holder from the interested people.
-    function setBondHolder(address payable _holder, address payable _sender) public {
-        if (_sender != bond.issuer) revert OnlyIssuerBondEditsAllowed();
+    function setBondHolder(
+        address payable _holder, address payable _sender
+    ) public bondDetailsInDispute onlyIssuerAllowed(_sender) {
+        require(bond.issuer != _holder, "Issuer & Holder must be separate");
 
-        if (bond.status == StatusChoice.BondInDispute && !signaturesExists()) {
-            revert BondDetailsInDispute();
-        }
-
-        if (bond.issuer == _holder) revert BondIssuerCannotBeAHolder();
-
-        if (uint8(bond.status) != uint8(StatusChoice.HolderSelection)) {
-            revert HolderOnlySetOnHolderselection();
-        }
+        require(
+            uint8(bond.status) == uint8(StatusChoice.HolderSelection),
+            "Holder is set on HolderSelection"
+        );
 
         bond.holder = _holder;
     }
 
-    // setIntro sets the introduction description. Only the issuer can do this.
-    function setIntro( string memory _intro, address _sender ) public {
-        if (_sender != bond.issuer) revert OnlyIssuerBondEditsAllowed();
-
-        if (bond.status == StatusChoice.BondInDispute && !signaturesExists()) {
-            revert BondDetailsInDispute();
-        }
-
-        if (uint(bond.status) > uint(BondContract.StatusChoice.TermsAgreement)) {
-                revert TermsUpdateDisabled();
-        }
-
+   // setIntro sets the introduction description. Only the issuer can do this.
+    function setIntro(
+        string memory _intro, address _sender
+    ) public bondDetailsInDispute termsUpdateDisabled onlyIssuerAllowed(_sender) {
         bond.intro = _intro;
     }
 
     // setSecurity sets the security information. Only the issuer can do this.
-    function setSecurity(string memory _security, address _sender) public {
-        if (_sender != bond.issuer) revert OnlyIssuerBondEditsAllowed();
-
-        if (bond.status == StatusChoice.BondInDispute && !signaturesExists()) {
-            revert BondDetailsInDispute();
-        }
-
-        if (uint(bond.status) > uint(BondContract.StatusChoice.TermsAgreement)) {
-                revert TermsUpdateDisabled();
-        }
-
+    function setSecurity(
+        string memory _security, address _sender
+    ) public bondDetailsInDispute termsUpdateDisabled onlyIssuerAllowed(_sender) {
         bond.security = _security;
     }
 
     // setAppendix sets the Appendix information. Only the issuer can do this.
-    function setAppendix(string memory _appendix, address _sender) public {
-        if (_sender != bond.issuer) revert OnlyIssuerBondEditsAllowed();
-
-        if (bond.status == StatusChoice.BondInDispute && !signaturesExists()) {
-            revert BondDetailsInDispute();
-        }
-
-        if (uint(bond.status) > uint(BondContract.StatusChoice.TermsAgreement)) {
-                revert TermsUpdateDisabled();
-        }
-
+    function setAppendix(
+        string memory _appendix, address _sender
+    ) public bondDetailsInDispute termsUpdateDisabled onlyIssuerAllowed(_sender) {
         bond.appendix = _appendix;
     }
 
@@ -290,9 +252,10 @@ contract BondContract {
     // from outside this contract since it sets the signed status signature
     // against its block timestamp.
     function signBondStatus(address payable _sender) external {
-        if (_sender != bond.issuer && _sender != bond.holder) {
-            revert UnknownBondStatusSigner();
-        }
+        require (
+            _sender == bond.issuer || _sender == bond.holder,
+            "Unknown bond status signer used"
+        );
 
         bytes32 signature = bondStatusSignature(_sender, bond.status);
         signedBondStatuses[signature] = block.timestamp;
