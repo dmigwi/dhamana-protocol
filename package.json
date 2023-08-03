@@ -20,9 +20,8 @@
   "author": "dmigwi",
   "license": "ISC",
   "devDependencies": {
-    "@openzeppelin/test-helpers": "0.5.16",
     "@truffle/hdwallet-provider": "2.1.13",
-    "solhint": "^3.4.1",
+    "solhint": "3.4.1",
     "truffle": "5.11.1",
     "truffle-assertions": "0.9.2",
     "web3": "4.0.3"

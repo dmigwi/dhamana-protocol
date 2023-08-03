@@ -116,7 +116,8 @@ contract BondContract {
         return bond;
     }
 
-    // onlyIssuerAllowed restricts bond changes edits to only the issuer.
+    // onlyIssuerAllowed is used to restricts bond changes to only be
+    // introduced by the issuer on select functionality.
     modifier onlyIssuerAllowed(address _sender) {
        require (
             _sender == bond.issuer,
@@ -125,9 +126,9 @@ contract BondContract {
         _;
     }
 
-    // BondAlreadyFinalised checks if checks if the Bond has been finalised.
-    // Once finalised no more changes are accepted.
-    modifier BondAlreadyFinalised {
+    // bondAlreadyFinalised confirms that no more changes/activities
+    // are allowed from any person, including the the holder and issuer.
+    modifier bondAlreadyFinalised {
         require(
             bond.status != StatusChoice.BondFinalised,
             "Edits disabled on finalized Bond"
@@ -135,7 +136,7 @@ contract BondContract {
         _;
     }
 
-    // bondDetailsInDispute checks if the current bond is being disputed between
+    // bondDetailsInDispute is used to show the current bond is in disputed between
     // the parties involved. This prevents further actions on the bond until
     // they reconcile by signing the BondInDispute status.
     modifier bondDetailsInDispute {
@@ -148,7 +149,7 @@ contract BondContract {
 
     // termsUpdateDisabled prevents further terms edit since the version of the
     // terms have been agreed upon.
-    // Terms only possible fully or partially only on this bond statuses only:
+    // Terms edit is only possible fully or partially only on this bond statuses only:
     // Negotiating, HolderSelection, BondInDispute, TermsAgreement
     modifier termsUpdateDisabled {
         require(
@@ -173,7 +174,7 @@ contract BondContract {
 
     // setStatus sets the bond status. Can be triggered by both the issuer and the
     // the holder.
-    function setStatus(StatusChoice _status) public bondDetailsInDispute BondAlreadyFinalised {
+    function setStatus(StatusChoice _status) public bondDetailsInDispute bondAlreadyFinalised {
         // past the negotiating stage, a holder must be set.
         require(
             !(uint8(_status) > uint8(StatusChoice.HolderSelection) && bond.holder == address(0)),
