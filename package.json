@@ -1,7 +1,7 @@
 {
   "name": "dhamana-protocol",
   "version": "1.0.0",
-  "description": "Contains implementation used to run dhamana app on OSL sapphire paratime",
+  "description": "Contains implementation that run Dhamana bond app on Oasis Sapphire Paratime",
   "main": "truffle-config.js",
   "directories": {
     "test": "contracts/tests/chat.test.js"
@@ -9,18 +9,25 @@
   "scripts": {
     "compile": "./node_modules/.bin/truffle compile",
     "test": "./node_modules/.bin/truffle test ./contracts/tests/chat.test.js",
-    "ganache": "./node_modules/.bin/ganache"
+    "test_sapphire_localnet": "./node_modules/.bin/truffle test --network sapphire_localnet ./contracts/tests/chat.test.js",
+    "deploy_sapphire_testnet": "./node_modules/.bin/truffle migrate --network sapphire_testnet >> build/deploy_sapphire_testnet.log",
+    "deploy_sapphire_mainnet": "./node_modules/.bin/truffle migrate --network sapphire_mainnet >> build/deploy_sapphire_mainnet.log",
+    "lint": "./node_modules/.bin/solhint --max-warnings 0 'contracts/**/*.sol'"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/dmigwi/dhamana-protocol"
   },
   "author": "dmigwi",
-  "license": "GPL-3.0",
+  "license": "ISC",
   "devDependencies": {
-    "ganache": "^7.9.0",
-    "truffle": "^5.11.1",
-    "truffle-assertions": "^0.9.2",
-    "web3": "^4.0.3"
+    "@truffle/hdwallet-provider": "2.1.13",
+    "solhint": "3.4.1",
+    "truffle": "5.11.1",
+    "truffle-assertions": "0.9.2",
+    "web3": "4.0.3"
+  },
+  "dependencies": {
+    "@oasisprotocol/sapphire-paratime": "1.1.1"
   }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: ISC
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.13;
 
 /// @author dmigwi: (migwindungu0@gmail.com) @2023
 /// @title Bond Contract.
@@ -11,7 +11,7 @@ contract BondContract {
     /// @param HolderSelection => The issuer select a potential holder from all
     ///              of those who have expessed interest in taking up the bond.
     /// @param BondInDispute => signals that a trusted entity between the parties
-    ///                to the bond should lead the meditation process. 
+    ///                to the bond should lead the meditation process.
     ///                Once in this stage, all parties involved must approval any
     ///                further status change.
     /// @param TermsAgreement => Both the issuer and the selected holder agree
@@ -26,13 +26,13 @@ contract BondContract {
     ///                anyone else.
     /// @param BondFinalised => The issuer has fulfilled his obligation to pay
     ///            all the amount in full as agreed on in the terms
-    enum StatusChoice { 
+    enum StatusChoice {
             Negotiating, HolderSelection, BondInDispute, TermsAgreement,
                 ContractSigned, BondReselling, BondFinalised
         }
 
-    /// @param @param CurrencyType defines the various types of currency types 
-    /// supported in the bond declaration.
+    /// @param CurrencyType defines the various types of currency types
+    ///     supported in the bond declaration.
     /// @param usd => represents the fiat type.
     /// @param btc => represents Bitcoin.
     /// @param eth => represents Ethereum.
@@ -43,24 +43,24 @@ contract BondContract {
     enum CurrencyType { usd, btc, eth, etc, xrp, usdt, dcr }
 
     // issuerKey defines the key used to identify data signed by the bond issuer.
-    string issuerKey = "0x00000000f937";
+    string internal issuerKey = "0x00000000f937";
 
     // holderKey defines the key used to identify data signed by the bond holder.
-    string holderKey = "0x000000017d29";
+    string internal holderKey = "0x000000017d29";
 
     // signedBondStatuses holds the list of all bond statuses signed (approved)
     // by either of current party to this bond. Signed status to previous parties
     // are removed immediately they are detected.
-    mapping(bytes32 => uint256) signedBondStatuses;
+    mapping(bytes32 => uint256) private signedBondStatuses;
 
-    // Bond describes the collection of information that make up a bond. 
+    // Bond describes the collection of information that make up a bond.
     struct Bond {
-        // Section: 1 
+        // Section: 1
         // intro is added by the bond issuer where they describe the motivation
         // or what they hope  to achieve once the bond is subscribed to.
         string intro;
 
-        // Section: 2 (body)     
+        // Section: 2 (body)
         // issuer describes the address of the bond issuer. It should always be
         // set in all bonds.
         address payable issuer;
@@ -89,7 +89,7 @@ contract BondContract {
         // Section: 3
         // security describe some collataral or a form of a legal action a bond
         // holder can institute against the issuer should, money in the agreed
-        // amount fail to get to him at the expected date. 
+        // amount fail to get to him at the expected date.
         // Only exposed to the bond issuer and holder only
         string security;
 
@@ -99,6 +99,8 @@ contract BondContract {
         string appendix;
     }
 
+    // sapphire requires public variables to have an explicitly defined getter
+    // so as to guarrantee privacy.
     Bond public bond;
 
     // Once created the issuer address cannot be changed. Accepts a sender address
@@ -108,39 +110,46 @@ contract BondContract {
         bond.status = StatusChoice.Negotiating;
     }
 
-    // onlyIssuerAllowed restricts bond changes edits to only the issuer.
+    // getBond satisfies the requirement to have an explicitly defined getter
+    // method for all public variables declared.
+    function getBond() external view returns (Bond memory) {
+        return bond;
+    }
+
+    // onlyIssuerAllowed is used to restricts bond changes to only be
+    // introduced by the issuer on select functionality.
     modifier onlyIssuerAllowed(address _sender) {
        require (
             _sender == bond.issuer,
-            "Only the bond issuer can introduce changes"
+            "Edits only added by Bond Issuer"
         );
         _;
     }
 
-    // bondAlreadyFinalised checks if checks if the Bond has been finalised. 
-    // Once finalised no more changes are accepted.
+    // bondAlreadyFinalised confirms that no more changes/activities
+    // are allowed from any person, including the the holder and issuer.
     modifier bondAlreadyFinalised {
         require(
             bond.status != StatusChoice.BondFinalised,
-            "Bond already finalised"
+            "Edits disabled on finalized Bond"
         );
         _;
     }
 
-    // bondDetailsInDispute checks if the current bond is being disputed between
+    // bondDetailsInDispute is used to show the current bond is in disputed between
     // the parties involved. This prevents further actions on the bond until
     // they reconcile by signing the BondInDispute status.
     modifier bondDetailsInDispute {
         require(
             !(bond.status == StatusChoice.BondInDispute && !signaturesExists()),
-            "Bond disputes not yet resolved by all the parties"
+            "Some Bond dispute(s) are pending"
         );
         _;
     }
 
     // termsUpdateDisabled prevents further terms edit since the version of the
     // terms have been agreed upon.
-    // Terms only possible fully or partially only on this bond statuses only:
+    // Terms edit is only possible fully or partially only on this bond statuses only:
     // Negotiating, HolderSelection, BondInDispute, TermsAgreement
     modifier termsUpdateDisabled {
         require(
@@ -151,7 +160,7 @@ contract BondContract {
     }
 
     // setBodyInfo updates the body information. Only the bond issuer can make
-    // this change. 
+    // this change.
     function setBodyInfo(
         CurrencyType _currency, uint32 _principal, uint8 _couponRate,
         uint32 _couponDate, uint32 _maturityDate, address _sender
@@ -168,14 +177,14 @@ contract BondContract {
     function setStatus(StatusChoice _status) public bondDetailsInDispute bondAlreadyFinalised {
         // past the negotiating stage, a holder must be set.
         require(
-            !(uint8(_status) > uint8(StatusChoice.HolderSelection) && bond.holder == address(0)), 
+            !(uint8(_status) > uint8(StatusChoice.HolderSelection) && bond.holder == address(0)),
             "Missing bond holder address"
         );
 
-        // past holder selection stage, all bond body information must be set. 
+        // past holder selection stage, all bond body information must be set.
         require(
             !(uint8(_status) > uint8(StatusChoice.HolderSelection) && isAnyBondBodyFieldEmpty()),
-            "Bond body fields may contain empty values"
+            "Empty Bond body fields exists"
         );
 
         // If setting the new status to ContractSigned, TermsAgreement must be
@@ -184,7 +193,7 @@ contract BondContract {
         if (_status == StatusChoice.ContractSigned) {
             require(
                 !(bond.status == StatusChoice.TermsAgreement && !signaturesExists()),
-                "TermsAgreement must be signed before setting ContractSigned"
+                "Terms agreed on not fully signed"
             );
         }
 
@@ -192,34 +201,34 @@ contract BondContract {
         if (_status == StatusChoice.BondInDispute || _status == StatusChoice.TermsAgreement) {
             deleteSignatures();
         }
-       
+
         bond.status = _status;
     }
 
     // setBondHolder sets the bond holder after negotiations are complete.
-    // Once selected, the bond issuer cannot replace the holder. 
+    // Once selected, the bond issuer cannot replace the holder.
     // only the bond issuer can select a bond holder from the interested people.
     function setBondHolder(
         address payable _holder, address payable _sender
     ) public bondDetailsInDispute onlyIssuerAllowed(_sender) {
-        require(bond.issuer != _holder, "Bond issuer cannot be the holder too");
+        require(bond.issuer != _holder, "Issuer & Holder must be separate");
 
         require(
-            uint8(bond.status) == uint8(StatusChoice.HolderSelection), 
-            "Only set during the HolderSelection status"
+            uint8(bond.status) == uint8(StatusChoice.HolderSelection),
+            "Holder is set on HolderSelection"
         );
 
         bond.holder = _holder;
     }
 
-    // setIntro sets the introduction description. Only the issuer can do this.
+   // setIntro sets the introduction description. Only the issuer can do this.
     function setIntro(
         string memory _intro, address _sender
     ) public bondDetailsInDispute termsUpdateDisabled onlyIssuerAllowed(_sender) {
         bond.intro = _intro;
     }
 
-    // setSecurity sets the security information. Only the issuer can do this. 
+    // setSecurity sets the security information. Only the issuer can do this.
     function setSecurity(
         string memory _security, address _sender
     ) public bondDetailsInDispute termsUpdateDisabled onlyIssuerAllowed(_sender) {
@@ -240,13 +249,13 @@ contract BondContract {
             bond.couponDate == 0 || bond.maturityDate == 0;
     }
 
-    // signBondStatus returns the signed status by the sender. Can only be called 
-    // from outside this contract since it sets the signed status signature 
+    // signBondStatus returns the signed status by the sender. Can only be called
+    // from outside this contract since it sets the signed status signature
     // against its block timestamp.
     function signBondStatus(address payable _sender) external {
-         require (
+        require (
             _sender == bond.issuer || _sender == bond.holder,
-            "Unknown bond status signer address used"
+            "Unknown bond status signer used"
         );
 
         bytes32 signature = bondStatusSignature(_sender, bond.status);
@@ -268,7 +277,7 @@ contract BondContract {
 
     // signaturesExists confirms if the required bond status has been signed
     // by all the parties involved.
-    function signaturesExists() view internal returns (bool) {
+    function signaturesExists() internal view returns (bool) {
         bytes32 issuerSignature = bondStatusSignature(bond.issuer, bond.status);
         bytes32 holderSignature = bondStatusSignature(bond.holder, bond.status);
 
@@ -279,7 +288,7 @@ contract BondContract {
     }
 
     // deleteSignatures removes the previous signatures so that fresh ones
-    // can be added. 
+    // can be added.
     function deleteSignatures() internal {
         bytes32 issuerSignature = bondStatusSignature(bond.issuer, bond.status);
         bytes32 holderSignature = bondStatusSignature(bond.holder, bond.status);
