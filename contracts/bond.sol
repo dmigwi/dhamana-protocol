@@ -31,8 +31,8 @@ contract BondContract {
                 ContractSigned, BondReselling, BondFinalised
         }
 
-    /// @param @param CurrencyType defines the various types of currency types
-    /// supported in the bond declaration.
+    /// @param CurrencyType defines the various types of currency types
+    ///     supported in the bond declaration.
     /// @param usd => represents the fiat type.
     /// @param btc => represents Bitcoin.
     /// @param eth => represents Ethereum.
