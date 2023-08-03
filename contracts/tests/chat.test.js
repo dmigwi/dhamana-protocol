@@ -22,7 +22,7 @@ const bondFinalised = 6
 // instances, I have noticed that revert message returned by the contract don't
 // show the expected error message, instead take the format:
 
-// Transaction: 0x2b33087437fe7bbb8b4bceb7d45ec88698b380e7efab1d98219797132abe3944 exited with an error (status 0). 
+// Transaction: 0x2b33087437fe7bbb8b4bceb7d45ec88698b380e7efab1d98219797132abe3944 exited with an error (status 0).
 //      Please check that the transaction:
 //      - satisfies all conditions set by Solidity `require` statements.
 //      - does not trigger a Solidity `revert` statement.
@@ -360,7 +360,7 @@ contract("ChatContract",  (accounts) => {
     describe("Test the update of bond holder address", () => {
 
         beforeEach(async () => {
-            this.chat = await chatContract.new({from: owner});
+            this.chat = await chatContract.new();
             let data = await this.chat.createBond();
 
             truffleAssert.eventEmitted(data, 'NewBondCreated');
@@ -395,7 +395,7 @@ contract("ChatContract",  (accounts) => {
     describe("Test the signing of a status", () => {
 
         beforeEach(async () => {
-            this.chat = await chatContract.new({from: owner});
+            this.chat = await chatContract.new();
             let data = await this.chat.createBond();
 
             truffleAssert.eventEmitted(data, 'NewBondCreated');
