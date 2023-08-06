@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,9 +19,10 @@ const (
 )
 
 type config struct {
-	Network     string `long:"network" description:"Network to use; Supported networks: SapphireMainnet, SapphireTestnet and SapphireLocalnet" default:"SapphireTestnet"`
+	Network     string `long:"network" description:"Network to use; Supported networks: SapphireMainnet, SapphireTestnet and SapphireLocalnet" default:"SapphireTestnet" required:"required"`
 	DataDirPath string `long:"datadir" description:"Directory path to where the app data is stored"`
 	LogLevel    string `long:"loglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}" default:"info"`
+	Contract    string `long:"contract" description:"Contract Address for the deploy dhamana contract instance" required:"required"`
 }
 
 // defaultDataDir returns the default
@@ -48,16 +50,23 @@ func loadConfig() (*config, error) {
 		return nil, err
 	}
 
+	h := &bytes.Buffer{}
+	parser.WriteHelp(h)
+
 	if net := utils.ToNetType(conf.Network); net == utils.UnsupportedNet {
-		return nil, fmt.Errorf("unsupported network used: %v", parser.Usage)
+		return nil, fmt.Errorf("unsupported network used: (%v) \n %v", conf.Network, h.String())
 	}
 
 	if _, ok := btclog.LevelFromString(conf.LogLevel); !ok {
-		return nil, fmt.Errorf("invalid LogLevel found: %v", parser.Usage)
+		return nil, fmt.Errorf("invalid LogLevel found: (%v) \n %v", conf.LogLevel, h.String())
 	}
 
 	if conf.DataDirPath == "" {
-		return nil, fmt.Errorf("empty datadir path found: %v", parser.Usage)
+		return nil, fmt.Errorf("empty datadir path found \n %v", h.String())
+	}
+
+	if conf.Contract == "" {
+		return nil, fmt.Errorf("missing contract address \n %v", h.String())
 	}
 
 	return &conf, nil

@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -20,11 +21,11 @@ var (
 	// requests it.
 	log = backendLog.Logger("MAIN")
 
-	backendLog = btclog.NewBackend(logWriter{logFile})
-
 	// logRotator is one of the logging outputs.  It should be closed on
 	// application shutdown.
 	logRotators *rotator.Rotator
+
+	backendLog = btclog.NewBackend(logWriter{logFile})
 )
 
 // Assigns the logger to use.
@@ -40,12 +41,22 @@ type logWriter struct {
 // Write writes the data in p to standard out and the log rotator.
 func (l logWriter) Write(p []byte) (n int, err error) {
 	os.Stdout.Write(p)
+	if logRotators == nil {
+		return 1, errors.New("log Rotator not initialised")
+	}
 	return logRotators.Write(p)
 }
 
 // setLogLevel the required log level.
 func setLogLevel(level btclog.Level) {
 	log.SetLevel(level)
+}
+
+// shutdownLog safely triggers the log rotator shutdown.
+func shutdownLog() {
+	if logRotators != nil {
+		logRotators.Close()
+	}
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
