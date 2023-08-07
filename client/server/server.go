@@ -6,13 +6,13 @@ package server
 import (
 	"fmt"
 	"log"
-	"math/big"
-	"strings"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
+	"github.com/dmigwi/dhamana-protocol/client/sapphire"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -37,16 +37,22 @@ func (s *ServerConfig) Connection() {
 		log.Fatalf("Failed to connect to the Sapphire Paratime client: %v", err)
 	}
 
+	backend, err := sapphire.WrapClient(*conn, s.Network, func(digest [32]byte) ([]byte, error) {
+		// Pass in a custom signing function to interact with the signer
+		return crypto.Sign(digest[:], crypto.ToECDSAUnsafe(hexutil.MustDecode(privateKey)))
+	})
+
 	chatInstance, err := contracts.NewChat(s.ContractAddr, conn)
 	if err != nil {
 		log.Fatalf("Failed to instantiate a Chat contract: %v", err)
 	}
 
 	// Create an authorized transactor and call the store function
-	auth, err := bind.NewTransactorWithChainID(strings.NewReader(privateKey), "strong_password", big.NewInt(420))
-	if err != nil {
-		log.Fatalf("Failed to create authorized transactor: %v", err)
-	}
+	auth := backend.Transactor([common.AddressLength]byte{})
+	// auth, err := bind.NewTransactorWithChainID(strings.NewReader(privateKey), "strong_password", big.NewInt(420))
+	// if err != nil {
+	// 	log.Fatalf("Failed to create authorized transactor: %v", err)
+	// }
 
 	// Call the store() function
 	tx, err := chatInstance.CreateBond(auth)

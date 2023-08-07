@@ -15,11 +15,11 @@ import (
 	"net/http"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/oasisprotocol/deoxysii"
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"
 	mraeApi "github.com/oasisprotocol/oasis-core/go/common/crypto/mrae/api"
 	mrae "github.com/oasisprotocol/oasis-core/go/common/crypto/mrae/deoxysii"
-	"github.com/oasisprotocol/oasis-web3-gateway/rpc/oasis"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -55,6 +55,37 @@ type Failure struct {
 type AeadEnvelope struct {
 	Nonce []byte `json:"nonce"`
 	Data  []byte `json:"data"`
+}
+
+type Request struct {
+	Version string      `json:"jsonrpc"`
+	Method  string      `json:"method"`
+	Params  interface{} `json:"params"`
+	ID      int         `json:"id"`
+}
+
+type Error struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+type Response struct {
+	Error  *Error          `json:"error"`
+	ID     int             `json:"id"`
+	Result json.RawMessage `json:"result,omitempty"`
+}
+
+// CallDataPublicKey is the public key alongside the key manager's signature.
+//
+// This is copied from https://github.com/oasisprotocol/oasis-web3-gateway/blob/da1635399a2611b99a6c5e4936bc173ff32c1da7/rpc/oasis/api.go#L21C1-L32C1.
+type CallDataPublicKey struct {
+	// PublicKey is the requested public key.
+	PublicKey hexutil.Bytes `json:"key"`
+	// Checksum is the checksum of the key manager state.
+	Checksum hexutil.Bytes `json:"checksum"`
+	// Signature is the Sign(sk, (key || checksum)) from the key manager.
+	Signature hexutil.Bytes `json:"signature"`
 }
 
 type Cipher interface {
@@ -289,7 +320,7 @@ func GetRuntimePublicKey(net utils.NetworkType) (*[32]byte, error) {
 	}
 	res.Body.Close()
 
-	var pubKey oasis.CallDataPublicKey
+	var pubKey CallDataPublicKey
 	if err := json.Unmarshal(rpcRes.Result, &pubKey); err != nil {
 		return nil, fmt.Errorf("invalid response when fetching runtime calldata public key: %w", err)
 	}
@@ -297,23 +328,4 @@ func GetRuntimePublicKey(net utils.NetworkType) (*[32]byte, error) {
 		return nil, fmt.Errorf("invalid public key length")
 	}
 	return (*[32]byte)(pubKey.PublicKey), nil
-}
-
-type Request struct {
-	Version string      `json:"jsonrpc"`
-	Method  string      `json:"method"`
-	Params  interface{} `json:"params"`
-	ID      int         `json:"id"`
-}
-
-type Error struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
-type Response struct {
-	Error  *Error          `json:"error"`
-	ID     int             `json:"id"`
-	Result json.RawMessage `json:"result,omitempty"`
 }
