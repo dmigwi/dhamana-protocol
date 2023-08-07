@@ -3,6 +3,8 @@
 
 package utils
 
+import "math/big"
+
 type NetworkType int
 
 const (
@@ -11,6 +13,35 @@ const (
 	SapphireLocalnet
 	UnsupportedNet
 )
+
+type NetworkParams struct {
+	Name           string
+	ChainID        big.Int
+	DefaultGateway string
+	RuntimeID      string
+}
+
+// Networks defines the configurations mappings to the various networks supported.
+var Networks = map[NetworkType]NetworkParams{
+	SapphireMainnet: {
+		Name:           "mainnet",
+		ChainID:        *big.NewInt(0x5afe),
+		DefaultGateway: "https://sapphire.oasis.io",
+		RuntimeID:      "0x000000000000000000000000000000000000000000000000f80306c9858e7279",
+	},
+	SapphireTestnet: {
+		Name:           "testnet",
+		ChainID:        *big.NewInt(0x5aff),
+		DefaultGateway: "https://testnet.sapphire.oasis.dev",
+		RuntimeID:      "0x000000000000000000000000000000000000000000000000a6d1e3ebf60dff6c",
+	},
+	SapphireLocalnet: {
+		Name:           "localnet",
+		ChainID:        *big.NewInt(0x5afd),
+		DefaultGateway: "http://localhost:8545",
+		RuntimeID:      "0x8000000000000000000000000000000000000000000000000000000000000000",
+	},
+}
 
 // String defines the default stringer for NetworkType.
 func (n NetworkType) String() string {
