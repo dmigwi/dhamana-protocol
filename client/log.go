@@ -10,26 +10,29 @@ import (
 	"path/filepath"
 
 	"github.com/btcsuite/btclog"
+	"github.com/dmigwi/dhamana-protocol/client/server"
 	"github.com/jrick/logrotate/rotator"
 )
 
 const logFile = "dhamana.log"
 
 var (
+	backendLog = btclog.NewBackend(logWriter{logFile})
+
 	// log is a logger that is initialized with no output filters.  This
 	// means the package will not perform any logging by default until the caller
 	// requests it.
-	log = backendLog.Logger("MAIN")
+	log       = backendLog.Logger("MAIN")
+	serverLog = backendLog.Logger("SERVER")
 
 	// logRotator is one of the logging outputs.  It should be closed on
 	// application shutdown.
 	logRotators *rotator.Rotator
-
-	backendLog = btclog.NewBackend(logWriter{logFile})
 )
 
 // Assigns the logger to use.
 func init() {
+	server.UseLogger(serverLog)
 }
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -50,6 +53,7 @@ func (l logWriter) Write(p []byte) (n int, err error) {
 // setLogLevel the required log level.
 func setLogLevel(level btclog.Level) {
 	log.SetLevel(level)
+	serverLog.SetLevel(level)
 }
 
 // shutdownLog safely triggers the log rotator shutdown.

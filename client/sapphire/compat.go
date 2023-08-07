@@ -64,14 +64,16 @@ func packTx(tx *types.Transaction, cipher Cipher) (*types.Transaction, error) {
 
 // NewCipher creates a default cipher.
 func NewCipher(net utils.NetworkType) (Cipher, error) {
-	runtimePublicKey, err := GetRuntimePublicKey(net)
+	runtimePublicKey, err := getRuntimePublicKey(net)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch runtime callata public key: %w", err)
 	}
+
 	keypair, err := NewCurve25519KeyPair()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate ephemeral keypair: %w", err)
 	}
+
 	cipher, err := NewX25519DeoxysIICipher(*keypair, *runtimePublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create default cipher: %w", err)
@@ -117,7 +119,7 @@ func (b WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
 
 		sig, err := b.signerFunc(*(*[32]byte)(signer.Hash(packedTx).Bytes()))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to sign tx: %w", err)
 		}
 
 		signedTx, err := packedTx.WithSignature(signer, sig)

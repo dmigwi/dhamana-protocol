@@ -17,12 +17,14 @@ func run(ctx context.Context, cancelFunc context.CancelFunc) {
 	// initiate app shutdown
 	defer cancelFunc()
 
+	log.Infof("Loading command configurations")
 	config, err := loadConfig()
 	if err != nil {
 		log.Errorf("loadConfig Error: %v", err)
 		return
 	}
 
+	log.Infof("Initiating the log rotator")
 	// Initialize the logger while while creating the data dir if it doesn't exists.
 	if err := initLogRotator(config.DataDirPath, 50); err != nil {
 		log.Errorf("initLogRotator Error: %v", err)
@@ -33,6 +35,7 @@ func run(ctx context.Context, cancelFunc context.CancelFunc) {
 	setLogLevel(level)
 
 	s := server.NewServer(config.Contract, config.Network)
+	log.Infof("Attempting to make a connection to the sapphire network via contract %v", config.Contract)
 	// Attempt to make connection.
 	s.Connection()
 }

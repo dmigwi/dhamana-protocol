@@ -97,67 +97,6 @@ type Cipher interface {
 	DecryptCallResult(result []byte) ([]byte, error)
 }
 
-type PlainCipher struct{}
-
-func NewPlainCipher() PlainCipher {
-	return PlainCipher{}
-}
-
-func (c PlainCipher) Kind() uint64 {
-	return Plain
-}
-
-func (c PlainCipher) Encrypt(plaintext []byte) (ciphertext []byte, nonce []byte) {
-	nonce = make([]byte, 0)
-	return plaintext, nonce
-}
-
-func (c PlainCipher) Decrypt(nonce []byte, ciphertext []byte) (plaintext []byte, err error) {
-	return ciphertext, nil
-}
-
-func (c PlainCipher) DecryptCallResult(response []byte) ([]byte, error) {
-	var callResult CallResult
-	cbor.MustUnmarshal(response, &callResult)
-
-	// TODO: actually decode and return failure
-	if callResult.Fail != nil {
-		return nil, ErrCallFailed
-	}
-
-	if callResult.Unknown != nil {
-		return callResult.Unknown.Data, nil
-	}
-
-	if callResult.OK != nil {
-		return callResult.OK, nil
-	}
-
-	return nil, ErrCallResultDecode
-}
-
-func (c PlainCipher) DecryptEncoded(response []byte) ([]byte, error) {
-	return c.DecryptCallResult(response)
-}
-
-func (c PlainCipher) EncryptEnvelope(plaintext []byte) *DataEnvelope {
-	// Txs without data are just balance transfers, and all data in those is public.
-	if len(plaintext) == 0 {
-		return nil
-	}
-	return &DataEnvelope{
-		Body: cbor.Marshal(Body{
-			Data: plaintext,
-		}),
-		Format: c.Kind(),
-	}
-}
-
-func (c PlainCipher) EncryptEncode(plaintext []byte) []byte {
-	envelope := c.EncryptEnvelope(plaintext)
-	return cbor.Marshal(envelope)
-}
-
 // X25519DeoxysIICipher is the default cipher that does what it says on the tin.
 type X25519DeoxysIICipher struct {
 	cipher  cipher.AEAD
@@ -175,6 +114,7 @@ func NewCurve25519KeyPair() (*Curve25519KeyPair, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &Curve25519KeyPair{
 		PublicKey: *public,
 		SecretKey: *private,
@@ -184,11 +124,14 @@ func NewCurve25519KeyPair() (*Curve25519KeyPair, error) {
 func NewX25519DeoxysIICipher(keypair Curve25519KeyPair, peerPublicKey [curve25519.PointSize]byte) (*X25519DeoxysIICipher, error) {
 	var sharedKey [deoxysii.KeySize]byte
 	mrae.Box.DeriveSymmetricKey(sharedKey[:], &peerPublicKey, &keypair.SecretKey)
+
 	cipher, err := deoxysii.New(sharedKey[:])
+	// Set the slice to zero before exiting.
 	mraeApi.Bzero(sharedKey[:])
 	if err != nil {
 		return nil, err
 	}
+
 	return &X25519DeoxysIICipher{
 		cipher:  cipher,
 		keypair: keypair,
@@ -204,6 +147,7 @@ func (c X25519DeoxysIICipher) Encrypt(plaintext []byte) (ciphertext []byte, nonc
 	if _, err := rand.Reader.Read(nonce); err != nil {
 		panic(fmt.Sprintf("crypto/rand is unavailable: %v", err))
 	}
+
 	res := c.cipher.Seal(ciphertext, nonce, plaintext, []byte{})
 	return res, nonce
 }
@@ -224,6 +168,7 @@ func (c X25519DeoxysIICipher) EncryptEnvelope(plaintext []byte) *EncryptedBodyEn
 	if len(plaintext) == 0 {
 		return nil
 	}
+
 	data, nonce := c.encryptCallData(plaintext)
 	return &EncryptedBodyEnvelope{
 		Body: Body{
@@ -287,8 +232,8 @@ func (c X25519DeoxysIICipher) DecryptEncoded(response []byte) ([]byte, error) {
 	return c.DecryptCallResult(response)
 }
 
-// GetRuntimePublicKey fetches the runtime calldata public key from the default Sapphire gateway.
-func GetRuntimePublicKey(net utils.NetworkType) (*[32]byte, error) {
+// getRuntimePublicKey fetches the runtime calldata public key from the default Sapphire gateway.
+func getRuntimePublicKey(net utils.NetworkType) (*[32]byte, error) {
 	network, exists := utils.Networks[net]
 	if !exists {
 		return nil, fmt.Errorf("could not fetch public key for %v network", net.String())
