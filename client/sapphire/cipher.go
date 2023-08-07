@@ -14,8 +14,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/oasisprotocol/deoxysii"
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"
+	mraeApi "github.com/oasisprotocol/oasis-core/go/common/crypto/mrae/api"
+	mrae "github.com/oasisprotocol/oasis-core/go/common/crypto/mrae/deoxysii"
+	"github.com/oasisprotocol/oasis-web3-gateway/rpc/oasis"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -253,11 +257,12 @@ func (c X25519DeoxysIICipher) DecryptEncoded(response []byte) ([]byte, error) {
 }
 
 // GetRuntimePublicKey fetches the runtime calldata public key from the default Sapphire gateway.
-func GetRuntimePublicKey(chainID uint64) (*[32]byte, error) {
-	network, exists := Networks[chainID]
+func GetRuntimePublicKey(net utils.NetworkType) (*[32]byte, error) {
+	network, exists := utils.Networks[net]
 	if !exists {
-		return nil, fmt.Errorf("could not fetch public key for network with chain id %d", chainID)
+		return nil, fmt.Errorf("could not fetch public key for %v network", net.String())
 	}
+
 	request := Request{
 		Version: "2.0",
 		Method:  "oasis_callDataPublicKey",

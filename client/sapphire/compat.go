@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -83,8 +84,8 @@ func NewWrappedBackend(backend bind.ContractBackend, chainID big.Int, cipher Cip
 }
 
 // NewCipher creates a default cipher.
-func NewCipher(chainID uint64) (Cipher, error) {
-	runtimePublicKey, err := GetRuntimePublicKey(chainID)
+func NewCipher(net utils.NetworkType) (Cipher, error) {
+	runtimePublicKey, err := GetRuntimePublicKey(net)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch runtime callata public key: %w", err)
 	}
@@ -100,12 +101,12 @@ func NewCipher(chainID uint64) (Cipher, error) {
 }
 
 // WrapClient wraps an ethclient.Client so that it can talk to Sapphire.
-func WrapClient(c ethclient.Client, sign SignerFn) (*WrappedBackend, error) {
+func WrapClient(c ethclient.Client, sign SignerFn, net utils.NetworkType) (*WrappedBackend, error) {
 	chainID, err := c.ChainID(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch chain ID: %w", err)
 	}
-	cipher, err := NewCipher(chainID.Uint64())
+	cipher, err := NewCipher(net)
 	if err != nil {
 		return nil, err
 	}

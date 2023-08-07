@@ -1,9 +1,6 @@
 // Copyright (c) 2023 Migwi Ndung'u
 // See LICENSE for details.
 
-// Copyright (c) 2023 Migwi Ndung'u
-// See LICENSE for details.
-
 package server
 
 import (
@@ -35,9 +32,9 @@ func NewServer(contractAddr string, network string) *ServerConfig {
 
 func (s *ServerConfig) Connection() {
 	// Create an IPC based RPC connection to a remote node and instantiate a contract binding
-	conn, err := ethclient.Dial(sapphire.Networks[SapphireChainID.Uint64()].DefaultGateway)
+	conn, err := ethclient.Dial(utils.Networks[s.Network].DefaultGateway)
 	if err != nil {
-		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
+		log.Fatalf("Failed to connect to the Sapphire Paratime client: %v", err)
 	}
 
 	chatInstance, err := contracts.NewChat(s.ContractAddr, conn)
