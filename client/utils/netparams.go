@@ -3,7 +3,10 @@
 
 package utils
 
-import "math/big"
+import (
+	"fmt"
+	"math/big"
+)
 
 type NetworkType int
 
@@ -22,7 +25,7 @@ type NetworkParams struct {
 }
 
 // Networks defines the configurations mappings to the various networks supported.
-var Networks = map[NetworkType]NetworkParams{
+var networks = map[NetworkType]NetworkParams{
 	SapphireMainnet: {
 		Name:           "mainnet",
 		ChainID:        *big.NewInt(0x5afe),
@@ -41,6 +44,15 @@ var Networks = map[NetworkType]NetworkParams{
 		DefaultGateway: "http://localhost:8545",
 		RuntimeID:      "0x8000000000000000000000000000000000000000000000000000000000000000",
 	},
+}
+
+// GetNetworkConfig returns the configured sapphire network params.
+func GetNetworkConfig(net NetworkType) (*NetworkParams, error) {
+	params, ok := networks[net]
+	if !ok {
+		return nil, fmt.Errorf("could not fetch %v network", net.String())
+	}
+	return &params, nil
 }
 
 // String defines the default stringer for NetworkType.
