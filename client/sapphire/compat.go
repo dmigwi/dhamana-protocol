@@ -31,6 +31,7 @@ type WrappedBackend struct {
 	chainID    big.Int
 	cipher     Cipher
 	signerFunc SignerFn
+	ctx        context.Context
 }
 
 // Confirm that WrappedBacked implements the bind.ContractBackend interface.
@@ -47,6 +48,7 @@ func txNeedsPacking(tx *types.Transaction) bool {
 	if tx == nil || len(tx.Data()) == 0 || isPacked {
 		return false
 	}
+
 	var envelope Data
 	return cbor.Unmarshal(tx.Data(), &envelope) != nil // If there is no error, the tx is already packed.
 }
@@ -63,8 +65,8 @@ func packTx(tx *types.Transaction, cipher Cipher) (*types.Transaction, error) {
 }
 
 // NewCipher creates a default cipher.
-func NewCipher(net utils.NetworkType) (Cipher, error) {
-	runtimePublicKey, err := getRuntimePublicKey(net)
+func NewCipher(ctx context.Context, net utils.NetworkType) (Cipher, error) {
+	runtimePublicKey, err := getRuntimePublicKey(ctx, net)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch runtime callata public key: %w", err)
 	}
@@ -82,13 +84,13 @@ func NewCipher(net utils.NetworkType) (Cipher, error) {
 }
 
 // WrapClient wraps an ethclient.Client so that it can talk to Sapphire.
-func WrapClient(c ethclient.Client, net utils.NetworkType, sign SignerFn) (*WrappedBackend, error) {
+func WrapClient(ctx context.Context, c ethclient.Client, net utils.NetworkType, sign SignerFn) (*WrappedBackend, error) {
 	chainID, err := c.ChainID(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch chain ID: %w", err)
 	}
 
-	cipher, err := NewCipher(net)
+	cipher, err := NewCipher(ctx, net)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +104,7 @@ func WrapClient(c ethclient.Client, net utils.NetworkType, sign SignerFn) (*Wrap
 }
 
 // Transactor returns a TransactOpts that can be used with Sapphire.
-func (b WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
+func (b *WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
 	signer := types.LatestSignerForChainID(&b.chainID)
 	signFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
 		if addr != from {
@@ -136,7 +138,7 @@ func (b WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
 
 // CallContract executes a Sapphire paratime contract call with the specified
 // data as the input. CallContract implements ContractCaller.
-func (b WrappedBackend) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (b *WrappedBackend) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	var err error
 	var packedCall *ethereum.CallMsg
 
@@ -182,15 +184,15 @@ func (b WrappedBackend) CallContract(ctx context.Context, call ethereum.CallMsg,
 }
 
 // EstimateGas implements ContractTransactor.
-func (b WrappedBackend) EstimateGas(ctx context.Context, call ethereum.CallMsg) (gas uint64, err error) {
+func (b *WrappedBackend) EstimateGas(ctx context.Context, call ethereum.CallMsg) (gas uint64, err error) {
 	return DefaultGasLimit, nil
 }
 
 // SendTransaction implements ContractTransactor.
-func (b WrappedBackend) SendTransaction(ctx context.Context, tx *types.Transaction) error {
-	if !txNeedsPacking(tx) {
-		return b.SendTransaction(ctx, tx)
-	}
+func (b *WrappedBackend) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+	// if !txNeedsPacking(tx) {
+	// 	return b.ContractBackend.SendTransaction(ctx, tx)
+	// }
 
 	packedTx, err := packTx(tx, b.cipher)
 	if err != nil {

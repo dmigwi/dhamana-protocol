@@ -34,7 +34,7 @@ func run(ctx context.Context, cancelFunc context.CancelFunc) {
 	level, _ := btclog.LevelFromString(config.LogLevel)
 	setLogLevel(level)
 
-	s := server.NewServer(config.Contract, config.Network)
+	s := server.NewServer(ctx, config.Contract, config.Network)
 	log.Infof("Attempting to make a connection to the sapphire network via contract %v", config.Contract)
 	// Attempt to make connection.
 	s.Connection()

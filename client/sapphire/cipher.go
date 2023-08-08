@@ -15,11 +15,11 @@ import (
 	"net/http"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/oasisprotocol/deoxysii"
 	"github.com/oasisprotocol/oasis-core/go/common/cbor"
 	mraeApi "github.com/oasisprotocol/oasis-core/go/common/crypto/mrae/api"
 	mrae "github.com/oasisprotocol/oasis-core/go/common/crypto/mrae/deoxysii"
+	"github.com/oasisprotocol/oasis-web3-gateway/rpc/oasis"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -74,18 +74,6 @@ type Response struct {
 	Error  *Error          `json:"error"`
 	ID     int             `json:"id"`
 	Result json.RawMessage `json:"result,omitempty"`
-}
-
-// CallDataPublicKey is the public key alongside the key manager's signature.
-//
-// This is copied from https://github.com/oasisprotocol/oasis-web3-gateway/blob/da1635399a2611b99a6c5e4936bc173ff32c1da7/rpc/oasis/api.go#L21C1-L32C1.
-type CallDataPublicKey struct {
-	// PublicKey is the requested public key.
-	PublicKey hexutil.Bytes `json:"key"`
-	// Checksum is the checksum of the key manager state.
-	Checksum hexutil.Bytes `json:"checksum"`
-	// Signature is the Sign(sk, (key || checksum)) from the key manager.
-	Signature hexutil.Bytes `json:"signature"`
 }
 
 type Cipher interface {
@@ -233,7 +221,7 @@ func (c X25519DeoxysIICipher) DecryptEncoded(response []byte) ([]byte, error) {
 }
 
 // getRuntimePublicKey fetches the runtime calldata public key from the default Sapphire gateway.
-func getRuntimePublicKey(net utils.NetworkType) (*[32]byte, error) {
+func getRuntimePublicKey(ctx context.Context, net utils.NetworkType) (*[32]byte, error) {
 	network, exists := utils.Networks[net]
 	if !exists {
 		return nil, fmt.Errorf("could not fetch public key for %v network", net.String())
@@ -246,7 +234,7 @@ func getRuntimePublicKey(net utils.NetworkType) (*[32]byte, error) {
 	}
 	rawReq, _ := json.Marshal(request)
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, network.DefaultGateway, bytes.NewBuffer(rawReq))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, network.DefaultGateway, bytes.NewBuffer(rawReq))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request for runtime calldata public key: %w", err)
 	}
@@ -265,12 +253,13 @@ func getRuntimePublicKey(net utils.NetworkType) (*[32]byte, error) {
 	}
 	res.Body.Close()
 
-	var pubKey CallDataPublicKey
+	var pubKey oasis.CallDataPublicKey
 	if err := json.Unmarshal(rpcRes.Result, &pubKey); err != nil {
 		return nil, fmt.Errorf("invalid response when fetching runtime calldata public key: %w", err)
 	}
 	if len(pubKey.PublicKey) != 32 {
 		return nil, fmt.Errorf("invalid public key length")
 	}
+
 	return (*[32]byte)(pubKey.PublicKey), nil
 }

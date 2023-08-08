@@ -4,6 +4,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
@@ -15,31 +16,39 @@ import (
 )
 
 type ServerConfig struct {
-	ContractAddr common.Address
-	Network      utils.NetworkType
+	contractAddr common.Address
+	network      utils.NetworkType
+	ctx          context.Context
+	cancelFunc   context.CancelFunc
 }
 
 var userAddress = common.HexToAddress("0xe1e2A376FEab01145F8Fb5679D964360cDd1B331")
 
-func NewServer(contractAddr string, network string) *ServerConfig {
-	s := &ServerConfig{
-		ContractAddr: common.HexToAddress(contractAddr),
-		Network:      utils.ToNetType(network),
+func NewServer(ctx context.Context, contractAddr string, network string) *ServerConfig {
+	// generate a new context using the parent context passed.
+	ctx, cancelfn := context.WithCancel(ctx)
+
+	config := &ServerConfig{
+		contractAddr: common.HexToAddress(contractAddr),
+		network:      utils.ToNetType(network),
+		ctx:          ctx,
+		cancelFunc:   cancelfn,
 	}
 
-	log.Infof("Running on the network: (%v)", s.Network)
-	return s
+	log.Infof("Running on the network: (%v)", config.network)
+
+	return config
 }
 
 func (s *ServerConfig) Connection() {
 	// Create RPC connection to a remote node and instantiate a contract binding
-	conn, err := ethclient.Dial(utils.Networks[s.Network].DefaultGateway)
+	conn, err := ethclient.Dial(utils.Networks[s.network].DefaultGateway)
 	if err != nil {
 		log.Errorf("failed to connect to the Sapphire Paratime client: %v", err)
 		return
 	}
 
-	backend, err := sapphire.WrapClient(*conn, s.Network, func(digest [32]byte) ([]byte, error) {
+	backend, err := sapphire.WrapClient(s.ctx, *conn, s.network, func(digest [32]byte) ([]byte, error) {
 		// Pass in a custom signing function to interact with the signer
 		key, err := crypto.ToECDSA(userAddress.Bytes())
 		if err != nil {
@@ -48,7 +57,7 @@ func (s *ServerConfig) Connection() {
 		return crypto.Sign(digest[:], key)
 	})
 
-	chatInstance, err := contracts.NewChat(s.ContractAddr, conn)
+	chatInstance, err := contracts.NewChat(s.contractAddr, backend)
 	if err != nil {
 		log.Errorf("failed to instantiate a Chat contract: %v", err)
 		return
