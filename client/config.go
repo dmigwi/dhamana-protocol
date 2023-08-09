@@ -22,7 +22,6 @@ type config struct {
 	Network     string `long:"network" description:"Network to use; Supported networks: SapphireMainnet, SapphireTestnet and SapphireLocalnet" default:"SapphireTestnet" required:"required"`
 	DataDirPath string `long:"datadir" description:"Directory path to where the app data is stored"`
 	LogLevel    string `long:"loglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}" default:"info"`
-	Contract    string `long:"contract" description:"Contract Address for the deploy dhamana contract instance" required:"required"`
 }
 
 // defaultDataDir returns the default
@@ -63,10 +62,6 @@ func loadConfig() (*config, error) {
 
 	if conf.DataDirPath == "" {
 		return nil, fmt.Errorf("empty datadir path found \n %v", h.String())
-	}
-
-	if conf.Contract == "" {
-		return nil, fmt.Errorf("missing contract address \n %v", h.String())
 	}
 
 	return &conf, nil

@@ -60,9 +60,9 @@ type Leash struct {
 // NewDataPack returns a SignedCallDataPack.
 //
 // This method does not encrypt `data`, so that should be done afterwards.
-func NewDataPack(sign SignerFn, chainID uint64, caller, callee []byte, gasLimit uint64, gasPrice, value *big.Int, data []byte, leash Leash) (*SignedCallDataPack, error) {
+func NewDataPack(sign SignerFn, privateKey []byte, chainID uint64, caller, callee []byte, gasLimit uint64, gasPrice, value *big.Int, data []byte, leash Leash) (*SignedCallDataPack, error) {
 	signable := makeSignableCall(chainID, caller, callee, gasLimit, gasPrice, value, data, leash)
-	signature, err := signTypedData(sign, signable)
+	signature, err := signTypedData(sign, privateKey, signable)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign call: %w", err)
 	}
@@ -161,18 +161,23 @@ func makeSignableCall(chainID uint64, caller, callee []byte, gasLimit uint64, ga
 }
 
 // signTypedData is based on go-ethereum/core/signer but modified to use an in-memory signer.
-func signTypedData(sign SignerFn, typedData apitypes.TypedData) ([]byte, error) {
+func signTypedData(sign SignerFn, privateKey []byte, typedData apitypes.TypedData) ([]byte, error) {
 	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash EIP721Domain: %w", err)
 	}
+
 	typedDataHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash typed data: %w", err)
 	}
+
 	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
-	digest := crypto.Keccak256Hash(rawData)
-	signature, err := sign(*(*[32]byte)(digest.Bytes()))
+
+	var digest [32]byte
+	copy(digest[:], crypto.Keccak256Hash(rawData).Bytes())
+
+	signature, err := sign(digest, privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign typed data: %w", err)
 	}
