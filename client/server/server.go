@@ -107,25 +107,27 @@ func NewServer(ctx context.Context, datadir, network string) (*ServerConfig, err
 		network:      net,
 		ctx:          ctx,
 		cancelFunc:   cancelfn,
+		datadir:      datadir,
 
 		backend: backend,
 	}, nil
 }
 
-// Run runs the actual TLS server instance.
+// Run the actual TLS server instance using mTLS where both server and client
+// must share their certificates.
 func (s *ServerConfig) Run() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.welcomeTextFunc)
-	mux.HandleFunc("/contract", s.contractQueryFunc)
+	mux.HandleFunc("/backend", s.backendQueryFunc)
+
+	// w := os.Stdout
 
 	cfg := &tls.Config{
+		// KeyLogWriter: w,
 		MinVersion: tls.VersionTLS12,
-		CurvePreferences: []tls.CurveID{
-			tls.CurveP521,
-			tls.CurveP384,
-			tls.CurveP256,
-		},
+		ClientAuth: tls.RequireAnyClientCert,
 		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
@@ -133,7 +135,7 @@ func (s *ServerConfig) Run() error {
 		},
 	}
 	srv := &http.Server{
-		Addr:         ":443",
+		Addr:         "0.0.0.0:30443",
 		Handler:      mux,
 		TLSConfig:    cfg,
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),

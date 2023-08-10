@@ -16,14 +16,18 @@ const (
 
 	// TLSCertFile defines the tls certificate file stored at the datadir directory.
 	// The certificate is auto-generated if its missing.
-	TLSCertFile = "cert.pem"
+	TLSCertFile = "server.crt"
 
 	// TLSKeyFile defines the tls key file stored at the datadir directory.
 	// The key file is auto-generated if its missing.
-	TLSKeyFile = "key.pem"
+	TLSKeyFile = "server.key"
 
 	// FilePerm defines the file permission used to manage the application data.
 	FilePerm = os.FileMode(0o0700)
+
+	// JSONRPCVersion defines the JSON version supportted for all the backend requests
+	// recieved by the server.
+	JSONRPCVersion = "2.0"
 
 	// Pi defines a sequence of numbers as a string for the first 1000 Pi values.
 	// From this string a random sequence of characters is selected as the server's

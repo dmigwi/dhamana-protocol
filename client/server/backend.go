@@ -13,16 +13,16 @@ import (
 // A value of this type can a JSON-RPC request, notification, successful response or
 // error response. Which one it is depends on the fields.
 type rpcMessage struct {
-	ID      uint8      `json:"id"`      // required
 	Version string     `json:"jsonrpc"` // required
 	Method  string     `json:"method"`  // required
 	Sender  senderInfo `json:"sender"`  // required
 
 	Params json.RawMessage `json:"params,omitempty"`
-	Error  *rpcError       `json:"error,omitempty"`
 	Result json.RawMessage `json:"result,omitempty"`
+	Error  *rpcError       `json:"error,omitempty"`
 }
 
+// senderInfo defines the required sender information attached in every request.
 type senderInfo struct {
 	Address string `json:"address"`
 	// SigningKey must be encrypted with the session's public key before being sent.
@@ -30,20 +30,21 @@ type senderInfo struct {
 	SigningKey string `json:"signingkey"`
 }
 
+// rpcError defines the error message information sent to the user on happening.
 type rpcError struct {
-	Code    int         `json:"code"`
+	Code    uint16      `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
 // welcomeTextFunc is used to confirm the successful connection to the server.
-func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, req *http.Request) {
+func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	w.Write([]byte(utils.WelcomeText))
 }
 
-// contractQueryFunc recieves all the requests made to the contracts.
-func (s *ServerConfig) contractQueryFunc(w http.ResponseWriter, req *http.Request) {
+// backendQueryFunc recieves all the requests made to the contracts.
+func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request) {
 	// chatInstance, err := contracts.NewChat(s.contractAddr, backend)
 	// if err != nil {
 	// 	log.Errorf("failed to instantiate a Chat contract: %v", err)

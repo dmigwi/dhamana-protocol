@@ -7,20 +7,20 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/btcsuite/btclog"
-	"github.com/decred/dcrd/certgen"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	flags "github.com/jessevdk/go-flags"
 )
 
-const (
-	defaultDataDir = ".dhamana-protocol"
-)
+// defaultDataDir sets the default data directory name appended on the
+// user config file path based on the os in use.
+const defaultDataDir = "dhamana-protocol"
 
 type config struct {
 	Network     string `long:"network" description:"Network to use; Supported networks: SapphireMainnet, SapphireTestnet and SapphireLocalnet" default:"SapphireTestnet" required:"required"`
@@ -98,41 +98,21 @@ func isTLSConfigValid(cert, key []byte) bool {
 	return x509Cert.NotAfter.After(time.Now())
 }
 
-// generateTLSConfig creates the TLS certificate and key files if don't exist
-// or are expired.
-func generateTLSConfig(datadir string) error {
+// validateTLSCerts confirm the TLS certificates files exist and can be decoded.
+func validateTLSCerts(datadir string) error {
 	keyPath := filepath.Join(datadir, utils.TLSKeyFile)
 	certPath := filepath.Join(datadir, utils.TLSCertFile)
 	keyFile, _ := os.ReadFile(keyPath)
 	certFile, _ := os.ReadFile(certPath)
 
-	// Only exit the config regeneration if cert and key exit and are not expired.
-	if keyFile != nil && certFile != nil {
-		// exit regeneration if cert and keys are found to be valid.
-		if isTLSConfigValid(certFile, keyFile) {
-			return nil
-		}
+	// Exit if cert and key don't exist.
+	if keyFile == nil || certFile == nil {
+		return fmt.Errorf("Missing %s or %s files at datadir %s",
+			utils.TLSCertFile, utils.TLSKeyFile, datadir)
 	}
-
-	// certificate is valid for 6 months otherwise a cert and key files will
-	// regenerate on next next restart.
-	validUntil := time.Unix(time.Now().Add(6*30*24*time.Hour).Unix(), 0)
-
-	// This details don't change often thus no need to pass them as function variables.
-	org := "dhamana-protocol cert"
-	extraHosts := []string{"localhost", "127.0.0.1"}
-
-	cert, key, err := certgen.NewEd25519TLSCertPair(org, validUntil, extraHosts)
-	if err != nil {
-		return fmt.Errorf("unable the generate tls key and cert: %v", err)
-	}
-
-	if err := os.WriteFile(keyPath, key, utils.FilePerm); err != nil {
-		return fmt.Errorf("unable to store tls key file at: %s Error: %v", keyPath, err)
-	}
-
-	if err := os.WriteFile(certPath, cert, utils.FilePerm); err != nil {
-		return fmt.Errorf("unable to store tls cert file at: %s Error: %v", certPath, err)
+	// exit regeneration if cert and keys are found to be valid.
+	if isTLSConfigValid(certFile, keyFile) {
+		return errors.New("Unable to decode cert and key files. Regenerate them!")
 	}
 
 	return nil
