@@ -3,6 +3,8 @@
 
 package utils
 
+import "os"
+
 const (
 	// WelcomeText is an easter egg placed in the code for cryptography enthusiasts
 	// to attempt solving.
@@ -19,4 +21,7 @@ const (
 	// TLSKeyFile defines the tls key file stored at the datadir directory.
 	// The key file is auto-generated if its missing.
 	TLSKeyFile = "key.pem"
+
+	// FilePerm defines the file permission used to manage the application data.
+	FilePerm = os.FileMode(0o0700)
 )

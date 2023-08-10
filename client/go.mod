@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
+	github.com/decred/dcrd/certgen v1.1.2
 	github.com/ethereum/go-ethereum v1.12.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jrick/logrotate v1.0.0

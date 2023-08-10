@@ -4,8 +4,10 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 
+	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 )
 
@@ -16,6 +18,23 @@ var (
 
 )
 
+// A value of this type can a JSON-RPC request, notification, successful response or
+// error response. Which one it is depends on the fields.
+type rpcMessage struct {
+	ID      json.RawMessage `json:"id,omitempty"`
+	Version string          `json:"jsonrpc,omitempty"`
+	Method  string          `json:"method,omitempty"`
+	Params  json.RawMessage `json:"params,omitempty"`
+	Error   *rpcError       `json:"error,omitempty"`
+	Result  json.RawMessage `json:"result,omitempty"`
+}
+
+type rpcError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
 // welcomeTextFunc is used to confirm the successful connection to the server.
 func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
@@ -24,6 +43,14 @@ func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, req *http.Request)
 
 // contractQueryFunc recieves all the requests made to the contracts.
 func (s *ServerConfig) contractQueryFunc(w http.ResponseWriter, req *http.Request) {
+	chatInstance, err := contracts.NewChat(s.contractAddr, s.backend)
+	if err != nil {
+		log.Errorf("failed to instantiate a Chat contract: %v", err)
+		return err
+	}
+
+	// Create an authorized transactor and call the store function
+	auth := backend.Transactor(userAddress)
 }
 
 // func (s *ServerConfig) Connection() error {
