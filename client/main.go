@@ -34,14 +34,17 @@ func run(ctx context.Context, cancelFunc context.CancelFunc) {
 	level, _ := btclog.LevelFromString(config.LogLevel)
 	setLogLevel(level)
 
-	s, err := server.NewServer(ctx, config.Network)
+	s, err := server.NewServer(ctx, config.DataDirPath, config.Network)
 	if err != nil {
 		log.Errorf("Server Config error: %v", err)
 		return
 	}
 
 	// Run the server
-	s.Run()
+	if err = s.Run(); err != nil {
+		log.Errorf("Server failed error: %v", err)
+		return
+	}
 }
 
 // shutdown initiates the shutdown sequence.
