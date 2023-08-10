@@ -114,9 +114,9 @@ func generateTLSConfig(datadir string) error {
 		}
 	}
 
-	// certificate is valid for 6 months. Then a certificate regenerate on next
-	// next restart will be necessary.
-	validUntil := time.Unix(time.Now().Add(30*24*time.Hour).Unix(), 0)
+	// certificate is valid for 6 months otherwise a cert and key files will
+	// regenerate on next next restart.
+	validUntil := time.Unix(time.Now().Add(6*30*24*time.Hour).Unix(), 0)
 
 	// This details don't change often thus no need to pass them as function variables.
 	org := "dhamana-protocol cert"

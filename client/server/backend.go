@@ -7,26 +7,27 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
-)
-
-var (
-// contractDeployedBlock = 2091593
-// userAddress           = common.HexToAddress("0xe1e2A376FEab01145F8Fb5679D964360cDd1B331")
-// privatekey            = hexutil.MustDecode("0x61e91868454365a28f4f9724ef3aaa7df0c09c16883338900a1b3dac197c89f0")
-
 )
 
 // A value of this type can a JSON-RPC request, notification, successful response or
 // error response. Which one it is depends on the fields.
 type rpcMessage struct {
-	ID      json.RawMessage `json:"id,omitempty"`
-	Version string          `json:"jsonrpc,omitempty"`
-	Method  string          `json:"method,omitempty"`
-	Params  json.RawMessage `json:"params,omitempty"`
-	Error   *rpcError       `json:"error,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
+	ID      uint8      `json:"id"`      // required
+	Version string     `json:"jsonrpc"` // required
+	Method  string     `json:"method"`  // required
+	Sender  senderInfo `json:"sender"`  // required
+
+	Params json.RawMessage `json:"params,omitempty"`
+	Error  *rpcError       `json:"error,omitempty"`
+	Result json.RawMessage `json:"result,omitempty"`
+}
+
+type senderInfo struct {
+	Address string `json:"address"`
+	// SigningKey must be encrypted with the session's public key before being sent.
+	// Failure to do so could expose the actual user key to any network hyjacker.
+	SigningKey string `json:"signingkey"`
 }
 
 type rpcError struct {
@@ -43,70 +44,37 @@ func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, req *http.Request)
 
 // contractQueryFunc recieves all the requests made to the contracts.
 func (s *ServerConfig) contractQueryFunc(w http.ResponseWriter, req *http.Request) {
-	chatInstance, err := contracts.NewChat(s.contractAddr, s.backend)
-	if err != nil {
-		log.Errorf("failed to instantiate a Chat contract: %v", err)
-		return err
-	}
+	// chatInstance, err := contracts.NewChat(s.contractAddr, backend)
+	// if err != nil {
+	// 	log.Errorf("failed to instantiate a Chat contract: %v", err)
+	// 	return err
+	// }
 
-	// Create an authorized transactor and call the store function
-	auth := backend.Transactor(userAddress)
+	// // Create an authorized transactor and call the store function
+	// auth := backend.Transactor(userAddress)
+
+	// tx, err := chatInstance.CreateBond(auth)
+	// if err != nil {
+	// 	log.Errorf("failed to update value: %v", err)
+	// 	return err
+	// }
+
+	// log.Infof("Update pending: 0x%x", tx.Hash())
+	// end := uint64(2149450)
+
+	// ops := &bind.FilterOpts{
+	// 	Start:   2149400,
+	// 	End:     &end,
+	// 	Context: s.ctx,
+	// }
+
+	// events, err := chatInstance.FilterNewBondCreated(ops)
+	// if err != nil {
+	// 	log.Error("Filter new bonds created events failed: ", err)
+	// 	return err
+	// }
+
+	// for events.Next() {
+	// 	fmt.Printf(" >>>> Bond Address: %v Sender Address: %v Timestamp: %v \n", events.Event.BondAddress, events.Event.Sender, events.Event.Timestamp)
+	// }
 }
-
-// func (s *ServerConfig) Connection() error {
-// 	network, err := utils.GetNetworkConfig(s.network)
-// 	if err != nil {
-// 		log.Error(err)
-// 		return err
-// 	}
-
-// 	// Create RPC connection to a remote node and instantiate a contract binding
-// 	conn, err := ethclient.Dial(network.DefaultGateway)
-// 	if err != nil {
-// 		log.Errorf("failed to connect to the Sapphire Paratime client: %v", err)
-// 		return err
-// 	}
-
-// 	backend, err := sapphire.WrapClient(s.ctx, *conn, s.network, func(digest [32]byte) ([]byte, error) {
-// 		// Pass in a custom signing function to interact with the signer
-// 		key, err := crypto.ToECDSA(privatekey)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("invalid private key: %v", err)
-// 		}
-// 		return crypto.Sign(digest[:], key)
-// 	})
-
-// 	chatInstance, err := contracts.NewChat(s.contractAddr, backend)
-// 	if err != nil {
-// 		log.Errorf("failed to instantiate a Chat contract: %v", err)
-// 		return err
-// 	}
-
-// 	// Create an authorized transactor and call the store function
-// 	auth := backend.Transactor(userAddress)
-
-// 	tx, err := chatInstance.CreateBond(auth)
-// 	if err != nil {
-// 		log.Errorf("failed to update value: %v", err)
-// 		return err
-// 	}
-
-// 	log.Infof("Update pending: 0x%x", tx.Hash())
-// 	end := uint64(2149450)
-
-// 	ops := &bind.FilterOpts{
-// 		Start:   2149400,
-// 		End:     &end,
-// 		Context: s.ctx,
-// 	}
-
-// 	events, err := chatInstance.FilterNewBondCreated(ops)
-// 	if err != nil {
-// 		log.Error("Filter new bonds created events failed: ", err)
-// 		return err
-// 	}
-
-// 	for events.Next() {
-// 		fmt.Printf(" >>>> Bond Address: %v Sender Address: %v Timestamp: %v \n", events.Event.BondAddress, events.Event.Sender, events.Event.Timestamp)
-// 	}
-// }
