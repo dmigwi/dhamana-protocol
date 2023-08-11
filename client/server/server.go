@@ -119,6 +119,7 @@ func (s *ServerConfig) Run() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.welcomeTextFunc)
 	mux.HandleFunc("/backend", s.backendQueryFunc)
+	mux.HandleFunc("/serverpubkey", s.serverPubkey)
 
 	cfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,

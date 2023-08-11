@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // A value of this type can a JSON-RPC request, notification, successful response or
@@ -24,10 +25,11 @@ type rpcMessage struct {
 
 // senderInfo defines the required sender information attached in every request.
 type senderInfo struct {
-	Address string `json:"address"`
+	Address common.Address `json:"address"`
 	// SigningKey must be encrypted with the session's public key before being sent.
-	// Failure to do so could expose the actual user key to any network hyjacker.
-	SigningKey string `json:"signingkey"`
+	// Failure to do so could expose the actual user key to hackers.
+	// It must be signed via the diffie-hellman passed pubkey.
+	SigningKey string `json:"signingkey,omitempty"`
 }
 
 // rpcError defines the error message information sent to the user on happening.
@@ -43,6 +45,47 @@ func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte(utils.WelcomeText))
 }
 
+// serverPubkey recieves the client pubkey and sends back session public key
+// to be used with diffie-hellman key exchange algorithm.
+// This server public key has an expiry date attached to it, after which the
+// client must fetch a new server pubkey to keep the communication alive.
+// A session server pubkey is mapped to a specific user address.
+func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
+}
+
 // backendQueryFunc recieves all the requests made to the contracts.
 func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request) {
+	// chatInstance, err := contracts.NewChat(s.contractAddr, backend)
+	// if err != nil {
+	// 	log.Errorf("failed to instantiate a Chat contract: %v", err)
+	// 	return err
+	// }
+
+	// // Create an authorized transactor and call the store function
+	// auth := backend.Transactor(userAddress)
+
+	// tx, err := chatInstance.CreateBond(auth)
+	// if err != nil {
+	// 	log.Errorf("failed to update value: %v", err)
+	// 	return err
+	// }
+
+	// log.Infof("Update pending: 0x%x", tx.Hash())
+	// end := uint64(2149450)
+
+	// ops := &bind.FilterOpts{
+	// 	Start:   2149400,
+	// 	End:     &end,
+	// 	Context: s.ctx,
+	// }
+
+	// events, err := chatInstance.FilterNewBondCreated(ops)
+	// if err != nil {
+	// 	log.Error("Filter new bonds created events failed: ", err)
+	// 	return err
+	// }
+
+	// for events.Next() {
+	// 	fmt.Printf(" >>>> Bond Address: %v Sender Address: %v Timestamp: %v \n", events.Event.BondAddress, events.Event.Sender, events.Event.Timestamp)
+	// }
 }
