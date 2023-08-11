@@ -11,6 +11,7 @@ import (
 
 	"github.com/btcsuite/btclog"
 	"github.com/dmigwi/dhamana-protocol/client/server"
+	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/jrick/logrotate/rotator"
 )
 
@@ -67,7 +68,7 @@ func shutdownLog() {
 // create roll files in the same directory.  It must be called before the
 // package-global log rotater variables are used.
 func initLogRotator(logDir string, maxRolls int) error {
-	err := os.MkdirAll(logDir, 0o0700)
+	err := os.MkdirAll(logDir, utils.FilePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create log directory: %v\n", err)
 	}

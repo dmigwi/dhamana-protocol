@@ -30,13 +30,15 @@ type WrappedBackend struct {
 	cipher     Cipher
 	signerFunc SignerFn
 	ctx        context.Context
+
+	privateKey []byte
 }
 
 // Confirm that WrappedBacked implements the bind.ContractBackend interface.
 var _ bind.ContractBackend = (*WrappedBackend)(nil)
 
 // SignerFn is a function that produces secp256k1 signatures in RSV format.
-type SignerFn = func(digest [32]byte) ([]byte, error)
+type SignerFn = func(digest [32]byte, privateKey []byte) ([]byte, error)
 
 // NewCipher creates a default cipher.
 func NewCipher(ctx context.Context, net utils.NetworkType) (Cipher, error) {
@@ -81,6 +83,11 @@ func WrapClient(ctx context.Context, c ethclient.Client, net utils.NetworkType, 
 	}, nil
 }
 
+func (b *WrappedBackend) SetclientPrivateKey(privateKey []byte) {
+	// Set the private key
+	b.privateKey = privateKey
+}
+
 // Transactor returns a TransactOpts that can be used with Sapphire.
 func (b *WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
 	signer := types.LatestSignerForChainID(&b.chainID)
@@ -101,7 +108,7 @@ func (b *WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
 		var signedTxBytes [32]byte
 		copy(signedTxBytes[:], signer.Hash(packedTx).Bytes())
 
-		sig, err := b.signerFunc(signedTxBytes)
+		sig, err := b.signerFunc(signedTxBytes, b.privateKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to sign tx: %w", err)
 		}
@@ -149,7 +156,7 @@ func (b *WrappedBackend) CallContract(ctx context.Context, call ethereum.CallMsg
 
 		// prepares call.Data in-place for being sent to Sapphire. The call will be
 		// end-to-end encrypted and a signature will be used to authenticate the `from` address.
-		dataPack, err := NewDataPack(b.signerFunc, b.chainID.Uint64(), call.From[:],
+		dataPack, err := NewDataPack(b.signerFunc, b.privateKey, b.chainID.Uint64(), call.From[:],
 			call.To[:], DefaultGasLimit, call.GasPrice, call.Value, call.Data, leash)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create signed call data back: %w", err)

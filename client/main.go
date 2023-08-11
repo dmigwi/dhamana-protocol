@@ -20,24 +20,38 @@ func run(ctx context.Context, cancelFunc context.CancelFunc) {
 	log.Infof("Loading command configurations")
 	config, err := loadConfig()
 	if err != nil {
-		log.Errorf("loadConfig Error: %v", err)
+		log.Errorf("loadConfig error: %v", err)
 		return
 	}
 
-	log.Infof("Initiating the log rotator")
-	// Initialize the logger while while creating the data dir if it doesn't exists.
+	log.Infof("Using data directory: %s", config.DataDirPath)
+
+	// Initialize the logger while creating the data dir if it doesn't exists.
 	if err := initLogRotator(config.DataDirPath, 50); err != nil {
-		log.Errorf("initLogRotator Error: %v", err)
+		log.Errorf("initLogRotator error: %v", err)
+		return
+	}
+
+	// validateTLSCerts confirms TLS certificates exists and are valid.
+	if err := validateTLSCerts(config.DataDirPath); err != nil {
+		log.Errorf("validateTLSCerts error: %v", err)
 		return
 	}
 
 	level, _ := btclog.LevelFromString(config.LogLevel)
 	setLogLevel(level)
 
-	s := server.NewServer(ctx, config.Contract, config.Network)
-	log.Infof("Attempting to make a connection to the sapphire network via contract %v", config.Contract)
-	// Attempt to make connection.
-	s.Connection()
+	s, err := server.NewServer(ctx, config.DataDirPath, config.Network)
+	if err != nil {
+		log.Errorf("Server Config error: %v", err)
+		return
+	}
+
+	// Run the server
+	if err = s.Run(); err != nil {
+		log.Errorf("Server failed error: %v", err)
+		return
+	}
 }
 
 // shutdown initiates the shutdown sequence.

@@ -1,3 +1,14 @@
 build
 node_modules
 **/deployment.go
+
+# generated binary
+dhamana-protocol
+
+# ssl generated files
+*.crt
+*.csr
+*.key
+*.conf
+certs
+ssl.sh
