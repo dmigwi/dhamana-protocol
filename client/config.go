@@ -110,7 +110,7 @@ func validateTLSCerts(datadir string) error {
 		return fmt.Errorf("Missing %s or %s files at datadir %s",
 			utils.TLSCertFile, utils.TLSKeyFile, datadir)
 	}
-	// exit regeneration if cert and keys are found to be valid.
+	// Confirm if cert and keys are found to be valid.
 	if isTLSConfigValid(certFile, keyFile) {
 		return errors.New("Unable to decode cert and key files. Regenerate them!")
 	}

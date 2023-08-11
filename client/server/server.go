@@ -120,10 +120,7 @@ func (s *ServerConfig) Run() error {
 	mux.HandleFunc("/", s.welcomeTextFunc)
 	mux.HandleFunc("/backend", s.backendQueryFunc)
 
-	// w := os.Stdout
-
 	cfg := &tls.Config{
-		// KeyLogWriter: w,
 		MinVersion: tls.VersionTLS12,
 		ClientAuth: tls.RequireAnyClientCert,
 		CipherSuites: []uint16{
