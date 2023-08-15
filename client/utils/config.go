@@ -3,7 +3,11 @@
 
 package utils
 
-import "os"
+import (
+	"crypto"
+	// "crypto/ecdh"
+	"os"
+)
 
 const (
 	// WelcomeText is an easter egg placed in the code for cryptography enthusiasts
@@ -29,3 +33,14 @@ const (
 	// recieved by the server.
 	JSONRPCVersion = "2.0"
 )
+
+type PrivateKey struct {
+	// *ecdh.PrivateKey
+}
+
+func GeneratePriKeys() (privateKey crypto.PrivateKey, err error) {
+	// pr, err := rand.Read(privateKey)
+	// pr.
+	// privateKey.
+	return
+}
