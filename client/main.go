@@ -32,16 +32,11 @@ func run(ctx context.Context, cancelFunc context.CancelFunc) {
 		return
 	}
 
-	// validateTLSCerts confirms TLS certificates exists and are valid.
-	if err := validateTLSCerts(config.DataDirPath); err != nil {
-		log.Errorf("validateTLSCerts error: %v", err)
-		return
-	}
-
 	level, _ := btclog.LevelFromString(config.LogLevel)
 	setLogLevel(level)
 
-	s, err := server.NewServer(ctx, config.DataDirPath, config.Network)
+	s, err := server.NewServer(ctx, config.TLSCertFile, config.TLSKeyFile,
+		config.DataDirPath, config.Network)
 	if err != nil {
 		log.Errorf("Server Config error: %v", err)
 		return

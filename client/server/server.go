@@ -22,6 +22,8 @@ import (
 // that interacts with the contract backend.
 type ServerConfig struct {
 	datadir      string
+	tlsCertFile  string
+	tlsKeyFile   string
 	contractAddr common.Address
 	network      utils.NetworkType
 	ctx          context.Context
@@ -32,7 +34,7 @@ type ServerConfig struct {
 
 // NewServer validates the deployment configuration information before
 // creating a sapphire client wrapped around an eth client.
-func NewServer(ctx context.Context, datadir, network string) (*ServerConfig, error) {
+func NewServer(ctx context.Context, certfile, keyfile, datadir, network string) (*ServerConfig, error) {
 	// Validate deployment information first.
 	net := utils.ToNetType(network)
 	if !isDeployedNetMatching(net) {
@@ -108,6 +110,8 @@ func NewServer(ctx context.Context, datadir, network string) (*ServerConfig, err
 		ctx:          ctx,
 		cancelFunc:   cancelfn,
 		datadir:      datadir,
+		tlsCertFile:  certfile,
+		tlsKeyFile:   keyfile,
 
 		backend: backend,
 	}, nil
@@ -140,8 +144,8 @@ func (s *ServerConfig) Run() error {
 	}
 
 	// Generate the complete path to the cert and key files.
-	certPath := filepath.Join(s.datadir, utils.TLSCertFile)
-	keyPath := filepath.Join(s.datadir, utils.TLSKeyFile)
+	certPath := filepath.Join(s.datadir, s.tlsCertFile)
+	keyPath := filepath.Join(s.datadir, s.tlsKeyFile)
 
 	log.Infof("Initiating the server on: %v", srv.Addr)
 

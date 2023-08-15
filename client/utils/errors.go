@@ -25,8 +25,9 @@ var (
 		ErrSenderAddrMissing: 1004,
 		ErrExpiredServerKey:  1005,
 		ErrSignerKeyMissing:  1006,
-		// ErrUnknownMethod:     1007,
-		// ErrUnknownParam:      1008,
+		ErrMissingParams:     1007,
+		ErrUnknownMethod:     1008,
+		ErrUnknownParam:      1009,
 	}
 
 	// ErrInvalidJSON returned if an error occurred while parsing the request JSON
@@ -53,17 +54,17 @@ var (
 	// ErrSignerKeyMissing is returned if the sender's signer key is missing.
 	ErrSignerKeyMissing = errors.New("sender signer key missing")
 
-	// // ErrMissingParams is returned if one or more of the expected parameters is
-	// // missing.
-	// ErrMissingParams = errors.New("missing params")
+	// ErrMissingParams is returned if one or more of the expected parameters is
+	// missing. Or more than required parameters are returned.
+	ErrMissingParams = errors.New("excess or missing param(s)")
 
-	// // ErrUnknownMethod is returned if the method provided in the request is
-	// // not currently supported.
-	// ErrUnknownMethod = errors.New("unknown method")
+	// ErrUnknownMethod is returned if the method provided in the request is
+	// not currently supported.
+	ErrUnknownMethod = errors.New("unknown method")
 
-	// // ErrUnknownParam is returned if one or more of the provided parameters
-	// // contains unexpected data.
-	// ErrUnknownParam = errors.New("unknown params")
+	// ErrUnknownParam is returned if one or more of the provided parameters
+	// contains unexpected data.
+	ErrUnknownParam = errors.New("unknown param(s)")
 )
 
 // GetErrorCode returns the set error code if it exists or max(uint16) if otherwise.

@@ -18,14 +18,18 @@ import (
 	flags "github.com/jessevdk/go-flags"
 )
 
-// defaultDataDir sets the default data directory name appended on the
-// user config file path based on the os in use.
-const defaultDataDir = "dhamana-protocol"
+const (
+	// defaultDataDir sets the default data directory name appended on the
+	// user config file path based on the os in use.
+	defaultDataDir = "dhamana-protocol"
+)
 
 type config struct {
 	Network     string `long:"network" description:"Network to use; Supported networks: SapphireMainnet, SapphireTestnet and SapphireLocalnet" default:"SapphireTestnet" required:"required"`
 	DataDirPath string `long:"datadir" description:"Directory path to where the app data is stored"`
 	LogLevel    string `long:"loglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}" default:"info"`
+	TLSCertFile string `long:"certfile" description:"tls certificate file name" default:"server.crt"`
+	TLSKeyFile  string `long:"keyfile" description:"tls key file name" default:"server.key"`
 }
 
 // defaultDataDir returns the default
@@ -57,15 +61,20 @@ func loadConfig() (*config, error) {
 	parser.WriteHelp(h)
 
 	if net := utils.ToNetType(conf.Network); net == utils.UnsupportedNet {
-		return nil, fmt.Errorf("unsupported network used: (%v) \n %v", conf.Network, h.String())
+		return nil, fmt.Errorf("unsupported network used: (%v) \n %s", conf.Network, h.String())
 	}
 
 	if _, ok := btclog.LevelFromString(conf.LogLevel); !ok {
-		return nil, fmt.Errorf("invalid LogLevel found: (%v) \n %v", conf.LogLevel, h.String())
+		return nil, fmt.Errorf("invalid LogLevel found: (%v) \n %s", conf.LogLevel, h.String())
 	}
 
 	if conf.DataDirPath == "" {
-		return nil, fmt.Errorf("empty datadir path found \n %v", h.String())
+		return nil, fmt.Errorf("empty datadir path found \n %s", h.String())
+	}
+
+	// validateTLSCerts confirms TLS certificates exists and are valid.
+	if err := validateTLSCerts(&conf); err != nil {
+		return nil, fmt.Errorf("validateTLSCerts error: %v \n %s", err, h.String())
 	}
 
 	return &conf, nil
@@ -99,16 +108,16 @@ func isTLSConfigValid(cert, key []byte) bool {
 }
 
 // validateTLSCerts confirm the TLS certificates files exist and can be decoded.
-func validateTLSCerts(datadir string) error {
-	keyPath := filepath.Join(datadir, utils.TLSKeyFile)
-	certPath := filepath.Join(datadir, utils.TLSCertFile)
+func validateTLSCerts(conf *config) error {
+	keyPath := filepath.Join(conf.DataDirPath, conf.TLSKeyFile)
+	certPath := filepath.Join(conf.DataDirPath, conf.TLSCertFile)
 	keyFile, _ := os.ReadFile(keyPath)
 	certFile, _ := os.ReadFile(certPath)
 
 	// Exit if cert and key don't exist.
 	if keyFile == nil || certFile == nil {
 		return fmt.Errorf("Missing %s or %s files at datadir %s",
-			utils.TLSCertFile, utils.TLSKeyFile, datadir)
+			conf.TLSCertFile, conf.TLSKeyFile, conf.DataDirPath)
 	}
 	// Confirm if cert and keys are found to be valid.
 	if isTLSConfigValid(certFile, keyFile) {

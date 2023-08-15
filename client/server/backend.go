@@ -8,13 +8,22 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// ZeroAddress defines an empty address value.
-var ZeroAddress = common.HexToAddress("")
+// sessionTime defines the duration when the server public key is valid.
+const sessionTime = time.Minute * 10
+
+var (
+	// ZeroAddress defines an empty address value.
+	ZeroAddress = common.HexToAddress("")
+
+	sessionKeys sync.Map
+)
 
 // A value of this type can a JSON-RPC request, notification, successful response or
 // error response. Which one it is depends on the fields.
@@ -45,27 +54,45 @@ type rpcError struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+// packServerError packs the errors identified into a response ready to be sent
+// to the client.
+func (msg *rpcMessage) packServerError(shortErr, desc error) {
+	msg.Error = &rpcError{
+		Code:    utils.GetErrorCode(shortErr),
+		Message: shortErr,
+		Data:    desc,
+	}
+
+	// Remove the unnecessary information in the response.
+	msg.Sender = nil
+	msg.Method = ""
+	msg.Params = nil
+	msg.Result = nil
+}
+
+// packServerResult packs the successful result queried into a response ready
+// to be sent to the client.
+func (msg *rpcMessage) packServerResult(data interface{}) {
+	// Remove the unnecessary information in the response.
+	msg.Error = nil
+	msg.Sender = nil
+	msg.Method = ""
+	msg.Params = nil
+
+	res, _ := json.Marshal(data)
+	msg.Result.UnmarshalJSON(res)
+}
+
 // decodeReqBody attempts to extract contents of the request passed, if an error
 // occured a response in bytes is returned. isSignerKeyRequired is used to set
 // when existence of the signer key should be checked.
-func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool) (response []byte) {
+func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool) {
 	var msgError, err error
 
 	// creates the error response to be returned
 	defer func() {
 		if msgError != nil {
-			msg.Error = &rpcError{
-				Code:    utils.GetErrorCode(msgError),
-				Message: msgError,
-				Data:    err,
-			}
-
-			// Remove the unnecessary information in the response.
-			msg.Sender = nil
-			msg.Method = ""
-			msg.Params = nil
-			msg.Result = nil
-			response, _ = json.Marshal(msg)
+			msg.packServerError(msgError, err)
 		}
 	}()
 
@@ -112,14 +139,16 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 }
 
 // writeResponse writes the response using the provided response writter.
-func writeResponse(w http.ResponseWriter, response []byte) {
+func writeResponse(w http.ResponseWriter, response interface{}) {
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
-	w.Write(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Errorf("response writter failed: %v", err)
+	}
 }
 
 // welcomeTextFunc is used to confirm the successful connection to the server.
 func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, _ *http.Request) {
-	writeResponse(w, []byte(utils.WelcomeText))
+	writeResponse(w, utils.WelcomeText)
 }
 
 // serverPubkey recieves the client pubkey and sends back session public key
@@ -129,10 +158,55 @@ func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, _ *http.Request) {
 // A session server pubkey is mapped to a specific user address.
 func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 	var msg rpcMessage
-	if response := decodeReqBody(req, &msg, false); response != nil {
-		writeResponse(w, response)
+	decodeReqBody(req, &msg, false)
+	if msg.Error != nil {
+		writeResponse(w, msg)
 		return
 	}
+
+	// decode param
+	var param []string
+	if err := json.Unmarshal(msg.Params, &param); err != nil {
+		msg.packServerError(utils.ErrUnknownParam, err)
+		writeResponse(w, msg)
+		return
+	}
+
+	// Only one parameter is of type string is expected.
+	if len(param) != 1 {
+		msg.packServerError(utils.ErrMissingParams, nil)
+		writeResponse(w, msg)
+		return
+	}
+
+	privKey, err := utils.GeneratePrivKey()
+	if err != nil {
+		msg.packServerError(utils.ErrInternalFailure, nil)
+		writeResponse(w, msg)
+		return
+	}
+
+	sharedkey, err := privKey.ComputeSharedKey(param[0])
+	if err != nil {
+		err := errors.New("invalid public key used")
+		msg.packServerError(utils.ErrInternalFailure, err)
+		writeResponse(w, msg)
+		return
+	}
+
+	// server public key is valid for 10 minutes after which a new public key
+	// must be requested.
+	data := serverKeyResp{
+		Pubkey: privKey.PubKeyToHexString(),
+		Expiry: uint64(time.Now().UTC().Add(sessionTime).Unix()),
+
+		sharedKey: sharedkey,
+	}
+
+	sessionKeys.Store(msg.Sender.Address, data)
+
+	msg.packServerResult(data)
+	writeResponse(w, msg)
 }
 
 // backendQueryFunc recieves all the requests made to the contracts.
