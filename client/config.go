@@ -116,12 +116,12 @@ func validateTLSCerts(conf *config) error {
 
 	// Exit if cert and key don't exist.
 	if keyFile == nil || certFile == nil {
-		return fmt.Errorf("Missing %s or %s files at datadir %s",
+		return fmt.Errorf("missing %s or %s files at datadir %s",
 			conf.TLSCertFile, conf.TLSKeyFile, conf.DataDirPath)
 	}
 	// Confirm if cert and keys are found to be valid.
 	if isTLSConfigValid(certFile, keyFile) {
-		return errors.New("Unable to decode cert and key files. Regenerate them!")
+		return errors.New("unable to decode cert and key files. Regenerate them")
 	}
 
 	return nil

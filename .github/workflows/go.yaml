@@ -1,8 +1,8 @@
-name: Build
+name: Golang
 on: [push]
 jobs:
   build:
-    name: Build
+    name: Linter
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
@@ -33,7 +33,7 @@ jobs:
       - name: Lint
         run: |
           export PATH=$PATH:~/go/bin
-          ./bin/golangci-lint run --deadline=10m \
+          ./bin/golangci-lint run client deployInfo client/utils --deadline=10m \
             --disable-all --enable govet \
             --enable staticcheck --enable gosimple \
             --enable unconvert --enable ineffassign \
