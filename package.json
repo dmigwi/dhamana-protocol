@@ -1,6 +1,6 @@
 {
   "name": "dhamana-protocol",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Contains implementation that run Dhamana bond app on Oasis Sapphire Paratime",
   "main": "truffle-config.js",
   "directories": {
