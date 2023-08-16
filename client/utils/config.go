@@ -4,8 +4,11 @@
 package utils
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/ecdh"
 	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"os"
 
@@ -36,9 +39,10 @@ type PrivateKey struct {
 	*ecdh.PrivateKey
 }
 
-// GeneratePrivKey() generates a private key using P521 curve.
+// GeneratePrivKey() generates a private key using a P256 curve. P256 is used
+// because it provides keys of size 32 bit which are the maximum allowed by AES.
 func GeneratePrivKey() (PrivateKey, error) {
-	key, err := ecdh.P521().GenerateKey(rand.Reader)
+	key, err := ecdh.P256().GenerateKey(rand.Reader)
 
 	return PrivateKey{PrivateKey: key}, err
 }
@@ -56,10 +60,54 @@ func (p *PrivateKey) ComputeSharedKey(remotePubKey string) ([]byte, error) {
 		return nil, errors.New("unable to decoded public key hex")
 	}
 
-	pubkey, err := ecdh.P521().NewPublicKey(rawPubkey)
+	pubkey, err := ecdh.P256().NewPublicKey(rawPubkey)
 	if err != nil {
 		return nil, errors.New("invalid public key found")
 	}
 
 	return p.ECDH(pubkey)
+}
+
+func Encrypt(sharedKey []byte, plaintext []byte) (string, error) {
+	c, err := aes.NewCipher(sharedKey)
+	if err != nil {
+		return "", errors.New("unable to generate new aes cipher")
+	}
+
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		return "", errors.New("gcm or Galois/Counter Mode creation failed")
+	}
+
+	nonce := make([]byte, gcm.NonceSize())
+
+	// Seal will append the output to the first argument; the usage
+	// here appends the ciphertext to the nonce. The final parameter
+	// is any additional data to be authenticated.
+	return hex.EncodeToString(gcm.Seal(nonce, nonce, plaintext, nil)), nil
+}
+
+func Decrypt(sharedKey []byte, ciphertext string) ([]byte, error) {
+	c, err := aes.NewCipher(sharedKey)
+	if err != nil {
+		return nil, errors.New("unable to generate new aes cipher")
+	}
+
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		return nil, errors.New("gcm or Galois/Counter Mode creation failed")
+	}
+
+	txt, err := hex.DecodeString(ciphertext)
+	if err != nil {
+		return nil, errors.New("unable to decode the hex string")
+	}
+
+	nonceSize := gcm.NonceSize()
+	if len(txt) < nonceSize {
+		return nil, errors.New("invalid decoded cipher text size")
+	}
+
+	nonce, txt := txt[:nonceSize], txt[nonceSize:]
+	return gcm.Open(nil, nonce, txt, nil)
 }

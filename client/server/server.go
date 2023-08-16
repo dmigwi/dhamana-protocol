@@ -12,7 +12,6 @@ import (
 
 	"github.com/dmigwi/dhamana-protocol/client/sapphire"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -29,7 +28,7 @@ type ServerConfig struct {
 	ctx          context.Context
 	cancelFunc   context.CancelFunc
 
-	backend bind.ContractBackend
+	backend *sapphire.WrappedBackend
 }
 
 // NewServer validates the deployment configuration information before

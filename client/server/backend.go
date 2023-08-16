@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -211,38 +212,51 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 
 // backendQueryFunc recieves all the requests made to the contracts.
 func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request) {
-	// req.Body.Read(p []byte)
-	// chatInstance, err := contracts.NewChat(s.contractAddr, backend)
-	// if err != nil {
-	// 	log.Errorf("failed to instantiate a Chat contract: %v", err)
-	// 	return err
-	// }
+	var msg rpcMessage
+	decodeReqBody(req, &msg, false)
+	if msg.Error != nil {
+		writeResponse(w, msg)
+		return
+	}
 
-	// // Create an authorized transactor and call the store function
-	// auth := backend.Transactor(userAddress)
+	data, ok := sessionKeys.Load(msg.Sender.Address)
+	if !ok {
+		msg.packServerError(utils.ErrExpiredServerKey, nil)
+		writeResponse(w, msg)
+		return
+	}
 
-	// tx, err := chatInstance.CreateBond(auth)
-	// if err != nil {
-	// 	log.Errorf("failed to update value: %v", err)
-	// 	return err
-	// }
+	privKey, err := utils.Decrypt(data.(serverKeyResp).sharedKey, msg.Sender.SigningKey)
+	if err != nil {
+		msg.packServerError(utils.ErrInvalidSigningKey, err)
+		writeResponse(w, msg)
+		return
+	}
 
-	// log.Infof("Update pending: 0x%x", tx.Hash())
-	// end := uint64(2149450)
+	s.backend.SetClientSigningKey(privKey)
 
-	// ops := &bind.FilterOpts{
-	// 	Start:   2149400,
-	// 	End:     &end,
-	// 	Context: s.ctx,
-	// }
+	chatInstance, err := contracts.NewChat(s.contractAddr, s.backend)
+	if err != nil {
+		log.Errorf("failed to instantiate a Chat contract: %v", err)
+		msg.packServerError(utils.ErrInternalFailure, err)
+		writeResponse(w, msg)
+		return
+	}
 
-	// events, err := chatInstance.FilterNewBondCreated(ops)
-	// if err != nil {
-	// 	log.Error("Filter new bonds created events failed: ", err)
-	// 	return err
-	// }
+	// Create an authorized transactor and call the store function
+	auth := s.backend.Transactor(msg.Sender.Address)
 
-	// for events.Next() {
-	// 	fmt.Printf(" >>>> Bond Address: %v Sender Address: %v Timestamp: %v \n", events.Event.BondAddress, events.Event.Sender, events.Event.Timestamp)
-	// }
+	transactor := contracts.ChatTransactorRaw{
+		Contract: &chatInstance.ChatTransactor,
+	}
+
+	tx, err := transactor.Transact(auth, msg.Method, msg.Params)
+	if err != nil {
+		msg.packServerError(utils.ErrInternalFailure, err)
+		writeResponse(w, msg)
+		return
+	}
+
+	msg.packServerResult(tx)
+	writeResponse(w, msg)
 }

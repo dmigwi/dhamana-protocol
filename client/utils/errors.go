@@ -28,6 +28,7 @@ var (
 		ErrMissingParams:     1007,
 		ErrUnknownMethod:     1008,
 		ErrUnknownParam:      1009,
+		ErrInvalidSigningKey: 1010,
 	}
 
 	// ErrInvalidJSON returned if an error occurred while parsing the request JSON
@@ -65,6 +66,10 @@ var (
 	// ErrUnknownParam is returned if one or more of the provided parameters
 	// contains unexpected data.
 	ErrUnknownParam = errors.New("unknown param(s)")
+
+	// ErrInvalidSigningKey is return if decrypting the actual key from the
+	// provided signing key string results into an error.
+	ErrInvalidSigningKey = errors.New("invalid client signing key")
 )
 
 // GetErrorCode returns the set error code if it exists or max(uint16) if otherwise.
