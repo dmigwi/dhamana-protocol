@@ -70,12 +70,12 @@ func shutdownLog() {
 func initLogRotator(logDir string, maxRolls int) error {
 	err := os.MkdirAll(logDir, utils.FilePerm)
 	if err != nil {
-		return fmt.Errorf("failed to create log directory: %v\n", err)
+		return fmt.Errorf("failed to create log directory: %v", err)
 	}
 
 	r, err := rotator.New(filepath.Join(logDir, logFile), 32*1024, false, maxRolls)
 	if err != nil {
-		return fmt.Errorf("failed to create file rotator: %v\n", err)
+		return fmt.Errorf("failed to create file rotator: %v", err)
 	}
 	logRotators = r
 	return nil

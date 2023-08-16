@@ -1,6 +1,6 @@
 module github.com/dmigwi/dhamana-protocol/client
 
-go 1.19
+go 1.21.0
 
 require (
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f

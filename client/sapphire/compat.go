@@ -83,7 +83,7 @@ func WrapClient(ctx context.Context, c ethclient.Client, net utils.NetworkType, 
 	}, nil
 }
 
-func (b *WrappedBackend) SetclientPrivateKey(privateKey []byte) {
+func (b *WrappedBackend) SetClientSigningKey(privateKey []byte) {
 	// Set the private key
 	b.privateKey = privateKey
 }
