@@ -51,7 +51,7 @@ type senderInfo struct {
 // rpcError defines the error message information sent to the user on happening.
 type rpcError struct {
 	Code    uint16      `json:"code"`
-	Message error       `json:"message"`
+	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
@@ -60,8 +60,8 @@ type rpcError struct {
 func (msg *rpcMessage) packServerError(shortErr, desc error) {
 	msg.Error = &rpcError{
 		Code:    utils.GetErrorCode(shortErr),
-		Message: shortErr,
-		Data:    desc,
+		Message: shortErr.Error(),
+		Data:    desc.Error(),
 	}
 
 	// Remove the unnecessary information in the response.
@@ -99,7 +99,6 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 
 	// extract the request body contents
 	if err = json.NewDecoder(req.Body).Decode(&msg); err != nil {
-		log.Errorf("invalid request body: %v", err)
 		msgError = utils.ErrInvalidJSON
 		return
 	}
@@ -109,7 +108,6 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 		msgError = utils.ErrInvalidReq
 		err = fmt.Errorf("expected JSON-RPC version %s but found %s",
 			utils.JSONRPCVersion, msg.Version)
-		log.Error(err)
 		return
 	}
 
@@ -117,7 +115,6 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 	if msg.Method == "" {
 		msgError = utils.ErrMethodMissing
 		err = errors.New("expected a method to be provided")
-		log.Error(err)
 		return
 	}
 
@@ -125,7 +122,6 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 	if msg.Sender == nil || msg.Sender.Address == ZeroAddress {
 		msgError = utils.ErrSenderAddrMissing
 		err = errors.New("expected sender address to be provided")
-		log.Error(err)
 		return
 	}
 
@@ -133,7 +129,6 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 	if isSignerKeyRequired && (msg.Sender == nil || msg.Sender.SigningKey == "") {
 		msgError = utils.ErrSignerKeyMissing
 		err = errors.New("expected sender signer key to be provided")
-		log.Error(err)
 		return
 	}
 	return
@@ -141,6 +136,7 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 
 // writeResponse writes the response using the provided response writter.
 func writeResponse(w http.ResponseWriter, response interface{}) {
+	w.Header().Add("Content-Type", "application/json")
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Errorf("response writter failed: %v", err)
@@ -148,7 +144,14 @@ func writeResponse(w http.ResponseWriter, response interface{}) {
 }
 
 // welcomeTextFunc is used to confirm the successful connection to the server.
-func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, _ *http.Request) {
+func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, req *http.Request) {
+	// The "/" pattern matches everything, so we need to check
+	// that we're at the root here.
+	if req.URL.Path != "/" {
+		http.NotFound(w, req)
+		return
+	}
+
 	writeResponse(w, utils.WelcomeText)
 }
 
