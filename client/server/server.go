@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/sapphire"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -20,20 +21,21 @@ import (
 // ServerConfig defines the configuration needed to run a TLS enabled server
 // that interacts with the contract backend.
 type ServerConfig struct {
+	serverURL    string
 	datadir      string
 	tlsCertFile  string
 	tlsKeyFile   string
 	contractAddr common.Address
 	network      utils.NetworkType
 	ctx          context.Context
-	cancelFunc   context.CancelFunc
 
-	backend *sapphire.WrappedBackend
+	backend  *sapphire.WrappedBackend
+	bondChat *contracts.Chat
 }
 
 // NewServer validates the deployment configuration information before
 // creating a sapphire client wrapped around an eth client.
-func NewServer(ctx context.Context, certfile, keyfile, datadir, network string) (*ServerConfig, error) {
+func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverURL string) (*ServerConfig, error) {
 	// Validate deployment information first.
 	net := utils.ToNetType(network)
 	if !isDeployedNetMatching(net) {
@@ -88,9 +90,6 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network string) 
 		return nil, err
 	}
 
-	// generate a new context using the parent context passed.
-	ctx, cancelfn := context.WithCancel(ctx)
-
 	log.Info("Creating a sapphire client wrapped over an eth client")
 
 	backend, err := sapphire.WrapClient(ctx, *conn, net,
@@ -103,16 +102,24 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network string) 
 			return crypto.Sign(digest[:], key)
 		})
 
+	// Create the chat instance to be used.
+	chatInstance, err := contracts.NewChat(address, backend)
+	if err != nil {
+		log.Errorf("failed to instantiate a Chat contract: %v", err)
+		return nil, err
+	}
+
 	return &ServerConfig{
-		contractAddr: address,
-		network:      net,
 		ctx:          ctx,
-		cancelFunc:   cancelfn,
+		network:      net,
+		contractAddr: address,
+		serverURL:    serverURL,
 		datadir:      datadir,
 		tlsCertFile:  certfile,
 		tlsKeyFile:   keyfile,
 
-		backend: backend,
+		backend:  backend,
+		bondChat: chatInstance,
 	}, nil
 }
 
@@ -136,7 +143,7 @@ func (s *ServerConfig) Run() error {
 		},
 	}
 	srv := &http.Server{
-		Addr:         "0.0.0.0:30443",
+		Addr:         s.serverURL,
 		Handler:      mux,
 		TLSConfig:    cfg,
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),

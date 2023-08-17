@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -30,6 +31,7 @@ type config struct {
 	LogLevel    string `long:"loglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}" default:"info"`
 	TLSCertFile string `long:"certfile" description:"tls certificate file name" default:"server.crt"`
 	TLSKeyFile  string `long:"keyfile" description:"tls key file name" default:"server.key"`
+	ServerURL   string `long:"url" description:"Server url to server content using" default:"0.0.0.0:30443"`
 }
 
 // defaultDataDir returns the default
@@ -61,11 +63,11 @@ func loadConfig() (*config, error) {
 	parser.WriteHelp(h)
 
 	if net := utils.ToNetType(conf.Network); net == utils.UnsupportedNet {
-		return nil, fmt.Errorf("unsupported network used: (%v) \n %s", conf.Network, h.String())
+		return nil, fmt.Errorf("unsupported network used: %q \n %s", conf.Network, h.String())
 	}
 
 	if _, ok := btclog.LevelFromString(conf.LogLevel); !ok {
-		return nil, fmt.Errorf("invalid LogLevel found: (%v) \n %s", conf.LogLevel, h.String())
+		return nil, fmt.Errorf("invalid LogLevel found: %q \n %s", conf.LogLevel, h.String())
 	}
 
 	if conf.DataDirPath == "" {
@@ -75,6 +77,10 @@ func loadConfig() (*config, error) {
 	// validateTLSCerts confirms TLS certificates exists and are valid.
 	if err := validateTLSCerts(&conf); err != nil {
 		return nil, fmt.Errorf("validateTLSCerts error: %v \n %s", err, h.String())
+	}
+
+	if _, err := url.Parse(conf.ServerURL); err != nil {
+		return nil, fmt.Errorf("invalid server url found: %q \n %s", conf.ServerURL, h.String())
 	}
 
 	return &conf, nil

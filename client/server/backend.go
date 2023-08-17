@@ -26,64 +26,6 @@ var (
 	sessionKeys sync.Map
 )
 
-// A value of this type can a JSON-RPC request, notification, successful response or
-// error response. Which one it is depends on the fields.
-type rpcMessage struct {
-	ID      uint16      `json:"id"`
-	Version string      `json:"jsonrpc"`          // required on a request and a response.
-	Method  string      `json:"method,omitempty"` // required on a request
-	Sender  *senderInfo `json:"sender,omitempty"` // required on a request
-
-	Params json.RawMessage `json:"params,omitempty"`
-	Result json.RawMessage `json:"result,omitempty"`
-	Error  *rpcError       `json:"error,omitempty"`
-}
-
-// senderInfo defines the required sender information attached in every request.
-type senderInfo struct {
-	Address common.Address `json:"address"`
-	// SigningKey must be encrypted with the session's public key before being sent.
-	// Failure to do so could expose the actual user key to hackers.
-	// It must be signed via the diffie-hellman passed pubkey.
-	SigningKey string `json:"signingkey,omitempty"`
-}
-
-// rpcError defines the error message information sent to the user on happening.
-type rpcError struct {
-	Code    uint16      `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
-// packServerError packs the errors identified into a response ready to be sent
-// to the client.
-func (msg *rpcMessage) packServerError(shortErr, desc error) {
-	msg.Error = &rpcError{
-		Code:    utils.GetErrorCode(shortErr),
-		Message: shortErr.Error(),
-		Data:    desc.Error(),
-	}
-
-	// Remove the unnecessary information in the response.
-	msg.Sender = nil
-	msg.Method = ""
-	msg.Params = nil
-	msg.Result = nil
-}
-
-// packServerResult packs the successful result queried into a response ready
-// to be sent to the client.
-func (msg *rpcMessage) packServerResult(data interface{}) {
-	// Remove the unnecessary information in the response.
-	msg.Error = nil
-	msg.Sender = nil
-	msg.Method = ""
-	msg.Params = nil
-
-	res, _ := json.Marshal(data)
-	msg.Result.UnmarshalJSON(res)
-}
-
 // decodeReqBody attempts to extract contents of the request passed, if an error
 // occured a response in bytes is returned. isSignerKeyRequired is used to set
 // when existence of the signer key should be checked.
@@ -203,19 +145,21 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 	data := serverKeyResp{
 		Pubkey: privKey.PubKeyToHexString(),
 		Expiry: uint64(time.Now().UTC().Add(sessionTime).Unix()),
-
-		sharedKey: sharedkey,
 	}
-
-	sessionKeys.Store(msg.Sender.Address, data)
 
 	msg.packServerResult(data)
 	writeResponse(w, msg)
+
+	// Appends the sharedkey after sending the user response. This shared key is
+	// what this client should use to encrypt information shared with the server.
+	data.sharedKey = sharedkey
+	sessionKeys.Store(msg.Sender.Address, data)
 }
 
 // backendQueryFunc recieves all the requests made to the contracts.
 func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request) {
 	var msg rpcMessage
+
 	decodeReqBody(req, &msg, false)
 	if msg.Error != nil {
 		writeResponse(w, msg)
@@ -229,6 +173,8 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	// extracts the private key from the signing key sent. The private key is
+	// required to sign all tx by the current sender.
 	privKey, err := utils.Decrypt(data.(serverKeyResp).sharedKey, msg.Sender.SigningKey)
 	if err != nil {
 		msg.packServerError(utils.ErrInvalidSigningKey, err)
@@ -238,19 +184,11 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 
 	s.backend.SetClientSigningKey(privKey)
 
-	chatInstance, err := contracts.NewChat(s.contractAddr, s.backend)
-	if err != nil {
-		log.Errorf("failed to instantiate a Chat contract: %v", err)
-		msg.packServerError(utils.ErrInternalFailure, err)
-		writeResponse(w, msg)
-		return
-	}
-
 	// Create an authorized transactor and call the store function
 	auth := s.backend.Transactor(msg.Sender.Address)
 
 	transactor := contracts.ChatTransactorRaw{
-		Contract: &chatInstance.ChatTransactor,
+		Contract: &s.bondChat.ChatTransactor,
 	}
 
 	tx, err := transactor.Transact(auth, msg.Method, msg.Params)

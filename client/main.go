@@ -36,7 +36,7 @@ func run(ctx context.Context, cancelFunc context.CancelFunc) {
 	setLogLevel(level)
 
 	s, err := server.NewServer(ctx, config.TLSCertFile, config.TLSKeyFile,
-		config.DataDirPath, config.Network)
+		config.DataDirPath, config.Network, config.ServerURL)
 	if err != nil {
 		log.Errorf("Server Config error: %v", err)
 		return
