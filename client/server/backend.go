@@ -23,6 +23,7 @@ var (
 	// ZeroAddress defines an empty address value.
 	ZeroAddress = common.HexToAddress("")
 
+	// sessionKeys holds the sessional access keys associated with a given user.
 	sessionKeys sync.Map
 )
 
@@ -134,7 +135,7 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 
 	sharedkey, err := privKey.ComputeSharedKey(param[0])
 	if err != nil {
-		err := errors.New("invalid public key used")
+		err := errors.New("invalid client public key used")
 		msg.packServerError(utils.ErrInternalFailure, err)
 		writeResponse(w, msg)
 		return
@@ -166,10 +167,23 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	// Check if the server keys exists.
 	data, ok := sessionKeys.Load(msg.Sender.Address)
 	if !ok {
+		err := errors.New("no server keys found associated with the sender")
+		msg.packServerError(utils.ErrMissingServerKey, err)
+		writeResponse(w, msg)
+		return
+	}
+
+	// check for the server keys expiry.
+	expiryTime := time.Unix(int64(data.(serverKeyResp).Expiry), 0).UTC()
+	if time.Now().UTC().After(expiryTime) {
 		msg.packServerError(utils.ErrExpiredServerKey, nil)
 		writeResponse(w, msg)
+
+		// Delete expired keys
+		sessionKeys.Delete(msg.Sender.Address)
 		return
 	}
 

@@ -29,6 +29,7 @@ var (
 		ErrUnknownMethod:     1008,
 		ErrUnknownParam:      1009,
 		ErrInvalidSigningKey: 1010,
+		ErrMissingServerKey:  1011,
 	}
 
 	// ErrInvalidJSON returned if an error occurred while parsing the request JSON
@@ -49,7 +50,7 @@ var (
 	ErrSenderAddrMissing = errors.New("sender address missing")
 
 	// ErrExpiredServerKey is returned if a sender takes too long to use the server
-	// key sent during the tls handshake.
+	// key sent.
 	ErrExpiredServerKey = errors.New("server key expired")
 
 	// ErrSignerKeyMissing is returned if the sender's signer key is missing.
@@ -70,6 +71,10 @@ var (
 	// ErrInvalidSigningKey is return if decrypting the actual key from the
 	// provided signing key string results into an error.
 	ErrInvalidSigningKey = errors.New("invalid client signing key")
+
+	// ErrMissingServerKey is returned if a sender doesn't request for the public
+	// server keys before accessing the contract backend.
+	ErrMissingServerKey = errors.New("missing server key")
 )
 
 // GetErrorCode returns the set error code if it exists or max(uint16) if otherwise.
