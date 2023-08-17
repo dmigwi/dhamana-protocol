@@ -27,10 +27,11 @@ var (
 	sessionKeys sync.Map
 )
 
-// decodeReqBody attempts to extract contents of the request passed, if an error
+// decodeRequestBody attempts to extract contents of the request passed, if an error
 // occured a response in bytes is returned. isSignerKeyRequired is used to set
 // when existence of the signer key should be checked.
-func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool) {
+// Its returns the method type depending on how it is implemented.
+func decodeRequestBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool) utils.MethodType {
 	var msgError, err error
 
 	// creates the error response to be returned
@@ -43,7 +44,7 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 	// extract the request body contents
 	if err = json.NewDecoder(req.Body).Decode(&msg); err != nil {
 		msgError = utils.ErrInvalidJSON
-		return
+		return utils.UnknownType
 	}
 
 	// Checks for JSON-RPC version mismatch
@@ -51,30 +52,56 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 		msgError = utils.ErrInvalidReq
 		err = fmt.Errorf("expected JSON-RPC version %s but found %s",
 			utils.JSONRPCVersion, msg.Version)
-		return
+		return utils.UnknownType
 	}
 
 	// Check for method parameter exists
 	if msg.Method == "" {
 		msgError = utils.ErrMethodMissing
 		err = errors.New("expected a method to be provided")
-		return
+		return utils.UnknownType
 	}
 
 	// Check the sender's address exists
 	if msg.Sender == nil || msg.Sender.Address == ZeroAddress {
 		msgError = utils.ErrSenderAddrMissing
 		err = errors.New("expected sender address to be provided")
-		return
+		return utils.UnknownType
 	}
 
 	// Check for the signer key if required.
 	if isSignerKeyRequired && (msg.Sender == nil || msg.Sender.SigningKey == "") {
 		msgError = utils.ErrSignerKeyMissing
 		err = errors.New("expected sender signer key to be provided")
-		return
+		return utils.UnknownType
 	}
-	return
+
+	// validate the method passed.
+	methodType, params := utils.GetMethodParams(msg.Method)
+	if methodType == utils.UnknownType {
+		err = fmt.Errorf("method %s not supportted", msg.Method)
+		msgError = utils.ErrUnknownMethod
+		return utils.UnknownType
+	}
+
+	if len(msg.Params) != len(params) {
+		err = fmt.Errorf("method %s requires %d params found %d params",
+			msg.Method, len(params), len(msg.Params))
+		msgError = utils.ErrMissingParams
+		return utils.UnknownType
+	}
+
+	// Confirm the required param types are used.
+	for i, p := range msg.Params {
+		paramType := utils.GetParamType(p)
+		if paramType != params[i] {
+			err = fmt.Errorf("expected param %s to be of type %s found it to be %s",
+				p, paramType, params[i])
+			msgError = utils.ErrUnknownParam
+			return utils.UnknownType
+		}
+	}
+	return methodType
 }
 
 // writeResponse writes the response using the provided response writter.
@@ -105,24 +132,17 @@ func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, req *http.Request)
 // A session server pubkey is mapped to a specific user address.
 func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 	var msg rpcMessage
-	decodeReqBody(req, &msg, false)
+	methodType := decodeRequestBody(req, &msg, false)
 	if msg.Error != nil {
 		writeResponse(w, msg)
 		return
 	}
 
-	// decode param
-	var param []string
-	if err := json.Unmarshal(msg.Params, &param); err != nil {
-		msg.packServerError(utils.ErrUnknownParam, err)
-		writeResponse(w, msg)
-		return
-	}
-
-	// Only one parameter is of type string is expected.
-	if len(param) != 1 {
-		msg.packServerError(utils.ErrMissingParams, nil)
-		writeResponse(w, msg)
+	// confirm server key methods match.
+	if methodType != utils.ServerKeyType {
+		err := fmt.Errorf("unsupported method %s found in route %s",
+			msg.Method, req.URL.Path)
+		msg.packServerError(utils.ErrUnknownMethod, err)
 		return
 	}
 
@@ -133,7 +153,7 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sharedkey, err := privKey.ComputeSharedKey(param[0])
+	sharedkey, err := privKey.ComputeSharedKey(msg.Params[0].(string))
 	if err != nil {
 		err := errors.New("invalid client public key used")
 		msg.packServerError(utils.ErrInternalFailure, err)
@@ -161,9 +181,17 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request) {
 	var msg rpcMessage
 
-	decodeReqBody(req, &msg, false)
+	methodType := decodeRequestBody(req, &msg, false)
 	if msg.Error != nil {
 		writeResponse(w, msg)
+		return
+	}
+
+	// Only allow contract methods to be executed.
+	if methodType != utils.ContractType {
+		err := fmt.Errorf("unsupported method %s found in route %s",
+			msg.Method, req.URL.Path)
+		msg.packServerError(utils.ErrUnknownMethod, err)
 		return
 	}
 

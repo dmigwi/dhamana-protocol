@@ -20,7 +20,7 @@ type rpcMessage struct {
 	Method  string      `json:"method,omitempty"` // required on a request
 	Sender  *senderInfo `json:"sender,omitempty"` // required on a request
 
-	Params json.RawMessage `json:"params,omitempty"`
+	Params []interface{}   `json:"params,omitempty"`
 	Result json.RawMessage `json:"result,omitempty"`
 	Error  *rpcError       `json:"error,omitempty"`
 }
