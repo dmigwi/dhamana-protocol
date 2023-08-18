@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 const (
@@ -32,6 +31,9 @@ type WrappedBackend struct {
 	ctx        context.Context
 
 	privateKey []byte
+	// Its used during tests when actual txs are not sent but all tx
+	// specific activities are done.
+	IsTesting bool
 }
 
 // Confirm that WrappedBacked implements the bind.ContractBackend interface.
@@ -64,7 +66,7 @@ func NewCipher(ctx context.Context, net utils.NetworkType) (Cipher, error) {
 }
 
 // WrapClient wraps an ethclient.Client so that it can talk to Sapphire.
-func WrapClient(ctx context.Context, c ethclient.Client, net utils.NetworkType, sign SignerFn) (*WrappedBackend, error) {
+func WrapClient(ctx context.Context, c bind.ContractBackend, net utils.NetworkType, sign SignerFn) (*WrappedBackend, error) {
 	network, err := utils.GetNetworkConfig(net)
 	if err != nil {
 		return nil, err
@@ -76,7 +78,7 @@ func WrapClient(ctx context.Context, c ethclient.Client, net utils.NetworkType, 
 	}
 
 	return &WrappedBackend{
-		ContractBackend: &c,
+		ContractBackend: c,
 		chainID:         network.ChainID,
 		cipher:          cipher,
 		signerFunc:      sign,
@@ -116,11 +118,15 @@ func (b *WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
 		return packedTx.WithSignature(signer, sig)
 	}
 
+	// when activated actul txs are not sent out.
+	log.Info("---DO NOT SEND--- parameter is activated")
+
 	return &bind.TransactOpts{
 		From:     from,
 		Signer:   signFn,
 		GasPrice: big.NewInt(DefaultGasPrice),
 		GasLimit: DefaultGasLimit,
+		NoSend:   b.IsTesting,
 	}
 }
 

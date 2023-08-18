@@ -41,6 +41,13 @@ func decodeRequestBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired b
 		}
 	}()
 
+	if req.Method != http.MethodPost {
+		msgError = utils.ErrInvalidReq
+		err = fmt.Errorf("invalid http method %s found expected %s",
+			req.Method, http.MethodPost)
+		return utils.UnknownType
+	}
+
 	// extract the request body contents
 	if err = json.NewDecoder(req.Body).Decode(&msg); err != nil {
 		msgError = utils.ErrInvalidJSON
@@ -146,7 +153,8 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	privKey, err := utils.GeneratePrivKey()
+	// Pass nil so that the default rand reader can be used.
+	privKey, err := utils.GeneratePrivKey(nil)
 	if err != nil {
 		msg.packServerError(utils.ErrInternalFailure, nil)
 		writeResponse(w, msg)

@@ -31,7 +31,7 @@ type config struct {
 	LogLevel    string `long:"loglevel" description:"Logging level {trace, debug, info, warn, error, critical, off}" default:"info"`
 	TLSCertFile string `long:"certfile" description:"tls certificate file name" default:"server.crt"`
 	TLSKeyFile  string `long:"keyfile" description:"tls key file name" default:"server.key"`
-	ServerURL   string `long:"url" description:"Server url to server content using" default:"0.0.0.0:30443"`
+	ServerURL   string `long:"url" description:"Server url to server content using" default:"https://0.0.0.0:30443"`
 }
 
 // defaultDataDir returns the default

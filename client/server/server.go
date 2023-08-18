@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"time"
 
@@ -43,7 +44,7 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverU
 		return nil, utils.ErrCorruptedConfig // network mismatch
 	}
 
-	log.Infof("Running on the network: %s", net)
+	log.Infof("Running on the network: %q", net)
 
 	address := getContractAddress(net)
 	if address == common.HexToAddress("") {
@@ -51,7 +52,7 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverU
 		return nil, utils.ErrCorruptedConfig // Address mismatch
 	}
 
-	log.Infof("Deployed contract address found: %s", address.String())
+	log.Infof("Deployed contract address found: %q", address.String())
 
 	// query the deployed time.
 	deployedTime := getDeploymentTime(net)
@@ -60,7 +61,7 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverU
 		return nil, utils.ErrCorruptedConfig // timestamp mismatch
 	}
 
-	log.Infof("Contract in use was deployed on Date: %s",
+	log.Infof("Contract in use was deployed on Date: %q",
 		deployedTime.Format(utils.FullDateformat))
 
 	// query the deployed transaction hash
@@ -70,7 +71,7 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverU
 		return nil, utils.ErrCorruptedConfig // tx hash mismatch
 	}
 
-	log.Infof("Contract in use was deployed on Tx: %s", txHash)
+	log.Infof("Contract in use was deployed on Tx: %q", txHash)
 
 	// query the network params
 	networkParams, err := utils.GetNetworkConfig(net)
@@ -84,7 +85,7 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverU
 	}
 
 	// Create RPC connection to a remote node and instantiate a contract binding
-	conn, err := ethclient.Dial(networkParams.DefaultGateway)
+	conn, err := ethclient.DialContext(ctx, networkParams.DefaultGateway)
 	if err != nil {
 		log.Errorf("failed to connect to the Sapphire Paratime client: %v", err)
 		return nil, err
@@ -92,7 +93,7 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverU
 
 	log.Info("Creating a sapphire client wrapped over an eth client")
 
-	backend, err := sapphire.WrapClient(ctx, *conn, net,
+	backend, err := sapphire.WrapClient(ctx, conn, net,
 		func(digest [32]byte, privateKey []byte) ([]byte, error) {
 			key, err := crypto.ToECDSA(privateKey)
 			if err != nil {
@@ -142,8 +143,11 @@ func (s *ServerConfig) Run() error {
 			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 		},
 	}
+
+	// Ignore the error because the url has already been validated.
+	serverURL, _ := url.Parse(s.serverURL)
 	srv := &http.Server{
-		Addr:         s.serverURL,
+		Addr:         serverURL.Host,
 		Handler:      mux,
 		TLSConfig:    cfg,
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
@@ -153,7 +157,7 @@ func (s *ServerConfig) Run() error {
 	certPath := filepath.Join(s.datadir, s.tlsCertFile)
 	keyPath := filepath.Join(s.datadir, s.tlsKeyFile)
 
-	log.Infof("Initiating the server on: %v", srv.Addr)
+	log.Infof("Initiating the server on: %q", s.serverURL)
 
 	return srv.ListenAndServeTLS(certPath, keyPath)
 }
