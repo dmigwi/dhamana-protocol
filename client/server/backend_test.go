@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/sapphire"
@@ -21,6 +23,14 @@ var (
 	serverConf       *ServerConfig
 	sampleHexAddress = common.HexToAddress("0x3396FD816Dd81100477c8ea3853039822f36B7ed")
 	sampleSigningKey = "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a"
+
+	sampleHexAddress1 = common.HexToAddress("0x3396FD816Dd81100477c8ea3853039822f36B7ad")
+	sampleHexAddress2 = common.HexToAddress("0x3396FD816Dd81100477c8ea3853039822f36B7bd")
+	sampleHexAddress3 = common.HexToAddress("0x3396FD816Dd81100477c8ea3853039822f36B71d")
+
+	pubkey1 = "0x5a59ec90d4cc9f9a60ac42179dcf461b3f3c7caa3b4960b69ce2de7ead3a5417"
+	pubkey2 = "0x409f538d156b3ffcec0b457f6f193946ab19e38fd36bd393963102473e583686"
+	pubkey3 = "0x673ce33fd92d3ea971412dbffe7c5523dc17174b7a77b4681013adbd0bea4afb"
 )
 
 type input struct {
@@ -44,6 +54,19 @@ func TestMain(m *testing.M) {
 	serverConf, err = genMockWrapper(ctx)
 
 	if err == nil {
+		// Store expired keys
+		expiredKey := serverKeyResp{
+			Pubkey: pubkey1,
+			Expiry: uint64(time.Now().UTC().Unix()),
+		}
+		serverConf.sessionKeys.Store(sampleHexAddress1, expiredKey)
+
+		// store fresh keys with an expiry of 2 minutes
+		freshKey := serverKeyResp{
+			Pubkey: pubkey2,
+			Expiry: uint64(time.Now().UTC().Add(2 * time.Minute).Unix()),
+		}
+		serverConf.sessionKeys.Store(sampleHexAddress2, freshKey)
 		m.Run()
 	} else {
 		log.Error("unexpected error: ", err)
@@ -67,7 +90,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				},
 			},
 			val: output{
-				errCode:    1000,
+				errCode:    1001,
 				shortErr:   utils.ErrInvalidReq,
 				longErr:    "invalid http method GET found expected POST",
 				methodType: utils.UnknownType,
@@ -98,7 +121,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				},
 			},
 			val: output{
-				errCode:    1000,
+				errCode:    1001,
 				shortErr:   utils.ErrInvalidReq,
 				longErr:    "expected JSON-RPC version 2.0 but found 1.0",
 				methodType: utils.UnknownType,
@@ -115,7 +138,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				},
 			},
 			val: output{
-				errCode:    1000,
+				errCode:    1003,
 				shortErr:   utils.ErrMethodMissing,
 				longErr:    "expected a method to be provided",
 				methodType: utils.UnknownType,
@@ -135,7 +158,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				},
 			},
 			val: output{
-				errCode:    1000,
+				errCode:    1004,
 				shortErr:   utils.ErrSenderAddrMissing,
 				longErr:    "expected sender address to be provided",
 				methodType: utils.UnknownType,
@@ -156,7 +179,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				},
 			},
 			val: output{
-				errCode:    1000,
+				errCode:    1006,
 				shortErr:   utils.ErrSignerKeyMissing,
 				longErr:    "expected sender signer key to be provided",
 				methodType: utils.UnknownType,
@@ -177,7 +200,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				},
 			},
 			val: output{
-				errCode:    1000,
+				errCode:    1008,
 				shortErr:   utils.ErrUnknownMethod,
 				longErr:    "method createBondAndSign not supportted",
 				methodType: utils.UnknownType,
@@ -198,7 +221,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				},
 			},
 			val: output{
-				errCode:    1000,
+				errCode:    1007,
 				shortErr:   utils.ErrMissingParams,
 				longErr:    "method getServerPubKey requires 1 params found 2 params",
 				methodType: utils.UnknownType,
@@ -219,7 +242,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				},
 			},
 			val: output{
-				errCode:    1000,
+				errCode:    1009,
 				shortErr:   utils.ErrUnknownParam,
 				longErr:    "expected param 200 to be of type string found it to be int",
 				methodType: utils.UnknownType,
@@ -339,28 +362,28 @@ func TestDecodeRequestBody(t *testing.T) {
 			// Test for the packed response.
 
 			if msg.Sender != nil {
-				t.Fatalf("expected sender field to be nil")
+				t.Fatal("expected sender field to be nil")
 			}
 
 			if msg.Method != "" {
-				t.Fatalf("expected method field to be empty")
+				t.Fatal("expected method field to be empty")
 			}
 
 			if msg.Params != nil {
-				t.Fatalf("expected params field to be nil")
+				t.Fatal("expected params field to be nil")
 			}
 
 			if retType == utils.UnknownType {
 				if msg.Error == nil {
-					t.Fatalf("expected error field not to be nil")
+					t.Fatal("expected error field not to be nil")
 				}
 
 				if msg.Result != nil {
-					t.Fatalf("expected result field to be nil")
+					t.Fatal("expected result field to be nil")
 				}
 			} else {
 				if msg.Error != nil {
-					t.Fatalf("expected error field to be nil")
+					t.Fatal("expected error field to be nil")
 				}
 
 				// Prevent further execution since no error is expected
@@ -460,4 +483,250 @@ func genMockWrapper(ctx context.Context) (*ServerConfig, error) {
 		backend:  backend,
 		bondChat: chatInstance,
 	}, nil
+}
+
+// TestServerPubkey tests unique functionality implemented in serverPubkey method.
+func TestServerPubkey(t *testing.T) {
+	testdata := []struct {
+		data input
+		val  output
+	}{
+		{
+			data: input{
+				testName: "Test-for-access-to-non-serverkey-method",
+				method:   http.MethodPost,
+				body: rpcMessage{
+					ID:      20,
+					Version: "2.0",
+					Method:  "getBondsByStatus",
+					Sender: &senderInfo{
+						Address: sampleHexAddress,
+					},
+					Params: []interface{}{"client-pub-key"},
+				},
+			},
+			val: output{
+				errCode:  1008,
+				shortErr: utils.ErrUnknownMethod,
+				longErr:  "unsupported method getBondsByStatus found for this route",
+			},
+		},
+		{
+			data: input{
+				testName: "Test-for-successful-access-to-serverkey-method",
+				method:   http.MethodPost,
+				body: rpcMessage{
+					ID:      20,
+					Version: "2.0",
+					Method:  "getServerPubKey",
+					Sender: &senderInfo{
+						Address: sampleHexAddress,
+					},
+					Params: []interface{}{"client-pub-key"},
+				},
+			},
+		},
+	}
+
+	for _, v := range testdata {
+		t.Run(v.data.testName, func(t *testing.T) {
+			var buf bytes.Buffer
+			_ = json.NewEncoder(&buf).Encode(v.data.body) // error ignored since its not being tested.
+
+			responseWritter := httptest.NewRecorder()
+
+			serverConf.serverPubkey(responseWritter,
+				httptest.NewRequest(v.data.method, "/serverpubkey", &buf))
+
+			data, err := io.ReadAll(responseWritter.Body)
+			if err != nil {
+				t.Fatalf("expected no error but found %q", err)
+			}
+
+			msg := rpcMessage{}
+			_ = json.Unmarshal(data, &msg)
+
+			if msg.Error == nil && v.val.shortErr != nil {
+				t.Fatalf("expected method %q to return an error but found",
+					v.val.methodType)
+			} else {
+
+				var result serverKeyResp
+				_ = json.Unmarshal(msg.Result, &result)
+
+				if result.Pubkey == "" {
+					t.Fatal("expected the server pubkey not to be empty")
+				}
+
+				now := time.Now().UTC()
+				if time.Unix(int64(result.Expiry), 0).UTC().After(now) {
+					t.Fatalf("expected the server pubkey expiry to be after %v", now)
+				}
+
+				// No error was expected, prevent further error check.
+				return
+			}
+
+			if msg.Error.Code != v.val.errCode {
+				t.Fatalf("expected returned error code to be %q but found %q",
+					msg.Error.Code, v.val.errCode)
+			}
+
+			err, _ = msg.Error.Data.(error)
+			if err != v.val.shortErr {
+				t.Fatalf("expected returned short error to be %q but found %q",
+					err, v.val.shortErr)
+			}
+
+			if msg.Error.Message != v.val.longErr {
+				t.Fatalf("expected returned long error to be %q but found %q",
+					err, v.val.shortErr)
+			}
+		})
+	}
+}
+
+// TestBackendQueryFunc tests unique functionality implemented in backendQueryFunc method.
+func TestBackendQueryFunc(t *testing.T) {
+	testdata := []struct {
+		data input
+		val  output
+	}{
+		{
+			data: input{
+				testName: "Test-for-access-to-non-contract-method",
+				method:   http.MethodPost,
+				body: rpcMessage{
+					ID:      20,
+					Version: "2.0",
+					Method:  "getServerPubKey",
+					Sender: &senderInfo{
+						Address:    sampleHexAddress2,
+						SigningKey: sampleSigningKey,
+					},
+					Params: []interface{}{"client-pub-key"},
+				},
+			},
+			val: output{
+				errCode:  1008,
+				shortErr: utils.ErrUnknownMethod,
+				longErr:  "unsupported method getServerPubKey found for this route",
+			},
+		},
+		{
+			data: input{
+				testName: "Test-for-missing-server-keys",
+				method:   http.MethodPost,
+				body: rpcMessage{
+					ID:      20,
+					Version: "2.0",
+					Method:  "signBondStatus",
+					Sender: &senderInfo{
+						Address:    sampleHexAddress3,
+						SigningKey: sampleSigningKey,
+					},
+					Params: []interface{}{"client-pub-key"},
+				},
+			},
+			val: output{
+				errCode:  1011,
+				shortErr: utils.ErrMissingServerKey,
+				longErr:  "no server keys found associated with the sender",
+			},
+		},
+		{
+			data: input{
+				testName: "Test-for-expired-server-keys",
+				method:   http.MethodPost,
+				body: rpcMessage{
+					ID:      20,
+					Version: "2.0",
+					Method:  "signBondStatus",
+					Sender: &senderInfo{
+						Address:    sampleHexAddress1,
+						SigningKey: sampleSigningKey,
+					},
+					Params: []interface{}{"client-pub-key"},
+				},
+			},
+			val: output{
+				errCode:  1005,
+				shortErr: utils.ErrExpiredServerKey,
+				longErr:  "",
+			},
+		},
+		{
+			data: input{
+				testName: "Test-for-successful-access-to-contract-method",
+				method:   http.MethodPost,
+				body: rpcMessage{
+					ID:      20,
+					Version: "2.0",
+					Method:  "signBondStatus",
+					Sender: &senderInfo{
+						Address:    sampleHexAddress2,
+						SigningKey: sampleSigningKey,
+					},
+					Params: []interface{}{"client-pub-key"},
+				},
+			},
+		},
+	}
+
+	for _, v := range testdata {
+		t.Run(v.data.testName, func(t *testing.T) {
+			var buf bytes.Buffer
+			_ = json.NewEncoder(&buf).Encode(v.data.body) // error ignored since its not being tested.
+
+			responseWritter := httptest.NewRecorder()
+
+			serverConf.serverPubkey(responseWritter,
+				httptest.NewRequest(v.data.method, "/serverpubkey", &buf))
+
+			data, err := io.ReadAll(responseWritter.Body)
+			if err != nil {
+				t.Fatalf("expected no error but found %q", err)
+			}
+
+			msg := rpcMessage{}
+			_ = json.Unmarshal(data, &msg)
+
+			if msg.Error == nil && v.val.shortErr != nil {
+				t.Fatalf("expected method %q to return an error but found",
+					v.val.methodType)
+			} else {
+
+				var result serverKeyResp
+				_ = json.Unmarshal(msg.Result, &result)
+
+				if result.Pubkey == "" {
+					t.Fatal("expected the server pubkey not to be empty")
+				}
+
+				now := time.Now().UTC()
+				if time.Unix(int64(result.Expiry), 0).UTC().After(now) {
+					t.Fatalf("expected the server pubkey expiry to be after %v", now)
+				}
+
+				// No error was expected, prevent further error check.
+				return
+			}
+
+			if msg.Error.Code != v.val.errCode {
+				t.Fatalf("expected returned error code to be %q but found %q",
+					msg.Error.Code, v.val.errCode)
+			}
+
+			err, _ = msg.Error.Data.(error)
+			if err != v.val.shortErr {
+				t.Fatalf("expected returned short error to be %q but found %q",
+					err, v.val.shortErr)
+			}
+
+			if msg.Error.Message != v.val.longErr {
+				t.Fatalf("expected returned long error to be %q but found %q",
+					err, v.val.shortErr)
+			}
+		})
+	}
 }

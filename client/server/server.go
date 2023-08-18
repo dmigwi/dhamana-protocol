@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
@@ -32,6 +33,9 @@ type ServerConfig struct {
 
 	backend  *sapphire.WrappedBackend
 	bondChat *contracts.Chat
+
+	// sessionKeys holds the sessional access keys associated with a given user.
+	sessionKeys sync.Map
 }
 
 // NewServer validates the deployment configuration information before

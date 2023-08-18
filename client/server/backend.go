@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
@@ -19,13 +18,8 @@ import (
 // sessionTime defines the duration when the server public key is valid.
 const sessionTime = time.Minute * 10
 
-var (
-	// ZeroAddress defines an empty address value.
-	ZeroAddress = common.HexToAddress("")
-
-	// sessionKeys holds the sessional access keys associated with a given user.
-	sessionKeys sync.Map
-)
+// ZeroAddress defines an empty address value.
+var ZeroAddress = common.HexToAddress("")
 
 // decodeRequestBody attempts to extract contents of the request passed, if an error
 // occured a response in bytes is returned. isSignerKeyRequired is used to set
@@ -147,8 +141,7 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 
 	// confirm server key methods match.
 	if methodType != utils.ServerKeyType {
-		err := fmt.Errorf("unsupported method %s found in route %s",
-			msg.Method, req.URL.Path)
+		err := fmt.Errorf("unsupported method %s found for this route", msg.Method)
 		msg.packServerError(utils.ErrUnknownMethod, err)
 		return
 	}
@@ -182,7 +175,7 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 	// Appends the sharedkey after sending the user response. This shared key is
 	// what this client should use to encrypt information shared with the server.
 	data.sharedKey = sharedkey
-	sessionKeys.Store(msg.Sender.Address, data)
+	s.sessionKeys.Store(msg.Sender.Address, data)
 }
 
 // backendQueryFunc recieves all the requests made to the contracts.
@@ -197,14 +190,13 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 
 	// Only allow contract methods to be executed.
 	if methodType != utils.ContractType {
-		err := fmt.Errorf("unsupported method %s found in route %s",
-			msg.Method, req.URL.Path)
+		err := fmt.Errorf("unsupported method %s found for this route", msg.Method)
 		msg.packServerError(utils.ErrUnknownMethod, err)
 		return
 	}
 
 	// Check if the server keys exists.
-	data, ok := sessionKeys.Load(msg.Sender.Address)
+	data, ok := s.sessionKeys.Load(msg.Sender.Address)
 	if !ok {
 		err := errors.New("no server keys found associated with the sender")
 		msg.packServerError(utils.ErrMissingServerKey, err)
@@ -219,7 +211,7 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 		writeResponse(w, msg)
 
 		// Delete expired keys
-		sessionKeys.Delete(msg.Sender.Address)
+		s.sessionKeys.Delete(msg.Sender.Address)
 		return
 	}
 
