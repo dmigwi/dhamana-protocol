@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math/big"
 	"net/http"
@@ -69,7 +70,7 @@ func TestMain(m *testing.M) {
 		serverConf.sessionKeys.Store(sampleHexAddress2, freshKey)
 		m.Run()
 	} else {
-		log.Error("unexpected error: ", err)
+		fmt.Printf("unexpected error: %v \n", err)
 	}
 	cancelFn()
 }
@@ -459,11 +460,11 @@ func (m *mockWrapper) SubscribeFilterLogs(ctx context.Context, query ethereum.Fi
 
 func genMockWrapper(ctx context.Context) (*ServerConfig, error) {
 	conn := &mockWrapper{}
-	backend, err := sapphire.WrapClient(ctx, conn, utils.SapphireLocalnet,
+	backend, err := sapphire.WrapClient(ctx, conn, utils.LocalTesting,
 		func(digest [32]byte, _ []byte) ([]byte, error) { return digest[:], nil })
-
-	// Prevent actual sending of txs
-	backend.IsTesting = true
+	if err != nil {
+		return nil, err
+	}
 
 	// Create the chat instance to be used.
 	chatInstance, err := contracts.NewChat(sampleHexAddress, backend)
