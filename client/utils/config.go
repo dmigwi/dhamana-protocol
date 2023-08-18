@@ -7,9 +7,10 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ecdh"
-	"crypto/rand"
+	cryptorand "crypto/rand"
 	"encoding/hex"
 	"errors"
+	"io"
 	"os"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -19,7 +20,8 @@ const (
 	// WelcomeText is an easter egg placed in the code for cryptography enthusiasts
 	// to attempt solving.
 	// Should you be successful in decrypting it, please do what it says!
-	WelcomeText = "Pi encrypted  715b48145c501951595355505d194050475a135a5d4251595d5d40021301705647585b5d600c7d527f615760417f63477d5a696045610348437f470d790757"
+	WelcomeText = "Pi encrypted  715b48145c501951595355505d194050475a135a5d4251595d5d" +
+		"40021301705647585b5d600c7d527f615760417f63477d5a696045610348437f470d790757"
 
 	// FullDateformat defines the full date format supported
 	FullDateformat = "Mon 15:04:05 2006-01-02"
@@ -39,10 +41,14 @@ type PrivateKey struct {
 	*ecdh.PrivateKey
 }
 
-// GeneratePrivKey() generates a private key using a P256 curve. P256 is used
+// GeneratePrivKey generates a private key using a P256 curve. P256 is used
 // because it provides keys of size 32 bit which are the maximum allowed by AES.
-func GeneratePrivKey() (PrivateKey, error) {
-	key, err := ecdh.P256().GenerateKey(rand.Reader)
+func GeneratePrivKey(randGen io.Reader) (PrivateKey, error) {
+	if randGen == nil {
+		randGen = cryptorand.Reader
+	}
+
+	key, err := ecdh.P256().GenerateKey(randGen)
 
 	return PrivateKey{PrivateKey: key}, err
 }
