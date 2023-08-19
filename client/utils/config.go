@@ -7,9 +7,11 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ecdh"
+	"crypto/rand"
 	cryptorand "crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 
@@ -68,52 +70,78 @@ func (p *PrivateKey) ComputeSharedKey(remotePubKey string) ([]byte, error) {
 
 	pubkey, err := ecdh.P256().NewPublicKey(rawPubkey)
 	if err != nil {
-		return nil, errors.New("invalid public key found")
+		return nil, fmt.Errorf("invalid public key found: %v", err)
 	}
 
 	return p.ECDH(pubkey)
 }
 
-func Encrypt(sharedKey []byte, plaintext []byte) (string, error) {
-	c, err := aes.NewCipher(sharedKey)
+// EncryptAES implements the AES algorithm in encrypting data.
+// To encrypt data, we need the following:
+// 1. sharedkey (32-bytes for AES-256 encryption)
+// 2. nonce (a random no., only used only once)
+// 3. plaintext data to encrypt
+
+// Its outputs a hexutils encode string and an error
+func EncryptAES(sharedKey []byte, plaintext []byte) (string, error) {
+	block, err := aes.NewCipher(sharedKey)
 	if err != nil {
 		return "", errors.New("unable to generate new aes cipher")
 	}
 
-	gcm, err := cipher.NewGCM(c)
+	// Create a new GCM - https://en.wikipedia.org/wiki/Galois/Counter_Mode
+	// https://golang.org/pkg/crypto/cipher/#NewGCM
+	aesGCM, err := cipher.NewGCM(block)
 	if err != nil {
 		return "", errors.New("gcm or Galois/Counter Mode creation failed")
 	}
 
-	nonce := make([]byte, gcm.NonceSize())
+	// Create a nonce. Nonce should be from GCM
+	nonce := make([]byte, aesGCM.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		panic(err.Error())
+	}
 
-	// Seal will append the output to the first argument; the usage
-	// here appends the ciphertext to the nonce. The final parameter
-	// is any additional data to be authenticated.
-	return hex.EncodeToString(gcm.Seal(nonce, nonce, plaintext, nil)), nil
+	// Encrypt the data using aesGCM.Seal. Since we don't want to save the nonce
+	// somewhere else in this case, we add it as a prefix to the encrypted data.
+	// The first nonce argument in Seal is the prefix.
+	return hex.EncodeToString(aesGCM.Seal(nonce, nonce, plaintext, nil)), nil
 }
 
-func Decrypt(sharedKey []byte, ciphertext string) ([]byte, error) {
-	c, err := aes.NewCipher(sharedKey)
-	if err != nil {
-		return nil, errors.New("unable to generate new aes cipher")
-	}
+// DecryptAES implements the AES algorithm in decoding the provided ciphertext.
+// To decrypt the ciphertext, we need the following:
+// 1. sharedkey (32-bytes for AES-256 encryption)
+// 2. ciphertext data to decrypt.
 
-	gcm, err := cipher.NewGCM(c)
-	if err != nil {
-		return nil, errors.New("gcm or Galois/Counter Mode creation failed")
-	}
-
+// Decode the ciphertext first into a bytes array.
+// The decoded output returned is in bytes form
+func DecryptAES(sharedKey []byte, ciphertext string) ([]byte, error) {
 	txt, err := hex.DecodeString(ciphertext)
 	if err != nil {
 		return nil, errors.New("unable to decode the hex string")
 	}
 
+	// Create a new Cipher Block from the key
+	block, err := aes.NewCipher(sharedKey)
+	if err != nil {
+		return nil, errors.New("unable to generate new aes cipher")
+	}
+
+	// Create a new GCM
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, errors.New("gcm or Galois/Counter Mode creation failed")
+	}
+
+	// Get the nonce size
 	nonceSize := gcm.NonceSize()
 	if len(txt) < nonceSize {
 		return nil, errors.New("invalid decoded cipher text size")
 	}
 
+	// Extract the nonce from the encrypted data
 	nonce, txt := txt[:nonceSize], txt[nonceSize:]
+
+	// Decrypt the data
 	return gcm.Open(nil, nonce, txt, nil)
 }

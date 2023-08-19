@@ -10,14 +10,13 @@ type ValueType string
 type MethodType int
 
 const (
-	// IntType defines all integer value types.
-	IntType ValueType = "int"
+	// NumType defines all numbers returned by JSON. JSON distinct types do not
+	// differentiate between intergers and floats thus the us of number type.
+	// https://www.webdatarocks.com/doc/data-types-in-json/#number
+	NumType ValueType = "number"
 
 	// StringType defines all string value types.
 	StringType ValueType = "string"
-
-	// FloatType defines all float value types.
-	FloatType ValueType = "float"
 
 	// UnsupportedType defines all other types not classified as int, float or string
 	UnsupportedType ValueType = "unsupported"
@@ -38,7 +37,7 @@ var (
 		"createBond": {},
 
 		// addMessage is used to update the bond details and also send bond chats.
-		// Parameters Required: bondAddress string, tag int, message string
+		// Parameters Required: bondAddress string, tag integer, message string
 		// bondAddress => Defines the address of the bond in question.
 		// tag => Defines the type of message being sent
 		//			tag 0: => General bond chat message.
@@ -47,7 +46,7 @@ var (
 		// 			tag 3: => Bond Appendix by the issuer.
 		// message => Defines the actual message being sent. Should be limited
 		// to 1000 characters before encryption.
-		"addMessage": {StringType, IntType, StringType},
+		"addMessage": {StringType, NumType, StringType},
 
 		// signBondStatus is used to show the sender has approved changes to the
 		// bond as they are in the current bond status. i.e. To approve the
@@ -84,7 +83,7 @@ var (
 		// 			Currency: 4 => represents Ripple
 		// 			Currency: 5 => represents Tether Coin.
 		// 			Currency: 6 => represents Decred Coin.
-		"updateBodyInfo": {StringType, IntType, IntType, IntType, IntType, IntType},
+		"updateBodyInfo": {StringType, NumType, NumType, NumType, NumType, NumType},
 
 		// updateBondHolder is used by the issuer during the HolderSelection stage to set
 		// a potential bond holder.
@@ -105,7 +104,7 @@ var (
 		// 	 		status: 4 => represents ContractSigned
 		// 	 		status: 5 => represents BondReselling
 		// 	 		status: 6 => represents BondFinalised
-		"updateBondStatus": {StringType, IntType},
+		"updateBondStatus": {StringType, NumType},
 	}
 
 	// LocalMethods is a mapping of the supported locally implemented methods with
@@ -130,7 +129,7 @@ var (
 		// 	 		status: 4 => represents ContractSigned
 		// 	 		status: 5 => represents BondReselling
 		// 	 		status: 6 => represents BondFinalised
-		"getBondsByStatus": {IntType},
+		"getBondsByStatus": {NumType},
 	}
 
 	// ServerKeyMethod defines the method used to query the server keys
@@ -167,12 +166,11 @@ func GetMethodParams(method string) (implementation MethodType, param []ValueTyp
 // GetParamType returns the type of the param passed.
 func GetParamType(param interface{}) ValueType {
 	switch param.(type) {
+	case int, float64:
+		// JSON doesn't differentiate integers from floats.
+		return NumType
 	case string:
 		return StringType
-	case int:
-		return IntType
-	case float32, float64:
-		return FloatType
 	default:
 		return UnsupportedType
 	}

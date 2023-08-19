@@ -59,7 +59,11 @@ func (msg *rpcMessage) packServerError(shortErr, desc error) {
 	msg.Error = &rpcError{
 		Code:    utils.GetErrorCode(shortErr),
 		Message: shortErr.Error(),
-		Data:    desc.Error(),
+	}
+
+	// Data field is optional
+	if desc != nil {
+		msg.Error.Data = desc.Error()
 	}
 
 	// Remove the unnecessary information in the response.

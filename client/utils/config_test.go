@@ -56,14 +56,13 @@ func TestDataEncryptionAndDecryption(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error but found %q", err)
 	}
-
 	keyStr := hexutil.Encode(key)
 	// confirm generated shared key matches the expected deterministic key.
 	if keyStr != sharedKey {
 		t.Fatalf("expected shared key to be %q but found %q", sharedKey, keyStr)
 	}
 
-	encyptedText, err := Encrypt(key, []byte(plainText))
+	encyptedText, err := EncryptAES(key, []byte(plainText))
 	if err != nil {
 		t.Fatalf("expected no error but found %q", err)
 	}
@@ -73,7 +72,7 @@ func TestDataEncryptionAndDecryption(t *testing.T) {
 		t.Fatalf("expected encrypted text to be %q but found %q", cipherText, encyptedText)
 	}
 
-	decryptedText, err := Decrypt(key, encyptedText)
+	decryptedText, err := DecryptAES(key, encyptedText)
 	if err != nil {
 		t.Fatalf("expected no error but found %q", err)
 	}

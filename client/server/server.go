@@ -35,7 +35,7 @@ type ServerConfig struct {
 	bondChat *contracts.Chat
 
 	// sessionKeys holds the sessional access keys associated with a given user.
-	sessionKeys sync.Map
+	sessionKeys *sync.Map
 }
 
 // NewServer validates the deployment configuration information before
@@ -123,8 +123,9 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverU
 		tlsCertFile:  certfile,
 		tlsKeyFile:   keyfile,
 
-		backend:  backend,
-		bondChat: chatInstance,
+		backend:     backend,
+		bondChat:    chatInstance,
+		sessionKeys: new(sync.Map),
 	}, nil
 }
 
