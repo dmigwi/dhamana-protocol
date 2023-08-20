@@ -5,9 +5,11 @@
     Client implements the dhamana-protocol on the sapphire paratime.
 
     dhamana-protocol is an implementation that allows people unknown to each other
-    but approved by a reputable 3rd party to engage in a conversation on how
+    but vetted by a Trust Organisation to engage in a conversation on how
     one of them (bond issuer) can have their idea financed in a legally binding
     contract (bond).
+
+    The integrity of the system is maintained by trust earned through referals.
 
     -------------------------------------DHAMANA-PROTOCOL OVERVIEW--------------------------------------
 
@@ -17,7 +19,7 @@
                         |         |           |              |            |            |            vetted by the 3rd party.
                         v         v           v              v            v            v
                     +---------------------------------------------------------------------+
-                    |        Reputable 3rd Party - Does Users Vetting Only                |
+                    |        Trust Organisations - Does Users Vetting Only                |
                     |                                                                     |
                     +---------------------------------------------------------------------+
                         |         |           |              |            |
@@ -77,8 +79,24 @@
                             |    activity on it is disabled.            |
                             +-------------------------------------------+
 
+        ****************************************************************************************
 
+                                        SAPPHIRE PARATIME LAYER
 
+    -------------------------------------DHAMANA-PROTOCOL END--------------------------------------
+
+The Truth organisation concept introduces the delegated managing of critical user identifying information
+in a distributed manner. Users interact with each other based on the trust owned by the vetting trust organisations.
+A user's trust is a strong and solid as the trust organisation that vetted them. The trustworthiness of a truth
+organisation is directly proportional to the users in the system that use it as expected. There is no single source
+of truth (user identity) but multiple sources of the same truth.
+If the integrity of one truth organisation is compromised, users can still rely on the other safe truth organisations.
+The effective functioning of dhamana-protocol rely on the integrity of the truth organisations. The system is meant
+to work with users anonymously at the behest of the truth organisations.
+If a malicious person penetrates into the system, it affects the truth organisation and users can be warned
+to avoid the said truth organisation.
+
+Dhamana-protocol is a trust based system where all users join the system expecting no malicious person/bot has been intentionally let in.
 */
 
 package main

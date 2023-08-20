@@ -19,8 +19,9 @@
 
 ### Introduction
 
-[Dhamana](https://en.wiktionary.org/wiki/dhamana) is a swahili word with arabic origins that means __"*to offer guarantee*"__. **Dhamana-protocol** is a system where people unknown to each other but approved by a reputable 3rd party, engage in a discussion on how one of them will offer a (bond) security in exchange for financial support **(Crypto/Fiat)** on a project or an idea they are passionate about.
+**[Dhamana](https://en.wiktionary.org/wiki/dhamana)** is a swahili word with arabic origins that means __"*to offer guarantee*"__. **[Dhamana-protocol](/blob/main/client/doc.go)** is a system where people unknown to each other but vetted by Trust Organisations, engage in a discussion on how one of them will offer a (bond) security in exchange for financial support **(Crypto/Fiat)** on a project or an idea they are passionate about.
 The bond issuer, initiates the conversation by describing the principal, interest rate, security e.t.c.(bond details) with a view that one of the people interested will agree on their terms and subscribe to their bond.
+A trust organisation manages the critical user identity information on behalf of the protocol (DHP). The trustworthiness owned by the trust organisation is extended to the vetted users. Users don't have to know each other as long they trust the vetting organisation that allowed the other person into the platform. Trust is maintained by referals earned.
 The system allows people to make legal binding agreements that can be used to seek legal redress should one of the parties fall short of their expectations.
 Once the terms are agreed upon, financial transactions are done outside dhamana-protocol just as parties to the bond have agreed.
 
@@ -186,6 +187,23 @@ This implies that a single binary generated can interact with the same contract 
 And **Dhamana Protocol** is now live via **https://0.0.0.0:30443**
 
 ### Features
+
+1. **Truth Organisations** 
+    - Their sole purpose is it to manage confidential user identifying information.
+    - A single source of failure is eliminated because user information is stored in globally distributed locations.
+    - Normal users will be less concerned with the identity of the person they interact with because of the trust of the vetting organisation.
+    - Hacking the platform becomes extremely hard because trust has to be earned to access the DHAMANA PROTOCOL (DHP).
+    - The more people who use the system as expected, the more trust is earned by the respective vetting organisations.
+    - The vetting organisations get their trust penalised **heavily** for any malicious characters they vet and allow to join the platform.
+
+2. **Double-Data Encryption** 
+    - Communication between the POAs (Point Of Access) devices and the protocol backend is heavily encrypted. POAs enable users to securely access the protocol.
+    - User will require certificates signed by this trust organisation for them to connect to the system via TLS handshake.
+    - Data shared after the handshake is further encrypted with the help of Diffie-Hellman key exchange and AES algorithms.
+
+3. **Dispute Resolution Mechanism**
+    - Incase of a dispute the bond progress is halted until all parties to the bond arrive at a
+consensus.
 
 ### Feedback
 
