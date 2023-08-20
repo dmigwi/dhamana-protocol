@@ -14,8 +14,13 @@ const (
 	SapphireMainnet NetworkType = iota
 	SapphireTestnet
 	SapphireLocalnet
+	LocalTesting
 	UnsupportedNet
 )
+
+// UnitTestNet is the sapphire wrapper network set when running tests on a
+// mocked wrapper instance.
+const UnitTestNet = "unittest"
 
 type NetworkParams struct {
 	Name           string
@@ -43,6 +48,12 @@ var networks = map[NetworkType]NetworkParams{
 		ChainID:        *big.NewInt(0x5afd),
 		DefaultGateway: "http://localhost:8545",
 		RuntimeID:      "0x8000000000000000000000000000000000000000000000000000000000000000",
+	},
+	// Network params configuration is empty on purpose because its meant to used
+	// only by the unit tests.
+	LocalTesting: {
+		Name:    UnitTestNet,
+		ChainID: *big.NewInt(-1),
 	},
 }
 

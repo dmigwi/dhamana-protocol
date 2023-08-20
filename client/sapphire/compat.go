@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 const (
@@ -32,6 +31,7 @@ type WrappedBackend struct {
 	ctx        context.Context
 
 	privateKey []byte
+	noSend     bool // Used for running tests on a mocked wrapper instance.
 }
 
 // Confirm that WrappedBacked implements the bind.ContractBackend interface.
@@ -44,7 +44,7 @@ type SignerFn = func(digest [32]byte, privateKey []byte) ([]byte, error)
 func NewCipher(ctx context.Context, net utils.NetworkType) (Cipher, error) {
 	runtimePublicKey, err := getRuntimePublicKey(ctx, net)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch runtime callata public key: %w", err)
+		return nil, fmt.Errorf("failed to fetch runtime calldata public key: %w", err)
 	}
 
 	keypair, err := NewCurve25519KeyPair()
@@ -64,22 +64,31 @@ func NewCipher(ctx context.Context, net utils.NetworkType) (Cipher, error) {
 }
 
 // WrapClient wraps an ethclient.Client so that it can talk to Sapphire.
-func WrapClient(ctx context.Context, c ethclient.Client, net utils.NetworkType, sign SignerFn) (*WrappedBackend, error) {
+func WrapClient(ctx context.Context, c bind.ContractBackend, net utils.NetworkType, sign SignerFn) (*WrappedBackend, error) {
 	network, err := utils.GetNetworkConfig(net)
 	if err != nil {
 		return nil, err
 	}
 
-	cipher, err := NewCipher(ctx, net)
-	if err != nil {
-		return nil, err
+	// Check if current network is set to unit tests
+	noSend := network.Name == utils.UnitTestNet
+
+	var cipher Cipher
+	if !noSend {
+		// if mocked instance running, cipher not required because
+		// no network calls will be made.
+		cipher, err = NewCipher(ctx, net)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &WrappedBackend{
-		ContractBackend: &c,
+		ContractBackend: c,
 		chainID:         network.ChainID,
 		cipher:          cipher,
 		signerFunc:      sign,
+		noSend:          noSend,
 	}, nil
 }
 
@@ -92,6 +101,11 @@ func (b *WrappedBackend) SetClientSigningKey(privateKey []byte) {
 func (b *WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
 	signer := types.LatestSignerForChainID(&b.chainID)
 	signFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
+		if b.noSend {
+			// ignore all tx signing since this will not be sent.
+			return tx, nil
+		}
+
 		if addr != from {
 			return nil, bind.ErrNotAuthorized
 		}
@@ -121,6 +135,7 @@ func (b *WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
 		Signer:   signFn,
 		GasPrice: big.NewInt(DefaultGasPrice),
 		GasLimit: DefaultGasLimit,
+		NoSend:   b.noSend,
 	}
 }
 

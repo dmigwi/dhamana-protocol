@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/btcsuite/btclog"
+	"github.com/dmigwi/dhamana-protocol/client/sapphire"
 	"github.com/dmigwi/dhamana-protocol/client/server"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/jrick/logrotate/rotator"
@@ -23,8 +24,9 @@ var (
 	// log is a logger that is initialized with no output filters.  This
 	// means the package will not perform any logging by default until the caller
 	// requests it.
-	log       = backendLog.Logger("MAIN")
-	serverLog = backendLog.Logger("SERVER")
+	log         = backendLog.Logger("MAIN")
+	serverLog   = backendLog.Logger("SERVER")
+	sapphireLog = backendLog.Logger("SPPHRE")
 
 	// logRotator is one of the logging outputs.  It should be closed on
 	// application shutdown.
@@ -34,6 +36,7 @@ var (
 // Assigns the logger to use.
 func init() {
 	server.UseLogger(serverLog)
+	sapphire.UseLogger(sapphireLog)
 }
 
 // logWriter implements an io.Writer that outputs to both standard output and

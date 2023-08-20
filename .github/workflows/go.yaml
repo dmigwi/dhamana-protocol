@@ -2,7 +2,7 @@ name: Golang
 on: [push]
 jobs:
   build:
-    name: Linter
+    name: Lint-Tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
@@ -39,3 +39,5 @@ jobs:
             --enable unconvert --enable ineffassign \
             --enable revive --enable goimports \
             --enable unparam
+      - name: Lint
+        run: go test -v ./client/... ./client/utils/...

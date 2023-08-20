@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
@@ -19,75 +19,14 @@ import (
 // sessionTime defines the duration when the server public key is valid.
 const sessionTime = time.Minute * 10
 
-var (
-	// ZeroAddress defines an empty address value.
-	ZeroAddress = common.HexToAddress("")
+// ZeroAddress defines an empty address value.
+var ZeroAddress = common.HexToAddress("")
 
-	sessionKeys sync.Map
-)
-
-// A value of this type can a JSON-RPC request, notification, successful response or
-// error response. Which one it is depends on the fields.
-type rpcMessage struct {
-	ID      uint16      `json:"id"`
-	Version string      `json:"jsonrpc"`          // required on a request and a response.
-	Method  string      `json:"method,omitempty"` // required on a request
-	Sender  *senderInfo `json:"sender,omitempty"` // required on a request
-
-	Params json.RawMessage `json:"params,omitempty"`
-	Result json.RawMessage `json:"result,omitempty"`
-	Error  *rpcError       `json:"error,omitempty"`
-}
-
-// senderInfo defines the required sender information attached in every request.
-type senderInfo struct {
-	Address common.Address `json:"address"`
-	// SigningKey must be encrypted with the session's public key before being sent.
-	// Failure to do so could expose the actual user key to hackers.
-	// It must be signed via the diffie-hellman passed pubkey.
-	SigningKey string `json:"signingkey,omitempty"`
-}
-
-// rpcError defines the error message information sent to the user on happening.
-type rpcError struct {
-	Code    uint16      `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-}
-
-// packServerError packs the errors identified into a response ready to be sent
-// to the client.
-func (msg *rpcMessage) packServerError(shortErr, desc error) {
-	msg.Error = &rpcError{
-		Code:    utils.GetErrorCode(shortErr),
-		Message: shortErr.Error(),
-		Data:    desc.Error(),
-	}
-
-	// Remove the unnecessary information in the response.
-	msg.Sender = nil
-	msg.Method = ""
-	msg.Params = nil
-	msg.Result = nil
-}
-
-// packServerResult packs the successful result queried into a response ready
-// to be sent to the client.
-func (msg *rpcMessage) packServerResult(data interface{}) {
-	// Remove the unnecessary information in the response.
-	msg.Error = nil
-	msg.Sender = nil
-	msg.Method = ""
-	msg.Params = nil
-
-	res, _ := json.Marshal(data)
-	msg.Result.UnmarshalJSON(res)
-}
-
-// decodeReqBody attempts to extract contents of the request passed, if an error
+// decodeRequestBody attempts to extract contents of the request passed, if an error
 // occured a response in bytes is returned. isSignerKeyRequired is used to set
 // when existence of the signer key should be checked.
-func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool) {
+// Its returns the method type depending on how it is implemented.
+func decodeRequestBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool) utils.MethodType {
 	var msgError, err error
 
 	// creates the error response to be returned
@@ -97,10 +36,17 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 		}
 	}()
 
+	if req.Method != http.MethodPost {
+		msgError = utils.ErrInvalidReq
+		err = fmt.Errorf("invalid http method %s found expected %s",
+			req.Method, http.MethodPost)
+		return utils.UnknownType
+	}
+
 	// extract the request body contents
 	if err = json.NewDecoder(req.Body).Decode(&msg); err != nil {
 		msgError = utils.ErrInvalidJSON
-		return
+		return utils.UnknownType
 	}
 
 	// Checks for JSON-RPC version mismatch
@@ -108,30 +54,56 @@ func decodeReqBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool)
 		msgError = utils.ErrInvalidReq
 		err = fmt.Errorf("expected JSON-RPC version %s but found %s",
 			utils.JSONRPCVersion, msg.Version)
-		return
+		return utils.UnknownType
 	}
 
 	// Check for method parameter exists
 	if msg.Method == "" {
 		msgError = utils.ErrMethodMissing
 		err = errors.New("expected a method to be provided")
-		return
+		return utils.UnknownType
 	}
 
 	// Check the sender's address exists
 	if msg.Sender == nil || msg.Sender.Address == ZeroAddress {
 		msgError = utils.ErrSenderAddrMissing
 		err = errors.New("expected sender address to be provided")
-		return
+		return utils.UnknownType
 	}
 
 	// Check for the signer key if required.
-	if isSignerKeyRequired && (msg.Sender == nil || msg.Sender.SigningKey == "") {
-		msgError = utils.ErrSignerKeyMissing
-		err = errors.New("expected sender signer key to be provided")
-		return
+	if isSignerKeyRequired {
+		if msg.Sender == nil || msg.Sender.SigningKey == "" {
+			msgError = utils.ErrSignerKeyMissing
+			err = errors.New("expected sender signer key to be provided")
+			return utils.UnknownType
+		}
 	}
-	return
+
+	// validate the method passed.
+	methodType, params := utils.GetMethodParams(msg.Method)
+	if methodType == utils.UnknownType {
+		err = fmt.Errorf("method %s not supportted", msg.Method)
+		msgError = utils.ErrUnknownMethod
+		return utils.UnknownType
+	}
+
+	if len(msg.Params) != len(params) {
+		err = fmt.Errorf("method %s requires %d params found %d params",
+			msg.Method, len(params), len(msg.Params))
+		msgError = utils.ErrMissingParams
+		return utils.UnknownType
+	}
+
+	// Confirm the required param types are used.
+	for i, p := range msg.Params {
+		msg.Params[i], err = castType(p, params[i])
+		if err != nil {
+			msgError = utils.ErrUnknownParam
+			return utils.UnknownType
+		}
+	}
+	return methodType
 }
 
 // writeResponse writes the response using the provided response writter.
@@ -162,37 +134,31 @@ func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, req *http.Request)
 // A session server pubkey is mapped to a specific user address.
 func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 	var msg rpcMessage
-	decodeReqBody(req, &msg, false)
+	methodType := decodeRequestBody(req, &msg, false)
 	if msg.Error != nil {
 		writeResponse(w, msg)
 		return
 	}
 
-	// decode param
-	var param []string
-	if err := json.Unmarshal(msg.Params, &param); err != nil {
-		msg.packServerError(utils.ErrUnknownParam, err)
+	// confirm server key methods match.
+	if methodType != utils.ServerKeyType {
+		err := fmt.Errorf("unsupported method %s found for this route", msg.Method)
+		msg.packServerError(utils.ErrUnknownMethod, err)
 		writeResponse(w, msg)
 		return
 	}
 
-	// Only one parameter is of type string is expected.
-	if len(param) != 1 {
-		msg.packServerError(utils.ErrMissingParams, nil)
-		writeResponse(w, msg)
-		return
-	}
-
-	privKey, err := utils.GeneratePrivKey()
+	// Pass nil so that the default rand reader can be used.
+	privKey, err := utils.GeneratePrivKey(nil)
 	if err != nil {
 		msg.packServerError(utils.ErrInternalFailure, nil)
 		writeResponse(w, msg)
 		return
 	}
 
-	sharedkey, err := privKey.ComputeSharedKey(param[0])
+	sharedkey, err := privKey.ComputeSharedKey(msg.Params[0].(string))
 	if err != nil {
-		err := errors.New("invalid public key used")
+		err := errors.New("invalid client public key used")
 		msg.packServerError(utils.ErrInternalFailure, err)
 		writeResponse(w, msg)
 		return
@@ -203,33 +169,71 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 	data := serverKeyResp{
 		Pubkey: privKey.PubKeyToHexString(),
 		Expiry: uint64(time.Now().UTC().Add(sessionTime).Unix()),
-
-		sharedKey: sharedkey,
 	}
 
-	sessionKeys.Store(msg.Sender.Address, data)
+	// sent the sender before packing the result because its zeroed while preparing
+	// the client response.
+	sender := msg.Sender.Address
 
 	msg.packServerResult(data)
 	writeResponse(w, msg)
+
+	// Appends the sharedkey after sending the user response. This shared key is
+	// what this client should use to encrypt information shared with the server.
+	data.sharedKey = sharedkey
+	s.sessionKeys.Store(sender, data)
 }
 
 // backendQueryFunc recieves all the requests made to the contracts.
 func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request) {
 	var msg rpcMessage
-	decodeReqBody(req, &msg, false)
+
+	methodType := decodeRequestBody(req, &msg, true)
 	if msg.Error != nil {
 		writeResponse(w, msg)
 		return
 	}
 
-	data, ok := sessionKeys.Load(msg.Sender.Address)
-	if !ok {
-		msg.packServerError(utils.ErrExpiredServerKey, nil)
+	// Only allow contract methods to be executed.
+	// TODO: Allow execution of locally implementated methods too.
+	if methodType != utils.ContractType {
+		err := fmt.Errorf("unsupported method %s found for this route", msg.Method)
+		msg.packServerError(utils.ErrUnknownMethod, err)
 		writeResponse(w, msg)
 		return
 	}
 
-	privKey, err := utils.Decrypt(data.(serverKeyResp).sharedKey, msg.Sender.SigningKey)
+	sender := msg.Sender.Address
+	// Check if the server keys exists.
+	data, ok := s.sessionKeys.Load(sender)
+	if !ok {
+		err := errors.New("no server keys found associated with the sender")
+		msg.packServerError(utils.ErrMissingServerKey, err)
+		writeResponse(w, msg)
+		return
+	}
+
+	// check for the server keys expiry.
+	expiryTime := time.Unix(int64(data.(serverKeyResp).Expiry), 0).UTC()
+	if time.Now().UTC().After(expiryTime) {
+		msg.packServerError(utils.ErrExpiredServerKey, nil)
+		writeResponse(w, msg)
+
+		// Delete expired keys
+		s.sessionKeys.Delete(sender)
+		return
+	}
+
+	sharedKey := data.(serverKeyResp).sharedKey
+	if len(sharedKey) == 0 {
+		msg.packServerError(utils.ErrInvalidSigningKey, nil)
+		writeResponse(w, msg)
+		return
+	}
+
+	// extracts the private key from the signing key sent. The private key is
+	// required to sign all tx by the current sender.
+	privKey, err := utils.DecryptAES(sharedKey, msg.Sender.SigningKey)
 	if err != nil {
 		msg.packServerError(utils.ErrInvalidSigningKey, err)
 		writeResponse(w, msg)
@@ -238,22 +242,11 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 
 	s.backend.SetClientSigningKey(privKey)
 
-	chatInstance, err := contracts.NewChat(s.contractAddr, s.backend)
-	if err != nil {
-		log.Errorf("failed to instantiate a Chat contract: %v", err)
-		msg.packServerError(utils.ErrInternalFailure, err)
-		writeResponse(w, msg)
-		return
-	}
+	// Create an authorized transactor.
+	auth := s.backend.Transactor(sender)
+	transactor := contracts.ChatRaw{Contract: s.bondChat}
 
-	// Create an authorized transactor and call the store function
-	auth := s.backend.Transactor(msg.Sender.Address)
-
-	transactor := contracts.ChatTransactorRaw{
-		Contract: &chatInstance.ChatTransactor,
-	}
-
-	tx, err := transactor.Transact(auth, msg.Method, msg.Params)
+	tx, err := transactor.Transact(auth, msg.Method, msg.Params...)
 	if err != nil {
 		msg.packServerError(utils.ErrInternalFailure, err)
 		writeResponse(w, msg)
@@ -262,4 +255,53 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 
 	msg.packServerResult(tx)
 	writeResponse(w, msg)
+}
+
+// castType returns the parameter cast to the required parameter type.
+func castType(param interface{}, pType utils.ParamType) (v interface{}, err error) {
+	if pType == utils.UnsupportedType {
+		return nil, fmt.Errorf("unexpected type for param %v found", param)
+	}
+
+	typeFound := "unsupported"
+
+	switch t := param.(type) {
+	case string:
+		switch pType {
+		case utils.AddressType:
+			v = common.HexToAddress(t)
+		case utils.StringType:
+			v = t
+		default:
+			typeFound = "string"
+		}
+	case float64:
+		// JSON distinct types do not differentiate between integers and floats.
+		// JSON returns all numbers as float64 values.
+		// https://www.webdatarocks.com/doc/data-types-in-json/#number
+		rawInt := int(t)
+
+		switch pType {
+		case utils.Uint8Type:
+			if rawInt <= math.MaxUint8 {
+				v = uint8(rawInt)
+			}
+		case utils.Uint16Type:
+			if rawInt <= math.MaxUint16 {
+				v = uint8(rawInt)
+			}
+		case utils.Uint32Type:
+			if rawInt <= math.MaxUint32 {
+				v = uint8(rawInt)
+			}
+		default:
+			typeFound = "number"
+		}
+	}
+
+	// Casting to the require parameter failed due to use of incorrect parameter value
+	if v == nil {
+		err = fmt.Errorf("expected param %v to be of type %v but found it to be %s", param, pType, typeFound)
+	}
+	return
 }
