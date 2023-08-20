@@ -2,9 +2,11 @@ module github.com/dmigwi/dhamana-protocol/client
 
 go 1.21.0
 
+replace github.com/dmigwi/dhamana-protocol/client/utils => ./utils
+
 require (
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
-	github.com/dmigwi/dhamana-protocol/client/utils v0.0.0-20230820122006-682b95291f47
+	github.com/dmigwi/dhamana-protocol/client/utils v0.0.1
 	github.com/ethereum/go-ethereum v1.12.2
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jrick/logrotate v1.0.0
