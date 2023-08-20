@@ -7,7 +7,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ecdh"
-	"crypto/rand"
 	cryptorand "crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -98,9 +97,6 @@ func EncryptAES(sharedKey []byte, plaintext []byte) (string, error) {
 
 	// Create a nonce. Nonce should be from GCM
 	nonce := make([]byte, aesGCM.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
-	}
 
 	// Encrypt the data using aesGCM.Seal. Since we don't want to save the nonce
 	// somewhere else in this case, we add it as a prefix to the encrypted data.
