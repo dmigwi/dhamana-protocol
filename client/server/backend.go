@@ -242,7 +242,7 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 
 	s.backend.SetClientSigningKey(privKey)
 
-	// Create an authorized transactor and call the store function
+	// Create an authorized transactor.
 	auth := s.backend.Transactor(sender)
 	transactor := contracts.ChatRaw{Contract: s.bondChat}
 

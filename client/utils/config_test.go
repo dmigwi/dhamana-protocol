@@ -27,7 +27,7 @@ const (
 // Cypto/rand reader is recommended for the real use case.
 type sampleReader int
 
-func (s sampleReader) Read(p []byte) (int, error) {
+func (s sampleReader) Read(_ []byte) (int, error) {
 	return int(s), nil
 }
 
