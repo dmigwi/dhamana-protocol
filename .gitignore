@@ -1,6 +1,5 @@
 build
 node_modules
-**/deployment.go
 
 # generated binary
 dhamana-protocol

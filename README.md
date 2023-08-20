@@ -90,7 +90,7 @@ To deploy a contract; several networks are supported. They include `development`
     ```
     $ pnpm run deploy_development
     > dhamana-protocol@0.0.1 deploy_development ~/golang/src/github.com/dmigwi/dhamana-protocol
-    > ./node_modules/.bin/truffle migrate --network development --describe-json >> build/deploy_development.log && pnpm gen_deployment_config build/deploy_development.log
+    > ./node_modules/.bin/truffle migrate --network development --describe-json >> build/deploy_development.log && pnpm run gen_deployment_config build/deploy_development.log
 
     > dhamana-protocol@0.0.1 gen_deployment_config ~/golang/src/github.com/dmigwi/dhamana-protocol
     > go run ./deployInfo  "build/deploy_development.log"
@@ -132,7 +132,7 @@ To deploy a contract; several networks are supported. They include `development`
     ```
     $ pnpm run deploy_sapphire_localnet
     > dhamana-protocol@0.0.1 deploy_sapphire_localnet ~/golang/src/github.com/dmigwi/dhamana-protocol
-    > ./node_modules/.bin/truffle migrate --network sapphire_localnet --describe-json >> build/deploy_sapphire_localnet.log && pnpm gen_deployment_config build/deploy_sapphire_localnet.log
+    > ./node_modules/.bin/truffle migrate --network sapphire_localnet --describe-json >> build/deploy_sapphire_localnet.log && pnpm run gen_deployment_config build/deploy_sapphire_localnet.log
 
       ⠏ Blocks: 0            Seconds: 0
     > dhamana-protocol@0.0.1 gen_deployment_config ~/golang/src/github.com/dmigwi/dhamana-protocol
@@ -152,7 +152,7 @@ To deploy a contract; several networks are supported. They include `development`
     ```
     $ pnpm run deploy_sapphire_testnet
     > dhamana-protocol@0.0.1 deploy_sapphire_testnet ~/golang/src/github.com/dmigwi/dhamana-protocol
-    > ./node_modules/.bin/truffle migrate --network sapphire_testnet --describe-json >> build/deploy_sapphire_testnet.log && pnpm gen_deployment_config build/deploy_sapphire_testnet.log
+    > ./node_modules/.bin/truffle migrate --network sapphire_testnet --describe-json >> build/deploy_sapphire_testnet.log && pnpm run gen_deployment_config build/deploy_sapphire_testnet.log
 
       ⠏ Blocks: 2            Seconds: 21
     > dhamana-protocol@0.0.1 gen_deployment_config ~/golang/src/github.com/dmigwi/dhamana-protocol
