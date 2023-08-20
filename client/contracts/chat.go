@@ -29,9 +29,16 @@ var (
 	_ = abi.ConvertType
 )
 
+// ChatContractMessageInfo is an auto generated low-level Go binding around an user-defined struct.
+type ChatContractMessageInfo struct {
+	Sender    common.Address
+	Message   string
+	Timestamp *big.Int
+}
+
 // ChatMetaData contains all meta data concerning the Chat contract.
 var ChatMetaData = &bind.MetaData{
-	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"}],\"name\":\"BondDisputeResolved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"}],\"name\":\"BondUnderDispute\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"principal\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"couponRate\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"couponDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"maturityDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"currency\",\"type\":\"uint8\"}],\"name\":\"FinalBondTerms\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"NewBondCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"NewChatMessage\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumChatContract.MessageTag\",\"name\":\"_tag\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_message\",\"type\":\"string\"}],\"name\":\"addMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"createBond\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"signBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"_principal\",\"type\":\"uint32\"},{\"internalType\":\"uint8\",\"name\":\"_couponRate\",\"type\":\"uint8\"},{\"internalType\":\"uint32\",\"name\":\"_couponDate\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_maturityDate\",\"type\":\"uint32\"},{\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"_currency\",\"type\":\"uint8\"}],\"name\":\"updateBodyInfo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_holder\",\"type\":\"address\"}],\"name\":\"updateBondHolder\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"_status\",\"type\":\"uint8\"}],\"name\":\"updateBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"}],\"name\":\"BondDisputeResolved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"}],\"name\":\"BondMotivation\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"}],\"name\":\"BondUnderDispute\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"principal\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"couponRate\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"couponDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"maturityDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"currency\",\"type\":\"uint8\"}],\"name\":\"FinalBondTerms\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"NewBondCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"indexed\":false,\"internalType\":\"structChatContract.MessageInfo\",\"name\":\"chat\",\"type\":\"tuple\"}],\"name\":\"NewChatMessage\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumChatContract.MessageTag\",\"name\":\"_tag\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_message\",\"type\":\"string\"}],\"name\":\"addMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"createBond\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"getBondSecureDetails\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"_security\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_appendix\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"signBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"_principal\",\"type\":\"uint32\"},{\"internalType\":\"uint8\",\"name\":\"_couponRate\",\"type\":\"uint8\"},{\"internalType\":\"uint32\",\"name\":\"_couponDate\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_maturityDate\",\"type\":\"uint32\"},{\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"_currency\",\"type\":\"uint8\"}],\"name\":\"updateBodyInfo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_holder\",\"type\":\"address\"}],\"name\":\"updateBondHolder\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"_status\",\"type\":\"uint8\"}],\"name\":\"updateBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // ChatABI is the input ABI used to generate the binding from.
@@ -178,6 +185,51 @@ func (_Chat *ChatTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transa
 // Transact invokes the (paid) contract method with params as input values.
 func (_Chat *ChatTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _Chat.Contract.contract.Transact(opts, method, params...)
+}
+
+// GetBondSecureDetails is a free data retrieval call binding the contract method 0xc3c95fa3.
+//
+// Solidity: function getBondSecureDetails(address _contract) view returns(string _security, string _appendix)
+func (_Chat *ChatCaller) GetBondSecureDetails(opts *bind.CallOpts, _contract common.Address) (struct {
+	Security string
+	Appendix string
+}, error) {
+	var out []interface{}
+	err := _Chat.contract.Call(opts, &out, "getBondSecureDetails", _contract)
+
+	outstruct := new(struct {
+		Security string
+		Appendix string
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.Security = *abi.ConvertType(out[0], new(string)).(*string)
+	outstruct.Appendix = *abi.ConvertType(out[1], new(string)).(*string)
+
+	return *outstruct, err
+
+}
+
+// GetBondSecureDetails is a free data retrieval call binding the contract method 0xc3c95fa3.
+//
+// Solidity: function getBondSecureDetails(address _contract) view returns(string _security, string _appendix)
+func (_Chat *ChatSession) GetBondSecureDetails(_contract common.Address) (struct {
+	Security string
+	Appendix string
+}, error) {
+	return _Chat.Contract.GetBondSecureDetails(&_Chat.CallOpts, _contract)
+}
+
+// GetBondSecureDetails is a free data retrieval call binding the contract method 0xc3c95fa3.
+//
+// Solidity: function getBondSecureDetails(address _contract) view returns(string _security, string _appendix)
+func (_Chat *ChatCallerSession) GetBondSecureDetails(_contract common.Address) (struct {
+	Security string
+	Appendix string
+}, error) {
+	return _Chat.Contract.GetBondSecureDetails(&_Chat.CallOpts, _contract)
 }
 
 // AddMessage is a paid mutator transaction binding the contract method 0x7efed061.
@@ -435,6 +487,142 @@ func (_Chat *ChatFilterer) WatchBondDisputeResolved(opts *bind.WatchOpts, sink c
 func (_Chat *ChatFilterer) ParseBondDisputeResolved(log types.Log) (*ChatBondDisputeResolved, error) {
 	event := new(ChatBondDisputeResolved)
 	if err := _Chat.contract.UnpackLog(event, "BondDisputeResolved", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// ChatBondMotivationIterator is returned from FilterBondMotivation and is used to iterate over the raw logs and unpacked data for BondMotivation events raised by the Chat contract.
+type ChatBondMotivationIterator struct {
+	Event *ChatBondMotivation // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *ChatBondMotivationIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(ChatBondMotivation)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(ChatBondMotivation)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *ChatBondMotivationIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *ChatBondMotivationIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// ChatBondMotivation represents a BondMotivation event raised by the Chat contract.
+type ChatBondMotivation struct {
+	Sender      common.Address
+	BondAddress common.Address
+	Message     string
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterBondMotivation is a free log retrieval operation binding the contract event 0x9c2db9547a0e615dbb8f26a29f24669e9cef62f8dd222509384887635c254d23.
+//
+// Solidity: event BondMotivation(address sender, address bondAddress, string message)
+func (_Chat *ChatFilterer) FilterBondMotivation(opts *bind.FilterOpts) (*ChatBondMotivationIterator, error) {
+
+	logs, sub, err := _Chat.contract.FilterLogs(opts, "BondMotivation")
+	if err != nil {
+		return nil, err
+	}
+	return &ChatBondMotivationIterator{contract: _Chat.contract, event: "BondMotivation", logs: logs, sub: sub}, nil
+}
+
+// WatchBondMotivation is a free log subscription operation binding the contract event 0x9c2db9547a0e615dbb8f26a29f24669e9cef62f8dd222509384887635c254d23.
+//
+// Solidity: event BondMotivation(address sender, address bondAddress, string message)
+func (_Chat *ChatFilterer) WatchBondMotivation(opts *bind.WatchOpts, sink chan<- *ChatBondMotivation) (event.Subscription, error) {
+
+	logs, sub, err := _Chat.contract.WatchLogs(opts, "BondMotivation")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(ChatBondMotivation)
+				if err := _Chat.contract.UnpackLog(event, "BondMotivation", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseBondMotivation is a log parse operation binding the contract event 0x9c2db9547a0e615dbb8f26a29f24669e9cef62f8dd222509384887635c254d23.
+//
+// Solidity: event BondMotivation(address sender, address bondAddress, string message)
+func (_Chat *ChatFilterer) ParseBondMotivation(log types.Log) (*ChatBondMotivation, error) {
+	event := new(ChatBondMotivation)
+	if err := _Chat.contract.UnpackLog(event, "BondMotivation", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -919,13 +1107,14 @@ func (it *ChatNewChatMessageIterator) Close() error {
 
 // ChatNewChatMessage represents a NewChatMessage event raised by the Chat contract.
 type ChatNewChatMessage struct {
-	Sender common.Address
-	Raw    types.Log // Blockchain specific contextual infos
+	BondAddress common.Address
+	Chat        ChatContractMessageInfo
+	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterNewChatMessage is a free log retrieval operation binding the contract event 0x344efdc1b050e6009a6c0c0539cdb87caf0251c1ae49b94a913823f4ab53b846.
+// FilterNewChatMessage is a free log retrieval operation binding the contract event 0xe375e64f8bee7abfbf28664e9a49830e9bc77a3d866bb3e3bcc69a65dc054e24.
 //
-// Solidity: event NewChatMessage(address sender)
+// Solidity: event NewChatMessage(address bondAddress, (address,string,uint256) chat)
 func (_Chat *ChatFilterer) FilterNewChatMessage(opts *bind.FilterOpts) (*ChatNewChatMessageIterator, error) {
 
 	logs, sub, err := _Chat.contract.FilterLogs(opts, "NewChatMessage")
@@ -935,9 +1124,9 @@ func (_Chat *ChatFilterer) FilterNewChatMessage(opts *bind.FilterOpts) (*ChatNew
 	return &ChatNewChatMessageIterator{contract: _Chat.contract, event: "NewChatMessage", logs: logs, sub: sub}, nil
 }
 
-// WatchNewChatMessage is a free log subscription operation binding the contract event 0x344efdc1b050e6009a6c0c0539cdb87caf0251c1ae49b94a913823f4ab53b846.
+// WatchNewChatMessage is a free log subscription operation binding the contract event 0xe375e64f8bee7abfbf28664e9a49830e9bc77a3d866bb3e3bcc69a65dc054e24.
 //
-// Solidity: event NewChatMessage(address sender)
+// Solidity: event NewChatMessage(address bondAddress, (address,string,uint256) chat)
 func (_Chat *ChatFilterer) WatchNewChatMessage(opts *bind.WatchOpts, sink chan<- *ChatNewChatMessage) (event.Subscription, error) {
 
 	logs, sub, err := _Chat.contract.WatchLogs(opts, "NewChatMessage")
@@ -972,9 +1161,9 @@ func (_Chat *ChatFilterer) WatchNewChatMessage(opts *bind.WatchOpts, sink chan<-
 	}), nil
 }
 
-// ParseNewChatMessage is a log parse operation binding the contract event 0x344efdc1b050e6009a6c0c0539cdb87caf0251c1ae49b94a913823f4ab53b846.
+// ParseNewChatMessage is a log parse operation binding the contract event 0xe375e64f8bee7abfbf28664e9a49830e9bc77a3d866bb3e3bcc69a65dc054e24.
 //
-// Solidity: event NewChatMessage(address sender)
+// Solidity: event NewChatMessage(address bondAddress, (address,string,uint256) chat)
 func (_Chat *ChatFilterer) ParseNewChatMessage(log types.Log) (*ChatNewChatMessage, error) {
 	event := new(ChatNewChatMessage)
 	if err := _Chat.contract.UnpackLog(event, "NewChatMessage", log); err != nil {
