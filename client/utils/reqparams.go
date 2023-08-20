@@ -3,23 +3,30 @@
 
 package utils
 
-// ValueType defines supported request parameters.
-type ValueType string
+// ParamType defines supported request parameters.
+type ParamType string
 
 // MethodType defines type in relation to how the method is implemented
 type MethodType int
 
 const (
-	// NumType defines all numbers returned by JSON. JSON distinct types do not
-	// differentiate between intergers and floats thus the us of number type.
-	// https://www.webdatarocks.com/doc/data-types-in-json/#number
-	NumType ValueType = "number"
+	// Uint8Type defines unsigned integer parameter value type of uint8.
+	Uint8Type ParamType = "uint8"
 
-	// StringType defines all string value types.
-	StringType ValueType = "string"
+	// Uint16Type defines unsigned integer parameter value type of uint16.
+	Uint16Type ParamType = "uint16"
+
+	// Uint32Type defines unsigned integer parameter value type of uint32.
+	Uint32Type ParamType = "uint32"
+
+	// AddressType defines the address type as supportted in ethereum types.
+	AddressType ParamType = "address"
+
+	// StringType defines a string value type.
+	StringType ParamType = "string"
 
 	// UnsupportedType defines all other types not classified as int, float or string
-	UnsupportedType ValueType = "unsupported"
+	UnsupportedType ParamType = "unsupported"
 
 	LocalType     MethodType = iota // Locally implemented
 	ContractType                    // Implemented by the contracts
@@ -31,13 +38,13 @@ var (
 	// ContractMethods is a mapping of the supported contract methods with their respective
 	// parameter types and count expected. Parameter types are placed at the
 	// position they are expected.
-	ContractMethods = map[string][]ValueType{
+	ContractMethods = map[string][]ParamType{
 		// createBond creates a new bond instance owned by the method sender.
 		// No user parameters are expected.
 		"createBond": {},
 
 		// addMessage is used to update the bond details and also send bond chats.
-		// Parameters Required: bondAddress string, tag integer, message string
+		// Parameters Required: bondAddress address, tag uint8, message string
 		// bondAddress => Defines the address of the bond in question.
 		// tag => Defines the type of message being sent
 		//			tag 0: => General bond chat message.
@@ -46,19 +53,19 @@ var (
 		// 			tag 3: => Bond Appendix by the issuer.
 		// message => Defines the actual message being sent. Should be limited
 		// to 1000 characters before encryption.
-		"addMessage": {StringType, NumType, StringType},
+		"addMessage": {AddressType, Uint8Type, StringType},
 
 		// signBondStatus is used to show the sender has approved changes to the
 		// bond as they are in the current bond status. i.e. To approve the
 		// TermsAgreement stage, the sender signs that status. To resolve
 		// dispute the sender signs the BondInDispute status for the specific bond.
-		// Parameters Required: bondAddress string
+		// Parameters Required: bondAddress address
 		// bondAddress => Defines the address of the bond in question.
-		"signBondStatus": {StringType},
+		"signBondStatus": {AddressType},
 
 		// updateBodyInfo is used to update the body fields.
-		// Parameter Required: bondAddress string, principal int, couponRate int,
-		//  	couponDate int, maturityDate int, currency int
+		// Parameter Required: bondAddress address, principal uint32,
+		// 		couponRate uint8, couponDate uint32, maturityDate uint32, currency uint8
 		// bondAddress => Defines the address of the bond in question.
 		// principal => Defines the asking amount in the currency type supported.
 		// couponRate => Defines the percentage of the interest payable.
@@ -83,18 +90,18 @@ var (
 		// 			Currency: 4 => represents Ripple
 		// 			Currency: 5 => represents Tether Coin.
 		// 			Currency: 6 => represents Decred Coin.
-		"updateBodyInfo": {StringType, NumType, NumType, NumType, NumType, NumType},
+		"updateBodyInfo": {AddressType, Uint32Type, Uint8Type, Uint32Type, Uint32Type, Uint8Type},
 
 		// updateBondHolder is used by the issuer during the HolderSelection stage to set
 		// a potential bond holder.
 		// Parameter Required: bondAddress string, holderAddress string
 		// bondAddress => Defines the address of the bond in question.
 		// holderAddress => Defines the address of potential holder choosen.
-		"updateBondHolder": {StringType, StringType},
+		"updateBondHolder": {AddressType, AddressType},
 
 		// updateBondStatus is used to move the bond along the supported bond status
 		// stages.
-		// Parameter Required: bondAddress string, status int
+		// Parameter Required: bondAddress string, status uint8
 		// bondAddress => Defines the address of the bond in question.
 		// status => Defines the bond stages in its lifecycle
 		// 	 		status: 0 => represents Negotiating
@@ -104,23 +111,23 @@ var (
 		// 	 		status: 4 => represents ContractSigned
 		// 	 		status: 5 => represents BondReselling
 		// 	 		status: 6 => represents BondFinalised
-		"updateBondStatus": {StringType, NumType},
+		"updateBondStatus": {AddressType, Uint8Type},
 	}
 
 	// LocalMethods is a mapping of the supported locally implemented methods with
 	// their respective parameter types and count expected. Parameter types are
 	// placed at the position they are expected to be.
-	LocalMethods = map[string][]ValueType{
+	LocalMethods = map[string][]ParamType{
 		// getBondByAddress returns a bond at any status if the request sender is
 		// also the bond issuer otherwise only returns bond with status
 		// Negotiating.
 		// Parameter Required: bondAddress string
 		// bondAddress => Defines the address of the bond in question.
-		"getBondByAddress": {StringType},
+		"getBondByAddress": {AddressType},
 
 		// getBondsByStatus returns all the bonds status Negotiating or only
 		// bonds owned by the sender if any other status is used.
-		// Parameter Required: status int
+		// Parameter Required: status uint8
 		// status => Defines the bond stages in its lifecycle
 		// 	 		status: 0 => represents Negotiating
 		// 	 		status: 1 => represents HolderSelection
@@ -129,11 +136,11 @@ var (
 		// 	 		status: 4 => represents ContractSigned
 		// 	 		status: 5 => represents BondReselling
 		// 	 		status: 6 => represents BondFinalised
-		"getBondsByStatus": {NumType},
+		"getBondsByStatus": {Uint8Type},
 	}
 
 	// ServerKeyMethod defines the method used to query the server keys
-	ServerKeyMethod = map[string][]ValueType{
+	ServerKeyMethod = map[string][]ParamType{
 		// getServerPubKey is used to query the session's server public key.
 		// Parameter Required: clientPubkey string
 		// The client provides its public key and in return the server sends
@@ -144,7 +151,7 @@ var (
 )
 
 // GetMethodParams returns the parameters of the method provided if supported.
-func GetMethodParams(method string) (implementation MethodType, param []ValueType) {
+func GetMethodParams(method string) (implementation MethodType, param []ParamType) {
 	// contract implemented methods
 	if data, ok := ContractMethods[method]; ok {
 		return ContractType, data
@@ -161,17 +168,4 @@ func GetMethodParams(method string) (implementation MethodType, param []ValueTyp
 	}
 
 	return UnknownType, nil
-}
-
-// GetParamType returns the type of the param passed.
-func GetParamType(param interface{}) ValueType {
-	switch param.(type) {
-	case int, float64:
-		// JSON doesn't differentiate integers from floats.
-		return NumType
-	case string:
-		return StringType
-	default:
-		return UnsupportedType
-	}
 }

@@ -80,7 +80,7 @@ func TestMain(m *testing.M) {
 		// store fresh keys with an expiry of 2 minutes
 		freshKey := serverKeyResp{
 			Pubkey:    pubkey2,
-			Expiry:    uint64(time.Now().UTC().Add(2 * time.Minute).Unix()),
+			Expiry:    uint64(time.Now().UTC().Add(10 * time.Minute).Unix()),
 			sharedKey: key2,
 		}
 		serverConf.sessionKeys.Store(sampleHexAddress2, freshKey)
@@ -262,7 +262,7 @@ func TestDecodeRequestBody(t *testing.T) {
 			val: output{
 				errCode:    1009,
 				shortErr:   utils.ErrUnknownParam,
-				longErr:    "expected param 200 to be of type string found it to be number",
+				longErr:    "expected param 200 to be of type string but found it to be number",
 				methodType: utils.UnknownType,
 			},
 		},
@@ -609,7 +609,7 @@ func TestBackendQueryFunc(t *testing.T) {
 						Address:    sampleHexAddress3,
 						SigningKey: sampleSigningKey,
 					},
-					Params: []interface{}{pubkey2},
+					Params: []interface{}{sampleHexAddress},
 				},
 			},
 			val: output{
@@ -630,7 +630,7 @@ func TestBackendQueryFunc(t *testing.T) {
 						Address:    sampleHexAddress1,
 						SigningKey: sampleSigningKey,
 					},
-					Params: []interface{}{pubkey1},
+					Params: []interface{}{sampleHexAddress},
 				},
 			},
 			val: output{
@@ -641,7 +641,22 @@ func TestBackendQueryFunc(t *testing.T) {
 		},
 		{
 			data: input{
-				testName: "Test-for-successful-access-to-contract-method",
+				testName: "Test-for-successful-access-to-contract-method-with-no-param",
+				method:   http.MethodPost,
+				body: rpcMessage{
+					ID:      20,
+					Version: "2.0",
+					Method:  "createBond",
+					Sender: &senderInfo{
+						Address:    sampleHexAddress2,
+						SigningKey: sampleSigningKey,
+					},
+				},
+			},
+		},
+		{
+			data: input{
+				testName: "Test-for-successful-access-to-contract-method-with-one-param",
 				method:   http.MethodPost,
 				body: rpcMessage{
 					ID:      20,
@@ -651,7 +666,23 @@ func TestBackendQueryFunc(t *testing.T) {
 						Address:    sampleHexAddress2,
 						SigningKey: sampleSigningKey,
 					},
-					Params: []interface{}{pubkey2},
+					Params: []interface{}{sampleHexAddress},
+				},
+			},
+		},
+		{
+			data: input{
+				testName: "Test-for-successful-access-to-contract-method-with-multiple-params",
+				method:   http.MethodPost,
+				body: rpcMessage{
+					ID:      20,
+					Version: "2.0",
+					Method:  "updateBondStatus",
+					Sender: &senderInfo{
+						Address:    sampleHexAddress2,
+						SigningKey: sampleSigningKey,
+					},
+					Params: []interface{}{sampleHexAddress, 2},
 				},
 			},
 		},
@@ -681,16 +712,8 @@ func TestBackendQueryFunc(t *testing.T) {
 			}
 
 			if msg.Error == nil {
-				var result serverKeyResp
-				_ = json.Unmarshal(msg.Result, &result)
-
-				if result.Pubkey == "" {
-					t.Fatal("expected the server pubkey not to be empty")
-				}
-
-				now := time.Now().UTC()
-				if time.Unix(int64(result.Expiry), 0).UTC().After(now) {
-					t.Fatalf("expected the server pubkey expiry to be after %v", now)
+				if len(msg.Result) == 0 {
+					t.Fatal("expected the Result data not to be empty")
 				}
 
 				// No error was expected, prevent further error check.
@@ -698,7 +721,6 @@ func TestBackendQueryFunc(t *testing.T) {
 			}
 
 			if msg.Error.Code != v.val.errCode {
-				fmt.Println(" Data >>> ", string(data))
 				t.Fatalf("expected returned error code to be %d but found %d",
 					msg.Error.Code, v.val.errCode)
 			}

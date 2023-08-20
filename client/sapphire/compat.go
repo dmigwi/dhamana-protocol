@@ -88,6 +88,7 @@ func WrapClient(ctx context.Context, c bind.ContractBackend, net utils.NetworkTy
 		chainID:         network.ChainID,
 		cipher:          cipher,
 		signerFunc:      sign,
+		noSend:          noSend,
 	}, nil
 }
 
@@ -100,6 +101,11 @@ func (b *WrappedBackend) SetClientSigningKey(privateKey []byte) {
 func (b *WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
 	signer := types.LatestSignerForChainID(&b.chainID)
 	signFn := func(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
+		if b.noSend {
+			// ignore all tx signing since this will not be sent.
+			return tx, nil
+		}
+
 		if addr != from {
 			return nil, bind.ErrNotAuthorized
 		}
@@ -122,11 +128,6 @@ func (b *WrappedBackend) Transactor(from common.Address) *bind.TransactOpts {
 		}
 
 		return packedTx.WithSignature(signer, sig)
-	}
-
-	if b.noSend {
-		// when activated actul txs are not sent out.
-		log.Info("---DO NOT SEND--- parameter is activated")
 	}
 
 	return &bind.TransactOpts{

@@ -82,6 +82,9 @@ func (msg *rpcMessage) packServerResult(data interface{}) {
 	msg.Method = ""
 	msg.Params = nil
 
-	res, _ := json.Marshal(data)
-	msg.Result.UnmarshalJSON(res)
+	// encode interface to bytes
+	b, _ := json.Marshal(data)
+
+	// push the data bytes into the msg.Result.
+	_ = json.Unmarshal(b, &msg.Result)
 }

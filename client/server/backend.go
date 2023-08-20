@@ -7,13 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // sessionTime defines the duration when the server public key is valid.
@@ -97,10 +97,8 @@ func decodeRequestBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired b
 
 	// Confirm the required param types are used.
 	for i, p := range msg.Params {
-		paramType := utils.GetParamType(p)
-		if paramType != params[i] {
-			err = fmt.Errorf("expected param %v to be of type %s found it to be %s",
-				p, params[i], paramType)
+		msg.Params[i], err = castType(p, params[i])
+		if err != nil {
 			msgError = utils.ErrUnknownParam
 			return utils.UnknownType
 		}
@@ -233,10 +231,6 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	fmt.Println(" signer >>>>> ", msg.Sender.SigningKey)
-	fmt.Println(" pubkey >>>>> ", data.(serverKeyResp).Pubkey)
-	fmt.Println(" sharedKey >> ", hexutil.Encode(sharedKey))
-
 	// extracts the private key from the signing key sent. The private key is
 	// required to sign all tx by the current sender.
 	privKey, err := utils.DecryptAES(sharedKey, msg.Sender.SigningKey)
@@ -250,10 +244,7 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 
 	// Create an authorized transactor and call the store function
 	auth := s.backend.Transactor(sender)
-
-	transactor := contracts.ChatTransactorRaw{
-		Contract: &s.bondChat.ChatTransactor,
-	}
+	transactor := contracts.ChatRaw{Contract: s.bondChat}
 
 	tx, err := transactor.Transact(auth, msg.Method, msg.Params...)
 	if err != nil {
@@ -264,4 +255,53 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 
 	msg.packServerResult(tx)
 	writeResponse(w, msg)
+}
+
+// castType returns the parameter cast to the required parameter type.
+func castType(param interface{}, pType utils.ParamType) (v interface{}, err error) {
+	if pType == utils.UnsupportedType {
+		return nil, fmt.Errorf("unexpected type for param %v found", param)
+	}
+
+	typeFound := "unsupported"
+
+	switch t := param.(type) {
+	case string:
+		switch pType {
+		case utils.AddressType:
+			v = common.HexToAddress(t)
+		case utils.StringType:
+			v = t
+		default:
+			typeFound = "string"
+		}
+	case float64:
+		// JSON distinct types do not differentiate between integers and floats.
+		// JSON returns all numbers as float64 values.
+		// https://www.webdatarocks.com/doc/data-types-in-json/#number
+		rawInt := int(t)
+
+		switch pType {
+		case utils.Uint8Type:
+			if rawInt <= math.MaxUint8 {
+				v = uint8(rawInt)
+			}
+		case utils.Uint16Type:
+			if rawInt <= math.MaxUint16 {
+				v = uint8(rawInt)
+			}
+		case utils.Uint32Type:
+			if rawInt <= math.MaxUint32 {
+				v = uint8(rawInt)
+			}
+		default:
+			typeFound = "number"
+		}
+	}
+
+	// Casting to the require parameter failed due to use of incorrect parameter value
+	if v == nil {
+		err = fmt.Errorf("expected param %v to be of type %v but found it to be %s", param, pType, typeFound)
+	}
+	return
 }
