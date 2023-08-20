@@ -6,15 +6,20 @@
   "directories": {
     "test": "contracts/tests/chat.test.js"
   },
+  "truffle":"node_modules/.bin/truffle",
+  "devlog": "build/deploy_development.log",
+  "locallog": "build/deploy_sapphire_localnet.log",
+  "testlog": "build/deploy_sapphire_testnet.log",
+  "mainlog": "build/deploy_sapphire_mainnet.log",
   "scripts": {
-    "compile": "./node_modules/.bin/truffle compile",
-    "test": "./node_modules/.bin/truffle test ./contracts/tests/chat.test.js",
-    "test_sapphire_localnet": "./node_modules/.bin/truffle test --network sapphire_localnet ./contracts/tests/chat.test.js",
-    "deploy_development": "./node_modules/.bin/truffle migrate --network development --describe-json >> build/deploy_development.log && pnpm gen_deployment_config build/deploy_sapphire_testnet.log",
-    "deploy_sapphire_localnet": "./node_modules/.bin/truffle migrate --network sapphire_localnet --describe-json >> build/deploy_sapphire_localnet.log && pnpm gen_deployment_config build/deploy_sapphire_testnet.log",
-    "deploy_sapphire_mainnet": "./node_modules/.bin/truffle migrate --network sapphire_mainnet --describe-json >> build/deploy_sapphire_mainnet.log && && pnpm gen_deployment_config build/deploy_sapphire_mainnet.log",
-    "deploy_sapphire_testnet": "./node_modules/.bin/truffle migrate --network sapphire_testnet --describe-json >> build/deploy_sapphire_testnet.log && pnpm gen_deployment_config build/deploy_sapphire_testnet.log",
-    "gen_deployment_config": "go run ./deployinfo ",
+    "compile": "./$npm_package_truffle compile",
+    "test": "./$npm_package_truffle test ./contracts/tests/chat.test.js",
+    "test_sapphire_localnet": "./$npm_package_truffle test --network sapphire_localnet ./contracts/tests/chat.test.js",
+    "deploy_development": "./$npm_package_truffle migrate --network development --describe-json > $npm_package_devlog && pnpm run gen_deployment_config $npm_package_devlog",
+    "deploy_sapphire_localnet": "./$npm_package_truffle migrate --network sapphire_localnet --describe-json > $npm_package_locallog && pnpm run gen_deployment_config $npm_package_locallog",
+    "deploy_sapphire_mainnet": "./$npm_package_truffle migrate --network sapphire_mainnet --describe-json > $npm_package_mainlog && && pnpm run gen_deployment_config $npm_package_mainlog",
+    "deploy_sapphire_testnet": "./$npm_package_truffle migrate --network sapphire_testnet --describe-json > $npm_package_testlog && pnpm run gen_deployment_config $npm_package_testlog",
+    "gen_deployment_config": "go run ./deployInfo ",
     "lint": "./node_modules/.bin/solhint --max-warnings 0 'contracts/**/*.sol'"
   },
   "repository": {

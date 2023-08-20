@@ -30,9 +30,9 @@ contract ChatContract {
     event FinalBondTerms(uint32 principal, uint8 couponRate, uint32 couponDate,
         uint32 maturityDate, BondContract.CurrencyType currency);
 
-    // NewChatMessage creates a new event when a new message as part of the
-    // negotiation chat is received.
-    event NewChatMessage(address sender);
+    // BondMotivation creates a new event that comprises of the bond introduction
+    // message sent by the bond issuer.
+    event BondMotivation(address sender, address bondAddress, string message);
 
     // BondUnderDispute creates an event to mark the specified bond is under
     // dispute. This information is exposed to the world so as to prevent
@@ -52,8 +52,10 @@ contract ChatContract {
         uint256 timestamp;      // Time when message was received.
     }
 
-    // conversation defines an array of messages info sent during bond negotiation.
-    MessageInfo[] private conversation;
+    // NewChatMessage creates a new event when a new message as part of the
+    // negotiation chat is received. Past negotaiation stage, events will still
+    // be sent but only the bond issuer and holder can send those messages.
+    event NewChatMessage(address bondAddress, MessageInfo chat);
 
     // createBond creates a new bond associated with the user who calls it.
     function createBond() external {
@@ -121,15 +123,22 @@ contract ChatContract {
 
         // Messages not part of the negotiations shouldn't get to the chat.
         if (_tag == MessageTag.InitConversation) {
-            conversation.push(MessageInfo({sender: msg.sender, message: _message, timestamp: block.timestamp}));
+            MessageInfo memory chat = MessageInfo({sender: msg.sender, message: _message, timestamp: block.timestamp});
 
-            emit NewChatMessage(msg.sender);
+            // Chat are messages not stored because they have very little effect on the
+            // final bond. Also storing them would create unnecessary data stored in
+            // the contracts. The same data can be obtained from the event logs.
+            emit NewChatMessage(_contract, chat);
         }
 
         // Only the bond issuer can make this encrypted messages edits below.
 
         if (_tag == MessageTag.Introduction) {
             bondC.setIntro(_message, msg.sender);
+
+            // Introduction message is accessible to everyone via events but only
+            // editted by the bond issuer.
+            emit BondMotivation(msg.sender, _contract, _message);
         } else if (_tag == MessageTag.Security) {
             bondC.setSecurity(_message, msg.sender);
         } else if (_tag == MessageTag.Appendix) {
@@ -158,5 +167,21 @@ contract ChatContract {
         if (status == BondContract.StatusChoice.BondInDispute) {
             emit BondDisputeResolved(msg.sender, _contract);
         }
+    }
+
+    // getBondSecureDetails returns the bonds private messages on accessible to
+    // bond holder and bond issuer.
+    function getBondSecureDetails(address _contract) public view returns (string memory _security, string memory _appendix) {
+        BondContract bondC = bonds[_contract];
+
+        (,address payable issuer,address payable holder,,,,,,,string memory security, string memory appendix) = bondC.bond();
+        require (
+            !((msg.sender != issuer && msg.sender != holder)),
+            "Only accessed by parties to the bond"
+        );
+
+        _security = security;
+        _appendix = appendix;
+        return (_security, _appendix);
     }
 }

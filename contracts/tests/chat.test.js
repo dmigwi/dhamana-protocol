@@ -18,6 +18,12 @@ const contractSigned = 4
 const bondReselling = 5;
 const bondFinalised = 6
 
+// chat message types
+const initChat = 0;
+const intro = 1;
+const security = 2;
+const appendix = 3;
+
 // While running sapphire-dev 2023-07-10-gitbacd168 (oasis-core: 22.2.8, sapphire-paratime: 0.5.2, oasis-web3-gateway: 3.3.0-gitbacd168)
 // instances, I have noticed that revert message returned by the contract don't
 // show the expected error message, instead take the format:
@@ -281,11 +287,6 @@ contract("ChatContract",  (accounts) => {
             await this.chat.updateBondStatus(this.contractAddr, negotiating);
         });
 
-        const initChat = 0;
-        const intro = 1;
-        const security = 2;
-        const appendix = 3;
-
         it("should block potential bond holders from sending messages past negotiation stage", async () => {
             await this.chat.updateBondStatus(this.contractAddr, holderSelection)
             await truffleAssert.reverts(
@@ -298,7 +299,8 @@ contract("ChatContract",  (accounts) => {
             let txInfo = await this.chat.addMessage(this.contractAddr, initChat, chatMsg, {from: holder1})
 
             truffleAssert.eventEmitted(txInfo, 'NewChatMessage', (ev) => {
-                return ev.sender == holder1;
+                return ev.bondAddress == this.contractAddr &&
+                    ev.chat.sender == holder1 && ev.chat.message == chatMsg;
             });
         })
 
@@ -309,18 +311,25 @@ contract("ChatContract",  (accounts) => {
             let issuerInfo = await this.chat.addMessage(this.contractAddr, initChat, chatMsg, {from: owner})
 
             truffleAssert.eventEmitted(issuerInfo, 'NewChatMessage', (ev) => {
-                return ev.sender == owner;
+                return ev.bondAddress == this.contractAddr &&
+                    ev.chat.sender == owner && ev.chat.message == chatMsg;
             });
 
             let holderInfo = await this.chat.addMessage(this.contractAddr, initChat, chatMsg, {from: holder})
 
             truffleAssert.eventEmitted(holderInfo, 'NewChatMessage', (ev) => {
-                return ev.sender == holder;
+                return ev.bondAddress == this.contractAddr &&
+                    ev.chat.sender == holder && ev.chat.message == chatMsg;
             });
         });
 
         it("should only allow the issuer to send the contract specific details messages", async () => {
-            await truffleAssert.passes(this.chat.addMessage(this.contractAddr, intro, chatMsg, {from: owner}));
+            let introInfo = await this.chat.addMessage(this.contractAddr, intro, chatMsg, {from: owner})
+
+            truffleAssert.eventEmitted(introInfo, 'BondMotivation', (ev) => {
+                return ev.sender == owner && ev.bondAddress == this.contractAddr && ev.message == chatMsg;
+            });
+
             await truffleAssert.passes(this.chat.addMessage(this.contractAddr, security, chatMsg, {from: owner}));
             await truffleAssert.passes(this.chat.addMessage(this.contractAddr, appendix, chatMsg, {from: owner}));
 
@@ -422,6 +431,51 @@ contract("ChatContract",  (accounts) => {
             let txInfo = await this.chat.signBondStatus(this.contractAddr, {from: holder});
 
             truffleAssert.eventNotEmitted(txInfo, "BondDisputeResolved");
+        });
+    });
+
+    describe("Test fetching the bond secure details", () => {
+
+        beforeEach(async () => {
+            this.chat = await chatContract.new();
+            let data = await this.chat.createBond();
+
+            truffleAssert.eventEmitted(data, 'NewBondCreated');
+            this.contractAddr = data.logs[0].args.bondAddress;
+
+            await this.chat.updateBodyInfo(this.contractAddr, principal, couponRate,
+                couponDate, maturityDate, currency);
+
+            await this.chat.updateBondStatus(this.contractAddr, holderSelection);
+            await truffleAssert.passes(this.chat.updateBondHolder(this.contractAddr, holder));
+
+            let introInfo = await this.chat.addMessage(this.contractAddr, intro, chatMsg, {from: owner})
+            truffleAssert.eventEmitted(introInfo, 'BondMotivation', (ev) => {
+                return ev.sender == owner && ev.bondAddress == this.contractAddr && ev.message == chatMsg;
+            });
+
+            await truffleAssert.passes(this.chat.addMessage(this.contractAddr, security, chatMsg, {from: owner}));
+            await truffleAssert.passes(this.chat.addMessage(this.contractAddr, appendix, chatMsg, {from: owner}));
+        });
+
+        it("should revert if non-bond party attempts to fetch the details", async () => {
+            await truffleAssert.reverts(
+                this.chat.getBondSecureDetails(this.contractAddr, {from: holder1})
+                // "Only accessed by parties to the bond"
+            );
+        });
+
+        it("should return the secure details if fetched by the owner or holder", async () => {
+            let a = await this.chat.getBondSecureDetails(this.contractAddr, {from: owner})
+            assert.notEqual(a.security, "", "expected owner security response not be empty")
+            assert.notEqual(a.appendix, "", "expected owner appendix response not be empty")
+
+            let b = await this.chat.getBondSecureDetails(this.contractAddr, {from: holder})
+            assert.notEqual(b.security, "", "expected holder security response not be empty")
+            assert.notEqual(b.appendix, "", "expected holder appendix response not be empty")
+
+            assert.equal(a.security, b.security, "expected owner security to match holder security")
+            assert.equal(a.appendix, b.appendix, "expected owner appendix to match holder appendix")
         });
     });
 });
