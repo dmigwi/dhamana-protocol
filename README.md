@@ -88,14 +88,14 @@ To deploy a contract; several networks are supported. They include `development`
 
 - Run the contract deployment.  It will deploy the contract, export the deployment log and generate go config bindings for the development network. <strong>(Terminal Window 2)</strong>
     ```
-    $ pnpm run deploy_development
+    $ pnpm run deploy_development     
     > dhamana-protocol@0.0.1 deploy_development ~/golang/src/github.com/dmigwi/dhamana-protocol
-    > ./node_modules/.bin/truffle migrate --network development --describe-json >> build/deploy_development.log && pnpm run gen_deployment_config build/deploy_development.log
+    > ./$npm_package_truffle migrate --network development --describe-json >> $npm_package_devlog && pnpm run gen_deployment_config $npm_package_devlog
 
     > dhamana-protocol@0.0.1 gen_deployment_config ~/golang/src/github.com/dmigwi/dhamana-protocol
     > go run ./deployInfo  "build/deploy_development.log"
 
-    2023/08/20 21:38:12 Log deployment information has me written to : client/deployment/development/deployment.go
+    2023/08/21 00:12:40 Log deployment information has me written to : client/deployment/development/deployment.go
     ```
 </details>
 <details>
@@ -132,13 +132,13 @@ To deploy a contract; several networks are supported. They include `development`
     ```
     $ pnpm run deploy_sapphire_localnet
     > dhamana-protocol@0.0.1 deploy_sapphire_localnet ~/golang/src/github.com/dmigwi/dhamana-protocol
-    > ./node_modules/.bin/truffle migrate --network sapphire_localnet --describe-json >> build/deploy_sapphire_localnet.log && pnpm run gen_deployment_config build/deploy_sapphire_localnet.log
+    > ./$npm_package_truffle migrate --network sapphire_localnet --describe-json >> $npm_package_locallog && pnpm run gen_deployment_config $npm_package_locallog
 
-      ⠏ Blocks: 0            Seconds: 0
+    ⠏ Blocks: 0            Seconds: 0
     > dhamana-protocol@0.0.1 gen_deployment_config ~/golang/src/github.com/dmigwi/dhamana-protocol
     > go run ./deployInfo  "build/deploy_sapphire_localnet.log"
 
-    2023/08/20 21:58:09 Log deployment information has me written to : client/deployment/sapphirelocalnet/deployment.go
+    2023/08/21 00:18:54 Log deployment information has me written to : client/deployment/sapphirelocalnet/deployment.go
     ```
 </details>
 <details>
@@ -150,15 +150,15 @@ To deploy a contract; several networks are supported. They include `development`
     ```
 - Run the contract deployment.  It will deploy the contract, export the deployment log and generate go config bindings for the sapphire_testnet network.
     ```
-    $ pnpm run deploy_sapphire_testnet
+    $ pnpm run deploy_sapphire_testnet 
     > dhamana-protocol@0.0.1 deploy_sapphire_testnet ~/golang/src/github.com/dmigwi/dhamana-protocol
-    > ./node_modules/.bin/truffle migrate --network sapphire_testnet --describe-json >> build/deploy_sapphire_testnet.log && pnpm run gen_deployment_config build/deploy_sapphire_testnet.log
+    > ./$npm_package_truffle migrate --network sapphire_testnet --describe-json > $npm_package_testlog && pnpm run gen_deployment_config $npm_package_testlog
 
-      ⠏ Blocks: 2            Seconds: 21
+    ⠇ Blocks: 3            Seconds: 17
     > dhamana-protocol@0.0.1 gen_deployment_config ~/golang/src/github.com/dmigwi/dhamana-protocol
     > go run ./deployInfo  "build/deploy_sapphire_testnet.log"
 
-    2023/08/20 22:08:44 Log deployment information has me written to : client/deployment/sapphiretestnet/deployment.go
+    2023/08/21 00:26:04 Log deployment information has me written to : client/deployment/sapphiretestnet/deployment.go
     ```
 </details>
 

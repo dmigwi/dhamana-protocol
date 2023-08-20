@@ -28,7 +28,7 @@ func GetContractName() (string) {
 
 // GetContractAddress returns the address of the deployed contract.
 func GetContractAddress() (string) {
-	return "0x46BA6791dcB37499328eb1DDC116aF6dCd4EBE27"
+	return "0x48C85A77897508D5c8976EFa56EeaA93e4226bE5"
 }
 
 // IsDeployed confirms if the contract was successfully deployed. If yes, it succeeded
@@ -38,10 +38,10 @@ func IsDeployed() (bool) {
 
 // GetTransactionHash returns the tx hash when the contract we deployed.
 func GetTransactionHash() (string) {
-	return "0x9d54ed9aae37f3c46034a5a679cfca0c022e7e2b2da1e92c16f6d17bc3814ef1"
+	return "0x93416c146f80f07584eebe1d4c28bac1fa9e3ea7f2634d27be315ae7ce2001dd"
 }
 
 // GetDeploymentTime returns the timestamp in seconds when the contract was actually deployed 
 func GetDeploymentTime() (uint64) {
-	return 1692557885
+	return 1692566525
 }
