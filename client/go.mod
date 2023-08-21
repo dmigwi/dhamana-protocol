@@ -1,6 +1,6 @@
 module github.com/dmigwi/dhamana-protocol/client
 
-go 1.21.0
+go 1.21
 
 replace github.com/dmigwi/dhamana-protocol/client/utils => ./utils
 
