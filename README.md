@@ -19,7 +19,7 @@
 
 ### Introduction
 
-**[Dhamana](https://en.wiktionary.org/wiki/dhamana)** is a swahili word with arabic origins that means __"*to offer guarantee*"__. **[Dhamana-protocol](/blob/main/client/doc.go)** is a system where people unknown to each other but vetted by Trust Organisations, engage in a discussion on how one of them will offer a (bond) security in exchange for financial support **(Crypto/Fiat)** on a project or an idea they are passionate about.
+**[Dhamana](https://en.wiktionary.org/wiki/dhamana)** is a swahili word with arabic origins that means __"*to offer guarantee*"__. **[Dhamana-protocol](/client/doc.go)** is a system where people unknown to each other but vetted by Trust Organisations, engage in a discussion on how one of them will offer a (bond) security in exchange for financial support **(Crypto/Fiat)** on a project or an idea they are passionate about.
 The bond issuer, initiates the conversation by describing the principal, interest rate, security e.t.c.(bond details) with a view that one of the people interested will agree on their terms and subscribe to their bond.
 A trust organisation manages the critical user identity information on behalf of the protocol (DHP). The trustworthiness owned by the trust organisation is extended to the vetted users. Users don't have to know each other as long they trust the vetting organisation that allowed the other person into the platform. Trust is maintained by referals earned.
 The system allows people to make legal binding agreements that can be used to seek legal redress should one of the parties fall short of their expectations.
