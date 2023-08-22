@@ -29,16 +29,9 @@ var (
 	_ = abi.ConvertType
 )
 
-// ChatContractMessageInfo is an auto generated low-level Go binding around an user-defined struct.
-type ChatContractMessageInfo struct {
-	Sender    common.Address
-	Message   string
-	Timestamp *big.Int
-}
-
 // ChatMetaData contains all meta data concerning the Chat contract.
 var ChatMetaData = &bind.MetaData{
-	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"}],\"name\":\"BondDisputeResolved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"}],\"name\":\"BondMotivation\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"}],\"name\":\"BondUnderDispute\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"principal\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"couponRate\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"couponDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"maturityDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"currency\",\"type\":\"uint8\"}],\"name\":\"FinalBondTerms\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"NewBondCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"indexed\":false,\"internalType\":\"structChatContract.MessageInfo\",\"name\":\"chat\",\"type\":\"tuple\"}],\"name\":\"NewChatMessage\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumChatContract.MessageTag\",\"name\":\"_tag\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_message\",\"type\":\"string\"}],\"name\":\"addMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"createBond\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"getBondSecureDetails\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"_security\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_appendix\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"signBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"_principal\",\"type\":\"uint32\"},{\"internalType\":\"uint8\",\"name\":\"_couponRate\",\"type\":\"uint8\"},{\"internalType\":\"uint32\",\"name\":\"_couponDate\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_maturityDate\",\"type\":\"uint32\"},{\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"_currency\",\"type\":\"uint8\"}],\"name\":\"updateBodyInfo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_holder\",\"type\":\"address\"}],\"name\":\"updateBondHolder\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"_status\",\"type\":\"uint8\"}],\"name\":\"updateBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"principal\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"couponRate\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"couponDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"maturityDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"currency\",\"type\":\"uint8\"}],\"name\":\"BondBodyTerms\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"}],\"name\":\"BondMotivation\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"status\",\"type\":\"uint8\"}],\"name\":\"BondStatusSigned\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"holder\",\"type\":\"address\"}],\"name\":\"HolderUpdate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"}],\"name\":\"NewBondCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"}],\"name\":\"NewChatMessage\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"status\",\"type\":\"uint8\"}],\"name\":\"StatusChange\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"status\",\"type\":\"uint8\"}],\"name\":\"StatusSigned\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumChatContract.MessageTag\",\"name\":\"_tag\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_message\",\"type\":\"string\"}],\"name\":\"addMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"createBond\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"getBondSecureDetails\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"_security\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_appendix\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"signBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"_principal\",\"type\":\"uint32\"},{\"internalType\":\"uint8\",\"name\":\"_couponRate\",\"type\":\"uint8\"},{\"internalType\":\"uint32\",\"name\":\"_couponDate\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_maturityDate\",\"type\":\"uint32\"},{\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"_currency\",\"type\":\"uint8\"}],\"name\":\"updateBodyInfo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_holder\",\"type\":\"address\"}],\"name\":\"updateBondHolder\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"_status\",\"type\":\"uint8\"}],\"name\":\"updateBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // ChatABI is the input ABI used to generate the binding from.
@@ -358,9 +351,9 @@ func (_Chat *ChatTransactorSession) UpdateBondStatus(_contract common.Address, _
 	return _Chat.Contract.UpdateBondStatus(&_Chat.TransactOpts, _contract, _status)
 }
 
-// ChatBondDisputeResolvedIterator is returned from FilterBondDisputeResolved and is used to iterate over the raw logs and unpacked data for BondDisputeResolved events raised by the Chat contract.
-type ChatBondDisputeResolvedIterator struct {
-	Event *ChatBondDisputeResolved // Event containing the contract specifics and raw log
+// ChatBondBodyTermsIterator is returned from FilterBondBodyTerms and is used to iterate over the raw logs and unpacked data for BondBodyTerms events raised by the Chat contract.
+type ChatBondBodyTermsIterator struct {
+	Event *ChatBondBodyTerms // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -374,7 +367,7 @@ type ChatBondDisputeResolvedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ChatBondDisputeResolvedIterator) Next() bool {
+func (it *ChatBondBodyTermsIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -383,7 +376,7 @@ func (it *ChatBondDisputeResolvedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ChatBondDisputeResolved)
+			it.Event = new(ChatBondBodyTerms)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -398,7 +391,7 @@ func (it *ChatBondDisputeResolvedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ChatBondDisputeResolved)
+		it.Event = new(ChatBondBodyTerms)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -414,42 +407,46 @@ func (it *ChatBondDisputeResolvedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ChatBondDisputeResolvedIterator) Error() error {
+func (it *ChatBondBodyTermsIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ChatBondDisputeResolvedIterator) Close() error {
+func (it *ChatBondBodyTermsIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ChatBondDisputeResolved represents a BondDisputeResolved event raised by the Chat contract.
-type ChatBondDisputeResolved struct {
-	Sender      common.Address
-	BondAddress common.Address
-	Raw         types.Log // Blockchain specific contextual infos
+// ChatBondBodyTerms represents a BondBodyTerms event raised by the Chat contract.
+type ChatBondBodyTerms struct {
+	BondAddress  common.Address
+	Principal    uint32
+	CouponRate   uint8
+	CouponDate   uint32
+	MaturityDate uint32
+	Currency     uint8
+	Raw          types.Log // Blockchain specific contextual infos
 }
 
-// FilterBondDisputeResolved is a free log retrieval operation binding the contract event 0x67a381a6a07926a6859febbf3faccb07a5d19deef5b03561a631757579f1c89c.
+// FilterBondBodyTerms is a free log retrieval operation binding the contract event 0xe6f76c15f92de04f9874c9963972f0244d7957b298d1b1bd00ffc99ea8bc1794.
 //
-// Solidity: event BondDisputeResolved(address sender, address bondAddress)
-func (_Chat *ChatFilterer) FilterBondDisputeResolved(opts *bind.FilterOpts) (*ChatBondDisputeResolvedIterator, error) {
+// Solidity: event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint32 couponDate, uint32 maturityDate, uint8 currency)
+func (_Chat *ChatFilterer) FilterBondBodyTerms(opts *bind.FilterOpts) (*ChatBondBodyTermsIterator, error) {
 
-	logs, sub, err := _Chat.contract.FilterLogs(opts, "BondDisputeResolved")
+	logs, sub, err := _Chat.contract.FilterLogs(opts, "BondBodyTerms")
 	if err != nil {
 		return nil, err
 	}
-	return &ChatBondDisputeResolvedIterator{contract: _Chat.contract, event: "BondDisputeResolved", logs: logs, sub: sub}, nil
+	return &ChatBondBodyTermsIterator{contract: _Chat.contract, event: "BondBodyTerms", logs: logs, sub: sub}, nil
 }
 
-// WatchBondDisputeResolved is a free log subscription operation binding the contract event 0x67a381a6a07926a6859febbf3faccb07a5d19deef5b03561a631757579f1c89c.
+// WatchBondBodyTerms is a free log subscription operation binding the contract event 0xe6f76c15f92de04f9874c9963972f0244d7957b298d1b1bd00ffc99ea8bc1794.
 //
-// Solidity: event BondDisputeResolved(address sender, address bondAddress)
-func (_Chat *ChatFilterer) WatchBondDisputeResolved(opts *bind.WatchOpts, sink chan<- *ChatBondDisputeResolved) (event.Subscription, error) {
+// Solidity: event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint32 couponDate, uint32 maturityDate, uint8 currency)
+func (_Chat *ChatFilterer) WatchBondBodyTerms(opts *bind.WatchOpts, sink chan<- *ChatBondBodyTerms) (event.Subscription, error) {
 
-	logs, sub, err := _Chat.contract.WatchLogs(opts, "BondDisputeResolved")
+	logs, sub, err := _Chat.contract.WatchLogs(opts, "BondBodyTerms")
 	if err != nil {
 		return nil, err
 	}
@@ -459,8 +456,8 @@ func (_Chat *ChatFilterer) WatchBondDisputeResolved(opts *bind.WatchOpts, sink c
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ChatBondDisputeResolved)
-				if err := _Chat.contract.UnpackLog(event, "BondDisputeResolved", log); err != nil {
+				event := new(ChatBondBodyTerms)
+				if err := _Chat.contract.UnpackLog(event, "BondBodyTerms", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -481,12 +478,12 @@ func (_Chat *ChatFilterer) WatchBondDisputeResolved(opts *bind.WatchOpts, sink c
 	}), nil
 }
 
-// ParseBondDisputeResolved is a log parse operation binding the contract event 0x67a381a6a07926a6859febbf3faccb07a5d19deef5b03561a631757579f1c89c.
+// ParseBondBodyTerms is a log parse operation binding the contract event 0xe6f76c15f92de04f9874c9963972f0244d7957b298d1b1bd00ffc99ea8bc1794.
 //
-// Solidity: event BondDisputeResolved(address sender, address bondAddress)
-func (_Chat *ChatFilterer) ParseBondDisputeResolved(log types.Log) (*ChatBondDisputeResolved, error) {
-	event := new(ChatBondDisputeResolved)
-	if err := _Chat.contract.UnpackLog(event, "BondDisputeResolved", log); err != nil {
+// Solidity: event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint32 couponDate, uint32 maturityDate, uint8 currency)
+func (_Chat *ChatFilterer) ParseBondBodyTerms(log types.Log) (*ChatBondBodyTerms, error) {
+	event := new(ChatBondBodyTerms)
+	if err := _Chat.contract.UnpackLog(event, "BondBodyTerms", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -562,15 +559,14 @@ func (it *ChatBondMotivationIterator) Close() error {
 
 // ChatBondMotivation represents a BondMotivation event raised by the Chat contract.
 type ChatBondMotivation struct {
-	Sender      common.Address
 	BondAddress common.Address
 	Message     string
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterBondMotivation is a free log retrieval operation binding the contract event 0x9c2db9547a0e615dbb8f26a29f24669e9cef62f8dd222509384887635c254d23.
+// FilterBondMotivation is a free log retrieval operation binding the contract event 0x37e80f8f8deab7dbce22e881bee00b243b0ed1880ff122ed20d655ce0acc4bc8.
 //
-// Solidity: event BondMotivation(address sender, address bondAddress, string message)
+// Solidity: event BondMotivation(address bondAddress, string message)
 func (_Chat *ChatFilterer) FilterBondMotivation(opts *bind.FilterOpts) (*ChatBondMotivationIterator, error) {
 
 	logs, sub, err := _Chat.contract.FilterLogs(opts, "BondMotivation")
@@ -580,9 +576,9 @@ func (_Chat *ChatFilterer) FilterBondMotivation(opts *bind.FilterOpts) (*ChatBon
 	return &ChatBondMotivationIterator{contract: _Chat.contract, event: "BondMotivation", logs: logs, sub: sub}, nil
 }
 
-// WatchBondMotivation is a free log subscription operation binding the contract event 0x9c2db9547a0e615dbb8f26a29f24669e9cef62f8dd222509384887635c254d23.
+// WatchBondMotivation is a free log subscription operation binding the contract event 0x37e80f8f8deab7dbce22e881bee00b243b0ed1880ff122ed20d655ce0acc4bc8.
 //
-// Solidity: event BondMotivation(address sender, address bondAddress, string message)
+// Solidity: event BondMotivation(address bondAddress, string message)
 func (_Chat *ChatFilterer) WatchBondMotivation(opts *bind.WatchOpts, sink chan<- *ChatBondMotivation) (event.Subscription, error) {
 
 	logs, sub, err := _Chat.contract.WatchLogs(opts, "BondMotivation")
@@ -617,9 +613,9 @@ func (_Chat *ChatFilterer) WatchBondMotivation(opts *bind.WatchOpts, sink chan<-
 	}), nil
 }
 
-// ParseBondMotivation is a log parse operation binding the contract event 0x9c2db9547a0e615dbb8f26a29f24669e9cef62f8dd222509384887635c254d23.
+// ParseBondMotivation is a log parse operation binding the contract event 0x37e80f8f8deab7dbce22e881bee00b243b0ed1880ff122ed20d655ce0acc4bc8.
 //
-// Solidity: event BondMotivation(address sender, address bondAddress, string message)
+// Solidity: event BondMotivation(address bondAddress, string message)
 func (_Chat *ChatFilterer) ParseBondMotivation(log types.Log) (*ChatBondMotivation, error) {
 	event := new(ChatBondMotivation)
 	if err := _Chat.contract.UnpackLog(event, "BondMotivation", log); err != nil {
@@ -629,9 +625,9 @@ func (_Chat *ChatFilterer) ParseBondMotivation(log types.Log) (*ChatBondMotivati
 	return event, nil
 }
 
-// ChatBondUnderDisputeIterator is returned from FilterBondUnderDispute and is used to iterate over the raw logs and unpacked data for BondUnderDispute events raised by the Chat contract.
-type ChatBondUnderDisputeIterator struct {
-	Event *ChatBondUnderDispute // Event containing the contract specifics and raw log
+// ChatBondStatusSignedIterator is returned from FilterBondStatusSigned and is used to iterate over the raw logs and unpacked data for BondStatusSigned events raised by the Chat contract.
+type ChatBondStatusSignedIterator struct {
+	Event *ChatBondStatusSigned // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -645,7 +641,7 @@ type ChatBondUnderDisputeIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ChatBondUnderDisputeIterator) Next() bool {
+func (it *ChatBondStatusSignedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -654,7 +650,7 @@ func (it *ChatBondUnderDisputeIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ChatBondUnderDispute)
+			it.Event = new(ChatBondStatusSigned)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -669,7 +665,7 @@ func (it *ChatBondUnderDisputeIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ChatBondUnderDispute)
+		it.Event = new(ChatBondStatusSigned)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -685,42 +681,43 @@ func (it *ChatBondUnderDisputeIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ChatBondUnderDisputeIterator) Error() error {
+func (it *ChatBondStatusSignedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ChatBondUnderDisputeIterator) Close() error {
+func (it *ChatBondStatusSignedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ChatBondUnderDispute represents a BondUnderDispute event raised by the Chat contract.
-type ChatBondUnderDispute struct {
+// ChatBondStatusSigned represents a BondStatusSigned event raised by the Chat contract.
+type ChatBondStatusSigned struct {
 	Sender      common.Address
 	BondAddress common.Address
+	Status      uint8
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterBondUnderDispute is a free log retrieval operation binding the contract event 0x5edcf956463f8d45ca26b3d5fb4fc9cd24aed980e33f4ccb131805819ddff187.
+// FilterBondStatusSigned is a free log retrieval operation binding the contract event 0xd76eace44117b2647270cc02d05e0bb7f011d97783726d3900c11c952b137367.
 //
-// Solidity: event BondUnderDispute(address sender, address bondAddress)
-func (_Chat *ChatFilterer) FilterBondUnderDispute(opts *bind.FilterOpts) (*ChatBondUnderDisputeIterator, error) {
+// Solidity: event BondStatusSigned(address sender, address bondAddress, uint8 status)
+func (_Chat *ChatFilterer) FilterBondStatusSigned(opts *bind.FilterOpts) (*ChatBondStatusSignedIterator, error) {
 
-	logs, sub, err := _Chat.contract.FilterLogs(opts, "BondUnderDispute")
+	logs, sub, err := _Chat.contract.FilterLogs(opts, "BondStatusSigned")
 	if err != nil {
 		return nil, err
 	}
-	return &ChatBondUnderDisputeIterator{contract: _Chat.contract, event: "BondUnderDispute", logs: logs, sub: sub}, nil
+	return &ChatBondStatusSignedIterator{contract: _Chat.contract, event: "BondStatusSigned", logs: logs, sub: sub}, nil
 }
 
-// WatchBondUnderDispute is a free log subscription operation binding the contract event 0x5edcf956463f8d45ca26b3d5fb4fc9cd24aed980e33f4ccb131805819ddff187.
+// WatchBondStatusSigned is a free log subscription operation binding the contract event 0xd76eace44117b2647270cc02d05e0bb7f011d97783726d3900c11c952b137367.
 //
-// Solidity: event BondUnderDispute(address sender, address bondAddress)
-func (_Chat *ChatFilterer) WatchBondUnderDispute(opts *bind.WatchOpts, sink chan<- *ChatBondUnderDispute) (event.Subscription, error) {
+// Solidity: event BondStatusSigned(address sender, address bondAddress, uint8 status)
+func (_Chat *ChatFilterer) WatchBondStatusSigned(opts *bind.WatchOpts, sink chan<- *ChatBondStatusSigned) (event.Subscription, error) {
 
-	logs, sub, err := _Chat.contract.WatchLogs(opts, "BondUnderDispute")
+	logs, sub, err := _Chat.contract.WatchLogs(opts, "BondStatusSigned")
 	if err != nil {
 		return nil, err
 	}
@@ -730,8 +727,8 @@ func (_Chat *ChatFilterer) WatchBondUnderDispute(opts *bind.WatchOpts, sink chan
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ChatBondUnderDispute)
-				if err := _Chat.contract.UnpackLog(event, "BondUnderDispute", log); err != nil {
+				event := new(ChatBondStatusSigned)
+				if err := _Chat.contract.UnpackLog(event, "BondStatusSigned", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -752,21 +749,21 @@ func (_Chat *ChatFilterer) WatchBondUnderDispute(opts *bind.WatchOpts, sink chan
 	}), nil
 }
 
-// ParseBondUnderDispute is a log parse operation binding the contract event 0x5edcf956463f8d45ca26b3d5fb4fc9cd24aed980e33f4ccb131805819ddff187.
+// ParseBondStatusSigned is a log parse operation binding the contract event 0xd76eace44117b2647270cc02d05e0bb7f011d97783726d3900c11c952b137367.
 //
-// Solidity: event BondUnderDispute(address sender, address bondAddress)
-func (_Chat *ChatFilterer) ParseBondUnderDispute(log types.Log) (*ChatBondUnderDispute, error) {
-	event := new(ChatBondUnderDispute)
-	if err := _Chat.contract.UnpackLog(event, "BondUnderDispute", log); err != nil {
+// Solidity: event BondStatusSigned(address sender, address bondAddress, uint8 status)
+func (_Chat *ChatFilterer) ParseBondStatusSigned(log types.Log) (*ChatBondStatusSigned, error) {
+	event := new(ChatBondStatusSigned)
+	if err := _Chat.contract.UnpackLog(event, "BondStatusSigned", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// ChatFinalBondTermsIterator is returned from FilterFinalBondTerms and is used to iterate over the raw logs and unpacked data for FinalBondTerms events raised by the Chat contract.
-type ChatFinalBondTermsIterator struct {
-	Event *ChatFinalBondTerms // Event containing the contract specifics and raw log
+// ChatHolderUpdateIterator is returned from FilterHolderUpdate and is used to iterate over the raw logs and unpacked data for HolderUpdate events raised by the Chat contract.
+type ChatHolderUpdateIterator struct {
+	Event *ChatHolderUpdate // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -780,7 +777,7 @@ type ChatFinalBondTermsIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ChatFinalBondTermsIterator) Next() bool {
+func (it *ChatHolderUpdateIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -789,7 +786,7 @@ func (it *ChatFinalBondTermsIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ChatFinalBondTerms)
+			it.Event = new(ChatHolderUpdate)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -804,7 +801,7 @@ func (it *ChatFinalBondTermsIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ChatFinalBondTerms)
+		it.Event = new(ChatHolderUpdate)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -820,45 +817,42 @@ func (it *ChatFinalBondTermsIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ChatFinalBondTermsIterator) Error() error {
+func (it *ChatHolderUpdateIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ChatFinalBondTermsIterator) Close() error {
+func (it *ChatHolderUpdateIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ChatFinalBondTerms represents a FinalBondTerms event raised by the Chat contract.
-type ChatFinalBondTerms struct {
-	Principal    uint32
-	CouponRate   uint8
-	CouponDate   uint32
-	MaturityDate uint32
-	Currency     uint8
-	Raw          types.Log // Blockchain specific contextual infos
+// ChatHolderUpdate represents a HolderUpdate event raised by the Chat contract.
+type ChatHolderUpdate struct {
+	BondAddress common.Address
+	Holder      common.Address
+	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterFinalBondTerms is a free log retrieval operation binding the contract event 0x7e5631fad24e4cbdaaf2d85082725b7cc657fb9d32a0025131310dca36d2eb41.
+// FilterHolderUpdate is a free log retrieval operation binding the contract event 0x316e906a1dc3867c66eacd02598322c6e106e4978e6e21aa8bb15a110b86898c.
 //
-// Solidity: event FinalBondTerms(uint32 principal, uint8 couponRate, uint32 couponDate, uint32 maturityDate, uint8 currency)
-func (_Chat *ChatFilterer) FilterFinalBondTerms(opts *bind.FilterOpts) (*ChatFinalBondTermsIterator, error) {
+// Solidity: event HolderUpdate(address bondAddress, address holder)
+func (_Chat *ChatFilterer) FilterHolderUpdate(opts *bind.FilterOpts) (*ChatHolderUpdateIterator, error) {
 
-	logs, sub, err := _Chat.contract.FilterLogs(opts, "FinalBondTerms")
+	logs, sub, err := _Chat.contract.FilterLogs(opts, "HolderUpdate")
 	if err != nil {
 		return nil, err
 	}
-	return &ChatFinalBondTermsIterator{contract: _Chat.contract, event: "FinalBondTerms", logs: logs, sub: sub}, nil
+	return &ChatHolderUpdateIterator{contract: _Chat.contract, event: "HolderUpdate", logs: logs, sub: sub}, nil
 }
 
-// WatchFinalBondTerms is a free log subscription operation binding the contract event 0x7e5631fad24e4cbdaaf2d85082725b7cc657fb9d32a0025131310dca36d2eb41.
+// WatchHolderUpdate is a free log subscription operation binding the contract event 0x316e906a1dc3867c66eacd02598322c6e106e4978e6e21aa8bb15a110b86898c.
 //
-// Solidity: event FinalBondTerms(uint32 principal, uint8 couponRate, uint32 couponDate, uint32 maturityDate, uint8 currency)
-func (_Chat *ChatFilterer) WatchFinalBondTerms(opts *bind.WatchOpts, sink chan<- *ChatFinalBondTerms) (event.Subscription, error) {
+// Solidity: event HolderUpdate(address bondAddress, address holder)
+func (_Chat *ChatFilterer) WatchHolderUpdate(opts *bind.WatchOpts, sink chan<- *ChatHolderUpdate) (event.Subscription, error) {
 
-	logs, sub, err := _Chat.contract.WatchLogs(opts, "FinalBondTerms")
+	logs, sub, err := _Chat.contract.WatchLogs(opts, "HolderUpdate")
 	if err != nil {
 		return nil, err
 	}
@@ -868,8 +862,8 @@ func (_Chat *ChatFilterer) WatchFinalBondTerms(opts *bind.WatchOpts, sink chan<-
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ChatFinalBondTerms)
-				if err := _Chat.contract.UnpackLog(event, "FinalBondTerms", log); err != nil {
+				event := new(ChatHolderUpdate)
+				if err := _Chat.contract.UnpackLog(event, "HolderUpdate", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -890,12 +884,12 @@ func (_Chat *ChatFilterer) WatchFinalBondTerms(opts *bind.WatchOpts, sink chan<-
 	}), nil
 }
 
-// ParseFinalBondTerms is a log parse operation binding the contract event 0x7e5631fad24e4cbdaaf2d85082725b7cc657fb9d32a0025131310dca36d2eb41.
+// ParseHolderUpdate is a log parse operation binding the contract event 0x316e906a1dc3867c66eacd02598322c6e106e4978e6e21aa8bb15a110b86898c.
 //
-// Solidity: event FinalBondTerms(uint32 principal, uint8 couponRate, uint32 couponDate, uint32 maturityDate, uint8 currency)
-func (_Chat *ChatFilterer) ParseFinalBondTerms(log types.Log) (*ChatFinalBondTerms, error) {
-	event := new(ChatFinalBondTerms)
-	if err := _Chat.contract.UnpackLog(event, "FinalBondTerms", log); err != nil {
+// Solidity: event HolderUpdate(address bondAddress, address holder)
+func (_Chat *ChatFilterer) ParseHolderUpdate(log types.Log) (*ChatHolderUpdate, error) {
+	event := new(ChatHolderUpdate)
+	if err := _Chat.contract.UnpackLog(event, "HolderUpdate", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -973,13 +967,12 @@ func (it *ChatNewBondCreatedIterator) Close() error {
 type ChatNewBondCreated struct {
 	Sender      common.Address
 	BondAddress common.Address
-	Timestamp   *big.Int
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterNewBondCreated is a free log retrieval operation binding the contract event 0x74bc6db54501e99f138a7c95f5207903e8ff7c77a541e7599688bac39d534f96.
+// FilterNewBondCreated is a free log retrieval operation binding the contract event 0xff5e78dafd87acba3d62bc893238ff9de367bc49ebc45993c9474fd881b577f2.
 //
-// Solidity: event NewBondCreated(address sender, address bondAddress, uint256 timestamp)
+// Solidity: event NewBondCreated(address sender, address bondAddress)
 func (_Chat *ChatFilterer) FilterNewBondCreated(opts *bind.FilterOpts) (*ChatNewBondCreatedIterator, error) {
 
 	logs, sub, err := _Chat.contract.FilterLogs(opts, "NewBondCreated")
@@ -989,9 +982,9 @@ func (_Chat *ChatFilterer) FilterNewBondCreated(opts *bind.FilterOpts) (*ChatNew
 	return &ChatNewBondCreatedIterator{contract: _Chat.contract, event: "NewBondCreated", logs: logs, sub: sub}, nil
 }
 
-// WatchNewBondCreated is a free log subscription operation binding the contract event 0x74bc6db54501e99f138a7c95f5207903e8ff7c77a541e7599688bac39d534f96.
+// WatchNewBondCreated is a free log subscription operation binding the contract event 0xff5e78dafd87acba3d62bc893238ff9de367bc49ebc45993c9474fd881b577f2.
 //
-// Solidity: event NewBondCreated(address sender, address bondAddress, uint256 timestamp)
+// Solidity: event NewBondCreated(address sender, address bondAddress)
 func (_Chat *ChatFilterer) WatchNewBondCreated(opts *bind.WatchOpts, sink chan<- *ChatNewBondCreated) (event.Subscription, error) {
 
 	logs, sub, err := _Chat.contract.WatchLogs(opts, "NewBondCreated")
@@ -1026,9 +1019,9 @@ func (_Chat *ChatFilterer) WatchNewBondCreated(opts *bind.WatchOpts, sink chan<-
 	}), nil
 }
 
-// ParseNewBondCreated is a log parse operation binding the contract event 0x74bc6db54501e99f138a7c95f5207903e8ff7c77a541e7599688bac39d534f96.
+// ParseNewBondCreated is a log parse operation binding the contract event 0xff5e78dafd87acba3d62bc893238ff9de367bc49ebc45993c9474fd881b577f2.
 //
-// Solidity: event NewBondCreated(address sender, address bondAddress, uint256 timestamp)
+// Solidity: event NewBondCreated(address sender, address bondAddress)
 func (_Chat *ChatFilterer) ParseNewBondCreated(log types.Log) (*ChatNewBondCreated, error) {
 	event := new(ChatNewBondCreated)
 	if err := _Chat.contract.UnpackLog(event, "NewBondCreated", log); err != nil {
@@ -1108,13 +1101,14 @@ func (it *ChatNewChatMessageIterator) Close() error {
 // ChatNewChatMessage represents a NewChatMessage event raised by the Chat contract.
 type ChatNewChatMessage struct {
 	BondAddress common.Address
-	Chat        ChatContractMessageInfo
+	Sender      common.Address
+	Message     string
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterNewChatMessage is a free log retrieval operation binding the contract event 0xe375e64f8bee7abfbf28664e9a49830e9bc77a3d866bb3e3bcc69a65dc054e24.
+// FilterNewChatMessage is a free log retrieval operation binding the contract event 0xbd74e567035eb30415526c1a311d34e5675e23d477622bf0701f23208c6b4bd4.
 //
-// Solidity: event NewChatMessage(address bondAddress, (address,string,uint256) chat)
+// Solidity: event NewChatMessage(address bondAddress, address sender, string message)
 func (_Chat *ChatFilterer) FilterNewChatMessage(opts *bind.FilterOpts) (*ChatNewChatMessageIterator, error) {
 
 	logs, sub, err := _Chat.contract.FilterLogs(opts, "NewChatMessage")
@@ -1124,9 +1118,9 @@ func (_Chat *ChatFilterer) FilterNewChatMessage(opts *bind.FilterOpts) (*ChatNew
 	return &ChatNewChatMessageIterator{contract: _Chat.contract, event: "NewChatMessage", logs: logs, sub: sub}, nil
 }
 
-// WatchNewChatMessage is a free log subscription operation binding the contract event 0xe375e64f8bee7abfbf28664e9a49830e9bc77a3d866bb3e3bcc69a65dc054e24.
+// WatchNewChatMessage is a free log subscription operation binding the contract event 0xbd74e567035eb30415526c1a311d34e5675e23d477622bf0701f23208c6b4bd4.
 //
-// Solidity: event NewChatMessage(address bondAddress, (address,string,uint256) chat)
+// Solidity: event NewChatMessage(address bondAddress, address sender, string message)
 func (_Chat *ChatFilterer) WatchNewChatMessage(opts *bind.WatchOpts, sink chan<- *ChatNewChatMessage) (event.Subscription, error) {
 
 	logs, sub, err := _Chat.contract.WatchLogs(opts, "NewChatMessage")
@@ -1161,12 +1155,284 @@ func (_Chat *ChatFilterer) WatchNewChatMessage(opts *bind.WatchOpts, sink chan<-
 	}), nil
 }
 
-// ParseNewChatMessage is a log parse operation binding the contract event 0xe375e64f8bee7abfbf28664e9a49830e9bc77a3d866bb3e3bcc69a65dc054e24.
+// ParseNewChatMessage is a log parse operation binding the contract event 0xbd74e567035eb30415526c1a311d34e5675e23d477622bf0701f23208c6b4bd4.
 //
-// Solidity: event NewChatMessage(address bondAddress, (address,string,uint256) chat)
+// Solidity: event NewChatMessage(address bondAddress, address sender, string message)
 func (_Chat *ChatFilterer) ParseNewChatMessage(log types.Log) (*ChatNewChatMessage, error) {
 	event := new(ChatNewChatMessage)
 	if err := _Chat.contract.UnpackLog(event, "NewChatMessage", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// ChatStatusChangeIterator is returned from FilterStatusChange and is used to iterate over the raw logs and unpacked data for StatusChange events raised by the Chat contract.
+type ChatStatusChangeIterator struct {
+	Event *ChatStatusChange // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *ChatStatusChangeIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(ChatStatusChange)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(ChatStatusChange)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *ChatStatusChangeIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *ChatStatusChangeIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// ChatStatusChange represents a StatusChange event raised by the Chat contract.
+type ChatStatusChange struct {
+	Sender      common.Address
+	BondAddress common.Address
+	Status      uint8
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterStatusChange is a free log retrieval operation binding the contract event 0xc82b702f5d9f3997b9d40d2a61bb841083384d586e4b023ef72e017153beb09a.
+//
+// Solidity: event StatusChange(address sender, address bondAddress, uint8 status)
+func (_Chat *ChatFilterer) FilterStatusChange(opts *bind.FilterOpts) (*ChatStatusChangeIterator, error) {
+
+	logs, sub, err := _Chat.contract.FilterLogs(opts, "StatusChange")
+	if err != nil {
+		return nil, err
+	}
+	return &ChatStatusChangeIterator{contract: _Chat.contract, event: "StatusChange", logs: logs, sub: sub}, nil
+}
+
+// WatchStatusChange is a free log subscription operation binding the contract event 0xc82b702f5d9f3997b9d40d2a61bb841083384d586e4b023ef72e017153beb09a.
+//
+// Solidity: event StatusChange(address sender, address bondAddress, uint8 status)
+func (_Chat *ChatFilterer) WatchStatusChange(opts *bind.WatchOpts, sink chan<- *ChatStatusChange) (event.Subscription, error) {
+
+	logs, sub, err := _Chat.contract.WatchLogs(opts, "StatusChange")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(ChatStatusChange)
+				if err := _Chat.contract.UnpackLog(event, "StatusChange", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseStatusChange is a log parse operation binding the contract event 0xc82b702f5d9f3997b9d40d2a61bb841083384d586e4b023ef72e017153beb09a.
+//
+// Solidity: event StatusChange(address sender, address bondAddress, uint8 status)
+func (_Chat *ChatFilterer) ParseStatusChange(log types.Log) (*ChatStatusChange, error) {
+	event := new(ChatStatusChange)
+	if err := _Chat.contract.UnpackLog(event, "StatusChange", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// ChatStatusSignedIterator is returned from FilterStatusSigned and is used to iterate over the raw logs and unpacked data for StatusSigned events raised by the Chat contract.
+type ChatStatusSignedIterator struct {
+	Event *ChatStatusSigned // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *ChatStatusSignedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(ChatStatusSigned)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(ChatStatusSigned)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *ChatStatusSignedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *ChatStatusSignedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// ChatStatusSigned represents a StatusSigned event raised by the Chat contract.
+type ChatStatusSigned struct {
+	Sender      common.Address
+	BondAddress common.Address
+	Status      uint8
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterStatusSigned is a free log retrieval operation binding the contract event 0x2988c7b4a31559db7f7be48700d500ea7d4b3c763dc6a23e3c6d1c03bed5f576.
+//
+// Solidity: event StatusSigned(address sender, address bondAddress, uint8 status)
+func (_Chat *ChatFilterer) FilterStatusSigned(opts *bind.FilterOpts) (*ChatStatusSignedIterator, error) {
+
+	logs, sub, err := _Chat.contract.FilterLogs(opts, "StatusSigned")
+	if err != nil {
+		return nil, err
+	}
+	return &ChatStatusSignedIterator{contract: _Chat.contract, event: "StatusSigned", logs: logs, sub: sub}, nil
+}
+
+// WatchStatusSigned is a free log subscription operation binding the contract event 0x2988c7b4a31559db7f7be48700d500ea7d4b3c763dc6a23e3c6d1c03bed5f576.
+//
+// Solidity: event StatusSigned(address sender, address bondAddress, uint8 status)
+func (_Chat *ChatFilterer) WatchStatusSigned(opts *bind.WatchOpts, sink chan<- *ChatStatusSigned) (event.Subscription, error) {
+
+	logs, sub, err := _Chat.contract.WatchLogs(opts, "StatusSigned")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(ChatStatusSigned)
+				if err := _Chat.contract.UnpackLog(event, "StatusSigned", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseStatusSigned is a log parse operation binding the contract event 0x2988c7b4a31559db7f7be48700d500ea7d4b3c763dc6a23e3c6d1c03bed5f576.
+//
+// Solidity: event StatusSigned(address sender, address bondAddress, uint8 status)
+func (_Chat *ChatFilterer) ParseStatusSigned(log types.Log) (*ChatStatusSigned, error) {
+	event := new(ChatStatusSigned)
+	if err := _Chat.contract.UnpackLog(event, "StatusSigned", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
