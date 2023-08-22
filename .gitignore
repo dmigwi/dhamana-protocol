@@ -4,6 +4,12 @@ node_modules
 # generated binary
 dhamana-protocol
 
+# Keep development, localnet and mainnet configuration local.
+# client/deployment/development/deployment.go
+# client/deployment/sapphirelocalnet/deployment.go
+# client/deployment/sapphiremainnet/deployment.go
+
+
 # ssl generated files
 *.crt
 *.csr
