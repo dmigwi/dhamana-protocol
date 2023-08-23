@@ -15,10 +15,10 @@ import (
 // rpcMessage defines the structure accepted for all requests and responses.
 // This struct is compatible with JSON-RPC version 2.0.
 type rpcMessage struct {
-	ID      uint16      `json:"id"`
-	Version string      `json:"jsonrpc"`          // required on a request and a response.
-	Method  string      `json:"method,omitempty"` // required on a request
-	Sender  *senderInfo `json:"sender,omitempty"` // required on a request
+	ID      uint16       `json:"id"`
+	Version string       `json:"jsonrpc"`          // required on a request and a response.
+	Method  utils.Method `json:"method,omitempty"` // required on a request
+	Sender  *senderInfo  `json:"sender,omitempty"` // required on a request
 
 	Params []interface{}   `json:"params,omitempty"`
 	Result json.RawMessage `json:"result,omitempty"`

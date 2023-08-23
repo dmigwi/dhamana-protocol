@@ -81,7 +81,7 @@ func decodeRequestBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired b
 	}
 
 	// validate the method passed.
-	methodType, params := utils.GetMethodParams(msg.Method)
+	methodType, params := utils.GetMethodParams(utils.Method(msg.Method))
 	if methodType == utils.UnknownType {
 		err = fmt.Errorf("method %s not supportted", msg.Method)
 		msgError = utils.ErrUnknownMethod
@@ -246,7 +246,7 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 	auth := s.backend.Transactor(sender)
 	transactor := contracts.ChatRaw{Contract: s.bondChat}
 
-	tx, err := transactor.Transact(auth, msg.Method, msg.Params...)
+	tx, err := transactor.Transact(auth, string(msg.Method), msg.Params...)
 	if err != nil {
 		msg.packServerError(utils.ErrInternalFailure, err)
 		writeResponse(w, msg)

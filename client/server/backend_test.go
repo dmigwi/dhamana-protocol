@@ -47,7 +47,7 @@ var (
 
 type input struct {
 	testName   string
-	method     string
+	method     utils.Method
 	body       interface{}
 	needSigner bool
 }
@@ -104,7 +104,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				method:     http.MethodGet,
 				needSigner: false,
 				body: rpcMessage{
-					Method: "getServerPubKey",
+					Method: utils.GetServerPubKey,
 				},
 			},
 			val: output{
@@ -135,7 +135,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				needSigner: false,
 				body: rpcMessage{
 					Version: "1.0",
-					Method:  "getServerPubKey",
+					Method:  utils.GetServerPubKey,
 				},
 			},
 			val: output{
@@ -169,7 +169,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				needSigner: false,
 				body: rpcMessage{
 					Version: "2.0",
-					Method:  "getServerPubKey",
+					Method:  utils.GetServerPubKey,
 					Sender: &senderInfo{
 						Address: common.Address{},
 					},
@@ -189,7 +189,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				needSigner: true,
 				body: rpcMessage{
 					Version: "2.0",
-					Method:  "createBond",
+					Method:  utils.CreateBond,
 					Sender: &senderInfo{
 						Address:    sampleHexAddress,
 						SigningKey: "",
@@ -210,7 +210,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				needSigner: true,
 				body: rpcMessage{
 					Version: "2.0",
-					Method:  "createBondAndSign",
+					Method:  utils.Method("createBondAndSign"),
 					Sender: &senderInfo{
 						Address:    sampleHexAddress,
 						SigningKey: sampleSigningKey,
@@ -231,7 +231,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				needSigner: false,
 				body: rpcMessage{
 					Version: "2.0",
-					Method:  "getServerPubKey",
+					Method:  utils.GetServerPubKey,
 					Sender: &senderInfo{
 						Address: sampleHexAddress,
 					},
@@ -252,7 +252,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				needSigner: false,
 				body: rpcMessage{
 					Version: "2.0",
-					Method:  "getServerPubKey",
+					Method:  utils.GetServerPubKey,
 					Sender: &senderInfo{
 						Address: sampleHexAddress,
 					},
@@ -273,7 +273,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				needSigner: false,
 				body: rpcMessage{
 					Version: "2.0",
-					Method:  "getServerPubKey",
+					Method:  utils.GetServerPubKey,
 					Sender: &senderInfo{
 						Address: sampleHexAddress,
 					},
@@ -295,7 +295,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				body: rpcMessage{
 					ID:      21,
 					Version: "2.0",
-					Method:  "signBondStatus",
+					Method:  utils.SignBondStatus,
 					Sender: &senderInfo{
 						Address:    sampleHexAddress,
 						SigningKey: sampleSigningKey,
@@ -318,12 +318,12 @@ func TestDecodeRequestBody(t *testing.T) {
 				body: rpcMessage{
 					ID:      21,
 					Version: "2.0",
-					Method:  "getBondsByStatus",
+					Method:  utils.GetBondByAddress,
 					Sender: &senderInfo{
 						Address:    sampleHexAddress,
 						SigningKey: sampleSigningKey,
 					},
-					Params: []interface{}{0},
+					Params: []interface{}{sampleHexAddress},
 				},
 			},
 			val: output{
@@ -340,7 +340,7 @@ func TestDecodeRequestBody(t *testing.T) {
 			var buf bytes.Buffer
 			_ = json.NewEncoder(&buf).Encode(v.data.body) // error ignored since its not being tested.
 
-			req := httptest.NewRequest(v.data.method, "/random-path", &buf)
+			req := httptest.NewRequest(string(v.data.method), "/random-path", &buf)
 
 			msg := rpcMessage{}
 			retType := decodeRequestBody(req, &msg, v.data.needSigner)
@@ -480,11 +480,11 @@ func TestServerPubkey(t *testing.T) {
 				body: rpcMessage{
 					ID:      20,
 					Version: "2.0",
-					Method:  "getBondsByStatus",
+					Method:  utils.GetBondByAddress,
 					Sender: &senderInfo{
 						Address: sampleHexAddress,
 					},
-					Params: []interface{}{1},
+					Params: []interface{}{sampleHexAddress1},
 				},
 			},
 			val: output{
@@ -500,7 +500,7 @@ func TestServerPubkey(t *testing.T) {
 				body: rpcMessage{
 					ID:      20,
 					Version: "2.0",
-					Method:  "getServerPubKey",
+					Method:  utils.GetServerPubKey,
 					Sender: &senderInfo{
 						Address: sampleHexAddress,
 					},
@@ -518,7 +518,7 @@ func TestServerPubkey(t *testing.T) {
 			responseWritter := httptest.NewRecorder()
 
 			serverConf.serverPubkey(responseWritter,
-				httptest.NewRequest(v.data.method, "/serverpubkey", &buf))
+				httptest.NewRequest(string(v.data.method), "/serverpubkey", &buf))
 
 			data, err := io.ReadAll(responseWritter.Body)
 			if err != nil {
@@ -583,7 +583,7 @@ func TestBackendQueryFunc(t *testing.T) {
 				body: rpcMessage{
 					ID:      20,
 					Version: "2.0",
-					Method:  "getServerPubKey",
+					Method:  utils.GetServerPubKey,
 					Sender: &senderInfo{
 						Address:    sampleHexAddress2,
 						SigningKey: sampleSigningKey,
@@ -604,7 +604,7 @@ func TestBackendQueryFunc(t *testing.T) {
 				body: rpcMessage{
 					ID:      20,
 					Version: "2.0",
-					Method:  "signBondStatus",
+					Method:  utils.SignBondStatus,
 					Sender: &senderInfo{
 						Address:    sampleHexAddress3,
 						SigningKey: sampleSigningKey,
@@ -625,7 +625,7 @@ func TestBackendQueryFunc(t *testing.T) {
 				body: rpcMessage{
 					ID:      20,
 					Version: "2.0",
-					Method:  "signBondStatus",
+					Method:  utils.SignBondStatus,
 					Sender: &senderInfo{
 						Address:    sampleHexAddress1,
 						SigningKey: sampleSigningKey,
@@ -646,7 +646,7 @@ func TestBackendQueryFunc(t *testing.T) {
 				body: rpcMessage{
 					ID:      20,
 					Version: "2.0",
-					Method:  "createBond",
+					Method:  utils.CreateBond,
 					Sender: &senderInfo{
 						Address:    sampleHexAddress2,
 						SigningKey: sampleSigningKey,
@@ -661,7 +661,7 @@ func TestBackendQueryFunc(t *testing.T) {
 				body: rpcMessage{
 					ID:      20,
 					Version: "2.0",
-					Method:  "signBondStatus",
+					Method:  utils.SignBondStatus,
 					Sender: &senderInfo{
 						Address:    sampleHexAddress2,
 						SigningKey: sampleSigningKey,
@@ -677,7 +677,7 @@ func TestBackendQueryFunc(t *testing.T) {
 				body: rpcMessage{
 					ID:      20,
 					Version: "2.0",
-					Method:  "updateBondStatus",
+					Method:  utils.UpdateBondStatus,
 					Sender: &senderInfo{
 						Address:    sampleHexAddress2,
 						SigningKey: sampleSigningKey,
@@ -696,7 +696,7 @@ func TestBackendQueryFunc(t *testing.T) {
 			responseWritter := httptest.NewRecorder()
 
 			serverConf.backendQueryFunc(responseWritter,
-				httptest.NewRequest(v.data.method, "/backend", &buf))
+				httptest.NewRequest(string(v.data.method), "/backend", &buf))
 
 			data, err := io.ReadAll(responseWritter.Body)
 			if err != nil {

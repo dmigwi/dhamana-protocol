@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/dmigwi/dhamana-protocol/client/utils"
 	_ "github.com/lib/pq"  // postgres
 	_ "modernc.org/sqlite" // sqlite
 )
@@ -19,7 +20,7 @@ const (
 	// SqliteDriverName defines the sqlite driver name.
 	SqliteDriverName = "sqlite"
 
-	// createTableBond is sql statement creating a table with the name table_bond.
+	// createTableBond is an sql statement creating a table with the name table_bond.
 	// It creates the table if it doesn't exists.
 	createTableBond = "CREATE TABLE IF NOT EXISTS table_bond (" +
 		"bond_address VARCHAR(42) PRIMARY KEY," +
@@ -37,7 +38,7 @@ const (
 		"last_status SMALLINT CHECK (last_status BETWEEN 0 AND 10)," +
 		"last_update TIMESTAMPTZ)"
 
-	// createTableBondStatus is sql statement creating a table with the name table_bond_status.
+	// createTableBondStatus is an sql statement creating a table with the name table_bond_status.
 	// It creates the table if it doesn't exists.
 	createTableBondStatus = "CREATE TABLE IF NOT EXISTS table_bond_status (" +
 		"id SERIAL PRIMARY KEY," +
@@ -47,16 +48,32 @@ const (
 		"holder_signed BOOLEAN," +
 		"update_time TIMESTAMPTZ)"
 
-	// createChatTable is sql statement creating a table with the name table_chat.
+	// createChatTable is an sql statement creating a table with the name table_chat.
 	// It creates the table if it doesn't exists.
 	createChatTable = "CREATE TABLE IF NOT EXISTS table_chat (" +
 		"id SERIAL PRIMARY KEY," +
 		"sender VARCHAR(42)," +
 		"chat_msg TEXT," +
 		"recieved TIMESTAMPTZ)"
+
+	// fetchBonds is an sql query that fetches all the bonds that are owned
+	// by bond party or they are still in the negotiation stage.
+	fetchBonds = "SELECT (bond_address,created_time,currency,last_status)" +
+		"FROM table_bond WHERE issuer_address = ? OR last_status = 0 " +
+		"Or holder_address = ? ORDER BY 'last_update' DESC LIMIT = ?"
+
+	// fetchBondByAddress is an sql statement that returns a bond identified by
+	// the provided address if the sender is a party to the bond or the bond
+	// is still in the negotiation stage.
+	fetchBondByAddress = "SELECT (bond_address,issuer_address,holder_address," +
+		"created_time,tx_hash,created_block,principal,coupon_rate,coupon_date," +
+		"maturity_date,currency,intro_msg,last_status,last_update)" +
+		"FROM table_bond WHERE bond_address = ? AND (last_status = 0 OR " +
+		"issuer_address = ? OR holder_address = ?) " +
+		"ORDER BY 'last_update'"
 )
 
-// tablesToSQLStmt is an array of sql statements used to create those tables
+// tablesToSQLStmt is an array of sql statements used to create the missing tables
 // if they don't exist.
 var tablesSQLStmt = []string{
 	createTableBond,
@@ -64,10 +81,22 @@ var tablesSQLStmt = []string{
 	createChatTable,
 }
 
+// reqToStmt matches the respective Methods supported to thier sql queries.
+var reqToStmt = map[utils.Method]string{
+	utils.GetBonds:         fetchBonds,
+	utils.GetBondByAddress: fetchBondByAddress,
+}
+
 // DB defines the parameters needed to use a persistence db instance connect to.
 type DB struct {
 	*sql.DB
 	ctx context.Context
+}
+
+// reader defines the method that read the sql row into the required interface
+// type returned.
+type reader interface {
+	Read(row *sql.Row) interface{}
 }
 
 // NewDB returns an opened db instance whose connection has been tested with
@@ -81,18 +110,19 @@ func NewDB(ctx context.Context, port uint16,
 
 	db, err := sql.Open(driverName, connInfo)
 	if err != nil {
-		log.Errorf("unable to open to postgres: err %v", err)
+		log.Errorf("unable to open to %s: err %v", driverName, err)
 		return nil, err
 	}
 
 	if err = db.PingContext(ctx); err != nil {
-		log.Errorf("connection to postgres failed: err %v", err)
+		log.Errorf("connection to %s failed: err %v", driverName, err)
 		return nil, err
 	}
 
-	for _, stmt := range tablesSQLStmt {
+	for i, stmt := range tablesSQLStmt {
 		if _, err := db.ExecContext(ctx, stmt); err != nil {
-			return nil, fmt.Errorf("creating a table failed Error: %v", err)
+			log.Errorf("creating a table index (%d) failed Error: %v", i, err)
+			return nil, err
 		}
 	}
 
@@ -100,4 +130,9 @@ func NewDB(ctx context.Context, port uint16,
 		DB:  db,
 		ctx: ctx,
 	}, nil
+}
+
+func (db *DB) QueryData(method utils.Method, r reader, params ...interface{}) ([]interface{}, error) {
+	// meth
+	return nil, nil
 }
