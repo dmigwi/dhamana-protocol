@@ -6,6 +6,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
@@ -58,7 +59,7 @@ const (
 
 	// fetchBonds is an sql query that fetches all the bonds that are owned
 	// by bond party or they are still in the negotiation stage.
-	fetchBonds = "SELECT (bond_address,created_time,currency,last_status)" +
+	fetchBonds = "SELECT (bond_address,created_time,coupon_rate,currency,last_status)" +
 		"FROM table_bond WHERE issuer_address = ? OR last_status = 0 " +
 		"Or holder_address = ? ORDER BY 'last_update' DESC LIMIT = ?"
 
@@ -93,10 +94,10 @@ type DB struct {
 	ctx context.Context
 }
 
-// reader defines the method that read the sql row into the required interface
-// type returned.
-type reader interface {
-	Read(row *sql.Row) interface{}
+// Reader defines the method that reads the row fields into the require data interface.
+// To read data, pass pointers to the expect field the parameter function.
+type Reader interface {
+	Read(fn func(fields ...any) error) (interface{}, error)
 }
 
 // NewDB returns an opened db instance whose connection has been tested with
@@ -132,7 +133,43 @@ func NewDB(ctx context.Context, port uint16,
 	}, nil
 }
 
-func (db *DB) QueryData(method utils.Method, r reader, params ...interface{}) ([]interface{}, error) {
-	// meth
-	return nil, nil
+// QueryLocalData executes the sql statement associated with the provided local
+// method and uses the reader interface provided to read the row data result set.
+// It then returns an array of data for each row read successfully otherwise
+// an error is returned.
+func (db *DB) QueryLocalData(method utils.Method, r Reader, sender string,
+	params ...interface{},
+) ([]interface{}, error) {
+	mType, _ := utils.GetMethodParams(method)
+	if mType != utils.LocalType {
+		return nil, errors.New("only LocalType methods are supported")
+	}
+
+	stmt, ok := reqToStmt[method]
+	if !ok {
+		return nil, fmt.Errorf("missing query for method %q", method)
+	}
+
+	switch method {
+	case utils.GetBondByAddress, utils.GetBonds:
+		// The sender's address is used 3 times as an argument for all queries.
+		params = append(params, []interface{}{sender, sender, sender}...)
+	}
+
+	rows, err := db.QueryContext(db.ctx, stmt, params)
+	if err != nil {
+		return nil, fmt.Errorf("fetching query for method %q failed: %v", method, err)
+	}
+
+	var data []interface{}
+	for rows.Next() {
+		row, err := r.Read(rows.Scan)
+		if err != nil {
+			return nil, err
+		}
+
+		data = append(data, row)
+	}
+
+	return data, nil
 }

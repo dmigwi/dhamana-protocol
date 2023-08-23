@@ -329,7 +329,7 @@ func TestDecodeRequestBody(t *testing.T) {
 			val: output{
 				errCode:    1008,
 				shortErr:   utils.ErrUnknownMethod,
-				longErr:    "unsupported method getBondsByStatus found for this route",
+				longErr:    "unsupported method getBondByAddress found for this route",
 				methodType: utils.LocalType,
 			},
 		},
@@ -490,7 +490,7 @@ func TestServerPubkey(t *testing.T) {
 			val: output{
 				errCode:  1008,
 				shortErr: utils.ErrUnknownMethod,
-				longErr:  "unsupported method getBondsByStatus found for this route",
+				longErr:  "unsupported method getBondByAddress found for this route",
 			},
 		},
 		{

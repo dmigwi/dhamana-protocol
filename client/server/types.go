@@ -5,6 +5,7 @@ package server
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -53,6 +54,31 @@ type serverKeyResp struct {
 	sharedKey []byte // Generate using the remote Pubkey + local private key.
 }
 
+// BondResp defines the response in an array form that is returned when get bonds
+// local method is queried by the client.
+type bondResp struct {
+	BondAddress common.Address `json:"bond_address"`
+	CreatedTime time.Time      `json:"created_time"`
+	CouponRate  uint8          `json:"coupon_rate"`
+	Currency    uint8          `json:"currency"`
+	LastStatus  uint8          `json:"last_status"`
+}
+
+// bondByAddressResp defines the complete bond details excluding the secure
+// details. Secure bond details require a separate request to access them.
+type bondByAddressResp struct {
+	*bondResp
+	Issuer         common.Address `json:"issuer_address"`
+	Holder         common.Address `json:"holder_address"`
+	TxHash         string         `json:"tx_hash"`
+	CreatedAtBlock uint32         `json:"created_at_block"`
+	Principal      uint64         `json:"principal"`
+	CouponDate     time.Time      `json:"coupon_date"`
+	MaturityDate   time.Time      `json:"maturity_date"`
+	IntroMessage   string         `json:"intro_msg"`
+	LastUpdate     time.Time      `json:"last_update"`
+}
+
 // packServerError packs the errors identified into a response ready to be sent
 // to the client.
 func (msg *rpcMessage) packServerError(shortErr, desc error) {
@@ -87,4 +113,24 @@ func (msg *rpcMessage) packServerResult(data interface{}) {
 
 	// push the data bytes into the msg.Result.
 	_ = json.Unmarshal(b, &msg.Result)
+}
+
+// Reader interface implementation for type bondResp.
+func (r *bondResp) Read(fn func(fields ...any) error) (interface{}, error) {
+	var resp bondResp
+	err := fn(&resp.BondAddress, &resp.CreatedTime, &resp.CouponRate,
+		&resp.Currency, &resp.LastStatus,
+	)
+	return &resp, err
+}
+
+// Reader interface implementation for type bondByAddressResp.
+func (r *bondByAddressResp) Read(fn func(fields ...any) error) (interface{}, error) {
+	var resp bondByAddressResp
+	err := fn(&resp.BondAddress, &resp.Issuer, &resp.Holder, &resp.CreatedTime,
+		&resp.TxHash, &resp.CreatedAtBlock, &resp.Principal, &resp.CouponRate,
+		&resp.CouponDate, &resp.MaturityDate, &resp.Currency, &resp.IntroMessage,
+		&resp.LastStatus, &resp.LastUpdate,
+	)
+	return &resp, err
 }

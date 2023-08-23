@@ -32,6 +32,14 @@ type config struct {
 	TLSCertFile string `long:"certfile" description:"tls certificate file name" default:"server.crt"`
 	TLSKeyFile  string `long:"keyfile" description:"tls key file name" default:"server.key"`
 	ServerURL   string `long:"url" description:"Server url to server content using" default:"https://0.0.0.0:30443"`
+
+	// DB configuration
+	DbPort     uint16 `long:"db_port" description:"Port to use when connecting to the db" default:"5432"`
+	DbDriver   string `long:"db_driver" description:"Driver name of the database to use {postgres,sqlite}" default:"postgres"`
+	DbHost     string `long:"db_host" description:"Host to use in connecting to the db" default:"localhost"`
+	DbUser     string `long:"db_user" description:"Username to use in connecting to the db" default:"ana"`
+	DbPassword string `long:"db_password" description:"Password of the database username to use" default:"ana"`
+	DbName     string `long:"db_name" description:"Name of the database to connect to" default:"dhamana"`
 }
 
 // defaultDataDir returns the default
@@ -83,6 +91,11 @@ func loadConfig() (*config, error) {
 		return nil, fmt.Errorf("invalid server url found: %q \n %s", conf.ServerURL, h.String())
 	}
 
+	// confirm all the db configurations have non-zero values
+	if !isDbConfig(&conf) {
+		return nil, fmt.Errorf("missing some db configurations \n %s", h.String())
+	}
+
 	return &conf, nil
 }
 
@@ -131,4 +144,17 @@ func validateTLSCerts(conf *config) error {
 	}
 
 	return nil
+}
+
+// isDbConfig confirms that the provided db config is valid.
+func isDbConfig(conf *config) bool {
+	if conf.DbPort == 0 {
+		return false
+	}
+
+	if conf.DbDriver == "" || conf.DbHost == "" || conf.DbName == "" ||
+		conf.DbPassword == "" || conf.DbUser == "" {
+		return false
+	}
+	return true
 }

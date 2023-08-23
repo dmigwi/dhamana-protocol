@@ -14,6 +14,7 @@ import (
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // sessionTime defines the duration when the server public key is valid.
@@ -194,9 +195,8 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	// Only allow contract methods to be executed.
-	// TODO: Allow execution of locally implementated methods too.
-	if methodType != utils.ContractType {
+	// Only allow contract and local type methods to be executed.
+	if methodType != utils.ContractType && methodType != utils.LocalType {
 		err := fmt.Errorf("unsupported method %s found for this route", msg.Method)
 		msg.packServerError(utils.ErrUnknownMethod, err)
 		writeResponse(w, msg)
@@ -246,14 +246,45 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 	auth := s.backend.Transactor(sender)
 	transactor := contracts.ChatRaw{Contract: s.bondChat}
 
-	tx, err := transactor.Transact(auth, string(msg.Method), msg.Params...)
+	var res interface{}
+
+	switch methodType {
+	case utils.ContractType:
+		var tx *types.Transaction
+		tx, err = transactor.Transact(auth, string(msg.Method), msg.Params...)
+		if err != nil && tx != nil {
+			res = tx.Hash().String()
+		}
+	case utils.LocalType:
+		switch msg.Method {
+		case utils.GetBonds:
+			res, err = s.db.QueryLocalData(msg.Method, new(bondResp),
+				msg.Sender.Address.String(), msg.Params...)
+		case utils.GetBondByAddress:
+			var arrayData []interface{}
+			arrayData, err = s.db.QueryLocalData(msg.Method, new(bondByAddressResp),
+				msg.Sender.Address.String(), msg.Params...)
+			// data response expected is just one record here.
+			if len(arrayData) != 0 {
+				res = arrayData[0]
+			}
+		default:
+			err = fmt.Errorf("missing implementation for method %s", msg.Method)
+		}
+	}
+
+	// if res hasn't be populated yet, data returned was empty.
+	if res == nil {
+		res = struct{}{}
+	}
+
 	if err != nil {
 		msg.packServerError(utils.ErrInternalFailure, err)
 		writeResponse(w, msg)
 		return
 	}
 
-	msg.packServerResult(tx)
+	msg.packServerResult(res)
 	writeResponse(w, msg)
 }
 

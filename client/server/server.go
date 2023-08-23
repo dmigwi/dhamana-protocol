@@ -14,6 +14,7 @@ import (
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/sapphire"
+	"github.com/dmigwi/dhamana-protocol/client/storage"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -36,11 +37,14 @@ type ServerConfig struct {
 
 	// sessionKeys holds the sessional access keys associated with a given user.
 	sessionKeys *sync.Map
+	db          *storage.DB
 }
 
 // NewServer validates the deployment configuration information before
 // creating a sapphire client wrapped around an eth client.
-func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverURL string) (*ServerConfig, error) {
+func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
+	network, serverURL, dbDriver, dbHost, dbName, dbUser, dbPassword string,
+) (*ServerConfig, error) {
 	// Validate deployment information first.
 	net := utils.ToNetType(network)
 	if !isDeployedNetMatching(net) {
@@ -114,6 +118,11 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverU
 		return nil, err
 	}
 
+	db, err := storage.NewDB(ctx, port, dbDriver, dbHost, dbUser, dbPassword, dbName)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ServerConfig{
 		ctx:          ctx,
 		network:      net,
@@ -126,6 +135,7 @@ func NewServer(ctx context.Context, certfile, keyfile, datadir, network, serverU
 		backend:     backend,
 		bondChat:    chatInstance,
 		sessionKeys: new(sync.Map),
+		db:          db,
 	}, nil
 }
 
