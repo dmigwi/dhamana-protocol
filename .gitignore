@@ -9,6 +9,7 @@ client/deployment/development/deployment.go
 client/deployment/sapphirelocalnet/deployment.go
 client/deployment/sapphiremainnet/deployment.go
 
+go.work.sum
 
 # ssl generated files
 *.crt
