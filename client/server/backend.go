@@ -268,6 +268,9 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 			if len(arrayData) != 0 {
 				res = arrayData[0]
 			}
+		case utils.GetChats:
+			res, err = s.db.QueryLocalData(msg.Method, new(chatMsgsResp),
+				msg.Sender.Address.String(), msg.Params...)
 		default:
 			err = fmt.Errorf("missing implementation for method %s", msg.Method)
 		}
@@ -310,7 +313,7 @@ func castType(param interface{}, pType utils.ParamType) (v interface{}, err erro
 		// JSON distinct types do not differentiate between integers and floats.
 		// JSON returns all numbers as float64 values.
 		// https://www.webdatarocks.com/doc/data-types-in-json/#number
-		rawInt := int(t)
+		rawInt := uint(t)
 
 		switch pType {
 		case utils.Uint8Type:
@@ -325,13 +328,17 @@ func castType(param interface{}, pType utils.ParamType) (v interface{}, err erro
 			if rawInt <= math.MaxUint32 {
 				v = uint8(rawInt)
 			}
+		case utils.LimitType:
+			if rawInt <= uint(utils.MaxLimit) {
+				v = uint8(rawInt)
+			}
 		default:
 			typeFound = "number"
 		}
 	}
 
 	// Casting to the require parameter failed due to use of incorrect parameter value
-	if v == nil {
+	if v == nil && err == nil {
 		err = fmt.Errorf("expected param %v to be of type %v but found it to be %s", param, pType, typeFound)
 	}
 	return

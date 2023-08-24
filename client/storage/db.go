@@ -226,9 +226,14 @@ func (d *DB) QueryLocalData(method utils.Method, r Reader, sender string,
 	}
 
 	switch method {
-	case utils.GetBondByAddress, utils.GetBonds:
-		// The sender's address is used 3 times as an argument for all queries.
-		params = append(params, []interface{}{sender, sender, sender}...)
+	case utils.GetBonds, utils.GetChats:
+		// The last two param values are always {limit, offset}.
+		// Append sender params before those two params.
+		n := len(params)
+		firstParams := params[:n-2]
+		lastParams := params[n-2:] // {limit, offset}.
+		params = append(firstParams, []interface{}{sender, sender}...)
+		params = append(params, lastParams...)
 	}
 
 	rows, err := d.db.QueryContext(d.ctx, d.formatPreparedStmt(stmt), params)

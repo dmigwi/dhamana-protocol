@@ -30,6 +30,13 @@ const (
 	// StringType defines a string value type.
 	StringType ParamType = "string"
 
+	// LimitType defines unsigned LIMIT integer parameter of value type uint16.
+	LimitType ParamType = "uint16_LIMIT"
+
+	// MaxLimit restricts the max limit that can be set into 100 when querying
+	// more than 1 record.
+	MaxLimit = uint16(100)
+
 	// UnsupportedType defines all other types not classified as int, float or string
 	UnsupportedType ParamType = "unsupported"
 
@@ -166,14 +173,20 @@ var (
 
 		// getBonds returns all the bonds with status Negotiating or owned by
 		// the sender if their current status status is past Negotiating stage.
-		// No parameter Required
-		GetBonds: {},
+		// Parameter Required: limit uint16, offset uint16
+		// limit => Defines the number of bonds to return. Max value is 100
+		// offset => Defines the number of bonds to skip before returning the
+		//  	require number of bonds.
+		GetBonds: {LimitType, Uint16Type},
 		// getChats returns the conversation in the bond address provides.
 		// The specific bond must either be in the negotiation stage or
 		// the sender is a party to the bond.
-		// Parameter Required: bondAddress string
+		// Parameter Required: bondAddress string, limit uint16, offset uint16
 		// bondAddress => Defines the address of the bond in question.
-		GetChats: {AddressType},
+		// limit => Defines the number of chats to return. Max value is 100
+		// offset => Defines the number of chats to skip before returning the
+		//  	require number of chats.
+		GetChats: {AddressType, LimitType, Uint16Type},
 	}
 
 	// serverKeyMethod defines the method used to query the server keys

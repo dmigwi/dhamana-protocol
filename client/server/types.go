@@ -82,6 +82,16 @@ type bondByAddressResp struct {
 // lastSyncedBlockResp defines the block last synced.
 type lastSyncedBlockResp uint64
 
+// chatMsgsResp defines the response returned when get chats method is queried
+// by the client.
+type chatMsgsResp struct {
+	Sender          common.Address `json:"sender"`
+	BondAddress     common.Address `json:"bond_address"`
+	Message         string         `json:"chat_msg"`
+	CreatedTime     time.Time      `json:"created_at"`
+	LastSyncedBlock uint64         `json:"last_synced_block"`
+}
+
 // packServerError packs the errors identified into a response ready to be sent
 // to the client.
 func (msg *rpcMessage) packServerError(shortErr, desc error) {
@@ -143,5 +153,14 @@ func (r *lastSyncedBlockResp) Read(fn func(fields ...any) error) (interface{}, e
 	var resp uint32
 
 	err := fn(&resp)
+	return &resp, err
+}
+
+// Reader interface implementation for type chatMsgsResp.
+func (r *chatMsgsResp) Read(fn func(fields ...any) error) (interface{}, error) {
+	var resp chatMsgsResp
+	err := fn(&resp.Sender, &resp.BondAddress, &resp.Message,
+		&resp.CreatedTime, &resp.LastSyncedBlock,
+	)
 	return &resp, err
 }
