@@ -83,7 +83,7 @@ func getDeployedTxHash(net utils.NetworkType) (tx common.Hash) {
 }
 
 // getDeployedBlock returns the block number when the current contract was deployed.
-func getDeployedBlock(net utils.NetworkType) (block uint32) {
+func getDeployedBlock(net utils.NetworkType) (block uint64) {
 	switch net {
 	case utils.SapphireTestnet:
 		block = sapphiretestnet.GetDeploymentBlock()

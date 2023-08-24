@@ -71,17 +71,17 @@ type bondByAddressResp struct {
 	Issuer          common.Address `json:"issuer_address"`
 	Holder          common.Address `json:"holder_address"`
 	TxHash          string         `json:"tx_hash"`
-	CreatedAtBlock  uint32         `json:"created_at_block"`
+	CreatedAtBlock  uint64         `json:"created_at_block"`
 	Principal       uint64         `json:"principal"`
 	CouponDate      time.Time      `json:"coupon_date"`
 	MaturityDate    time.Time      `json:"maturity_date"`
 	IntroMessage    string         `json:"intro_msg"`
 	LastUpdate      time.Time      `json:"last_update"`
-	LastSyncedBlock uint32         `json:"last_synced_block"`
+	LastSyncedBlock uint64         `json:"last_synced_block"`
 }
 
 // lastSyncedBlockResp defines the block last synced.
-type lastSyncedBlockResp uint32
+type lastSyncedBlockResp uint64
 
 // packServerError packs the errors identified into a response ready to be sent
 // to the client.

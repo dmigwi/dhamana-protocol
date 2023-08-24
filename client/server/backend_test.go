@@ -447,14 +447,6 @@ func (m *mockWrapper) SubscribeFilterLogs(ctx context.Context, query ethereum.Fi
 	return nil, nil
 }
 
-func (m *mockWrapper) TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error) {
-	return
-}
-
-func (m *mockWrapper) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
-	return nil, nil
-}
-
 func genMockWrapper(ctx context.Context) error {
 	conn := &mockWrapper{}
 	backend, err := sapphire.WrapClient(ctx, conn, utils.LocalTesting,

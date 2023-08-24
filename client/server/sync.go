@@ -28,10 +28,10 @@ func (s *ServerConfig) SyncData() error {
 
 	// fetch the last synced block from the database.
 	lastSyncedBlock, _ := s.db.QueryLocalData(utils.GetLastSyncedBlock, new(lastSyncedBlockResp), "")
-	var syncedBlock uint32
+	var syncedBlock uint64
 	if len(lastSyncedBlock) > 0 {
 		// To start on the next block yet to be synced add 1.
-		syncedBlock = lastSyncedBlock[0].(uint32) + 1
+		syncedBlock = lastSyncedBlock[0].(uint64) + 1
 	}
 
 	// compare the two blocks and pick the latests one.

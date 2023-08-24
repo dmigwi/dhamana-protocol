@@ -37,6 +37,6 @@ func GetDeploymentTime() (uint64) {
 }
 
 // GetDeploymentBlock returns the block number when the contract was actually deployed 
-func GetDeploymentBlock() (uint32) {
+func GetDeploymentBlock() (uint64) {
 	return 0
 }

@@ -95,7 +95,7 @@ package xxxx
 		}, {
 			Identifier: "block number",
 			FuncName:   "GetDeploymentBlock",
-			ReturnType: "uint32",
+			ReturnType: "uint64",
 			Comment:    "returns the block number when the contract was actually deployed ",
 		},
 	}
