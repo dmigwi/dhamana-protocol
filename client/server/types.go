@@ -54,8 +54,8 @@ type serverKeyResp struct {
 	sharedKey []byte // Generate using the remote Pubkey + local private key.
 }
 
-// BondResp defines the response in an array form that is returned when get bonds
-// local method is queried by the client.
+// BondResp defines the response returned in an array form that is returned
+// when get bonds local type method is queried by the client.
 type bondResp struct {
 	BondAddress common.Address `json:"bond_address"`
 	CreatedTime time.Time      `json:"created_time"`
@@ -82,8 +82,8 @@ type bondByAddressResp struct {
 // lastSyncedBlockResp defines the block last synced.
 type lastSyncedBlockResp uint64
 
-// chatMsgsResp defines the response returned when get chats method is queried
-// by the client.
+// chatMsgsResp defines the response returned in an array form when get
+// chats local type method is queried by the client.
 type chatMsgsResp struct {
 	Sender          common.Address `json:"sender"`
 	BondAddress     common.Address `json:"bond_address"`

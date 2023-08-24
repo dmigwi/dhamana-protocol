@@ -91,9 +91,9 @@ func loadConfig() (*config, error) {
 		return nil, fmt.Errorf("invalid server url found: %q \n %s", conf.ServerURL, h.String())
 	}
 
-	// confirm all the db configurations have non-zero values
+	// confirm all the db configurations have supported values.
 	if !isDbConfig(&conf) {
-		return nil, fmt.Errorf("missing some db configurations \n %s", h.String())
+		return nil, fmt.Errorf("invalid db configurations found \n %s", h.String())
 	}
 
 	return &conf, nil

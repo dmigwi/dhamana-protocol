@@ -20,14 +20,16 @@ type eventData struct {
 	params  []interface{}
 }
 
-// SyncData creates listener that wait for events data to be received then
+// SyncData creates a listener that waits for events data to be received then
 // updates it to the local data persistence storage.
 func (s *ServerConfig) SyncData() error {
 	// fetch the block at which the contract was deployed
 	deployedBlock := getDeployedBlock(s.network)
 
 	// fetch the last synced block from the database.
-	lastSyncedBlock, _ := s.db.QueryLocalData(utils.GetLastSyncedBlock, new(lastSyncedBlockResp), "")
+	lastSyncedBlock, _ := s.db.QueryLocalData(utils.GetLastSyncedBlock,
+		new(lastSyncedBlockResp), "")
+
 	var syncedBlock uint64
 	if len(lastSyncedBlock) > 0 {
 		// To start on the next block yet to be synced add 1.
@@ -114,8 +116,8 @@ func (s *ServerConfig) SyncData() error {
 	eventsExit := make(chan struct{})
 
 	for name, ev := range eventsSubscriptions {
-		// Launches several goroutine whose purpose is to listen to error from
-		// events and pipe them into a single buffered channel.
+		// Launches several goroutines whose purpose is to listen to errors from
+		// events and pipe them into a single channel.
 		go func(n string, evSub event.Subscription) {
 			for {
 				select {
@@ -144,7 +146,7 @@ func (s *ServerConfig) SyncData() error {
 					event.Unsubscribe()
 				}
 
-				// This for attempts to empty all app pending requests.
+				// This attempts to empty all app pending write requests.
 			loop:
 				for {
 					select {
@@ -153,9 +155,11 @@ func (s *ServerConfig) SyncData() error {
 					default:
 					}
 				}
+
 				if err != nil {
 					log.Errorf("events data syncing ended with an error: %v", err)
 				}
+
 			case <-s.ctx.Done():
 				close(quitWithErr)
 
@@ -215,8 +219,8 @@ func (s *ServerConfig) SyncData() error {
 					method:  utils.InsertStatusChange,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Sender, data.BondAddress, data.Status, time.Now().UTC(),
-						data.Raw.BlockNumber,
+						data.Sender, data.BondAddress, data.Status,
+						time.Now().UTC(), data.Raw.BlockNumber,
 					},
 				}
 
@@ -234,15 +238,14 @@ func (s *ServerConfig) SyncData() error {
 					method:  utils.InsertStatusSigned,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Sender, data.BondAddress, data.Status, time.Now().UTC(),
-						data.Raw.BlockNumber,
+						data.Sender, data.BondAddress, data.Status,
+						time.Now().UTC(), data.Raw.BlockNumber,
 					},
 				}
 
 			default:
 				for info := range eventsData {
-					err := s.db.SetLocalData(info.method, info.params...)
-					if err != nil {
+					if err := s.db.SetLocalData(info.method, info.params...); err != nil {
 
 						// clean dirty writes made before on the current block.
 						// This is a safeguard built in here but execution should never
@@ -250,6 +253,9 @@ func (s *ServerConfig) SyncData() error {
 						s.db.CleanUpLocalData(info.blockNo)
 
 						quitWithErr <- err
+
+						// exit the for loop so that the shutdown error can be processed.
+						break
 					}
 				}
 			}
