@@ -33,7 +33,22 @@ const (
 	// JSONRPCVersion defines the JSON version supportted for all the backend requests
 	// recieved by the server.
 	JSONRPCVersion = "2.0"
+
+	// PostgresDriverName defines the postgres driver name.
+	PostgresDriverName = "postgres"
+
+	// SqliteDriverName defines the sqlite driver name.
+	SqliteDriverName = "sqlite"
 )
+
+// SupportedDbDrivers defines mappings of the supported db pointing the regex
+// string the selects blind variable placeholder in a prepared statement.
+// By default the prepared statements are set in pgsql standard but can be
+// easily transformed into sql standard via the regex strings below.
+var SupportedDbDrivers = map[string]string{
+	PostgresDriverName: `$\d`,
+	SqliteDriverName:   `?`,
+}
 
 // PrivateKey is generated using elliptic curve diffie-hellman algorithm. This
 // is used to share sensitive information between the server and the client i.e

@@ -152,7 +152,12 @@ func isDbConfig(conf *config) bool {
 		return false
 	}
 
-	if conf.DbDriver == "" || conf.DbHost == "" || conf.DbName == "" ||
+	// confirm the db driver is among the supported ones.
+	if _, ok := utils.SupportedDbDrivers[conf.DbDriver]; !ok {
+		return false
+	}
+
+	if conf.DbHost == "" || conf.DbName == "" ||
 		conf.DbPassword == "" || conf.DbUser == "" {
 		return false
 	}

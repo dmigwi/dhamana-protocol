@@ -14,19 +14,13 @@ import (
 )
 
 const (
-	// PostgresDriverName defines the postgres driver name.
-	PostgresDriverName = "postgres"
-
-	// SqliteDriverName defines the sqlite driver name.
-	SqliteDriverName = "sqlite"
-
 	// createTableBond is an sql statement creating a table with the name table_bond.
 	// It creates the table if it doesn't exists.
 	createTableBond = "CREATE TABLE IF NOT EXISTS table_bond (" +
 		"bond_address VARCHAR(42) PRIMARY KEY," +
 		"issuer_address VARCHAR(42)," +
 		"holder_address VARCHAR(42)," +
-		"created_time TIMESTAMPTZ," +
+		"created_at TIMESTAMPTZ," +
 		"tx_hash VARCHAR(66)," +
 		"created_at_block INTEGER," +
 		"principal INTEGER," +
@@ -71,19 +65,25 @@ const (
 
 	// fetchBonds is an sql query that fetches all the bonds that are owned
 	// by bond party or they are still in the negotiation stage.
-	fetchBonds = "SELECT (bond_address,created_time,coupon_rate,currency,last_status)" +
+	fetchBonds = "SELECT (bond_address,created_at,coupon_rate,currency,last_status)" +
 		"FROM table_bond WHERE issuer_address = ? OR last_status = 0 " +
-		"Or holder_address = ? ORDER BY 'last_update' DESC LIMIT = ?"
+		"Or holder_address = ? ORDER BY last_update DESC LIMIT ? OFFSET ?"
 
 	// fetchBondByAddress is an sql statement that returns a bond identified by
 	// the provided address if the sender is a party to the bond or the bond
 	// is still in the negotiation stage.
 	fetchBondByAddress = "SELECT (bond_address,issuer_address,holder_address," +
-		"created_time,tx_hash,created_at_block,principal,coupon_rate,coupon_date," +
+		"created_at,tx_hash,created_at_block,principal,coupon_rate,coupon_date," +
 		"maturity_date,currency,intro_msg,last_status,last_update, last_synced_block)" +
 		"FROM table_bond WHERE bond_address = ? AND (last_status = 0 OR " +
-		"issuer_address = ? OR holder_address = ?) " +
-		"ORDER BY 'last_update'"
+		"issuer_address = ? OR holder_address = ?) ORDER BY last_update"
+
+	// fetchChats is an sql query that fetches the conversation within a certain
+	// that the sender is a bond party or its still in the negotiation stage.
+	fetchChats = "SELECT (c.sender, c.bond_address, c.chat_msg, c.created_at, c.last_synced_block)" +
+		"FROM table_chat as c LEFT JOIN table_bond as b WHERE c.bond_address = b.bond_address AND " +
+		"(b.issuer_address = ? OR b.last_status = 0 " +
+		"Or b.holder_address = ?) ORDER BY c.created_at DESC LIMIT ? OFFSET ?"
 
 	// fetchLastSyncBlock returns the last block to be synced on the table_bond.
 	fetchLastSyncBlock = "SELECT last_synced_block FROM table_bond ORDER BY" +
@@ -150,6 +150,7 @@ var cleanUpStmt = []string{
 var reqToStmt = map[utils.Method]string{
 	utils.GetBonds:         fetchBonds,
 	utils.GetBondByAddress: fetchBondByAddress,
+	utils.GetChats:         fetchChats,
 
 	// method needed locally. Results are not sent via the server
 	utils.GetLastSyncedBlock: fetchLastSyncBlock,

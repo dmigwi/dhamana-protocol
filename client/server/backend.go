@@ -82,7 +82,7 @@ func decodeRequestBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired b
 	}
 
 	// validate the method passed.
-	methodType, params := utils.GetMethodParams(utils.Method(msg.Method))
+	methodType, params := utils.GetMethodParams(msg.Method)
 	if methodType == utils.UnknownType {
 		err = fmt.Errorf("method %s not supportted", msg.Method)
 		msgError = utils.ErrUnknownMethod

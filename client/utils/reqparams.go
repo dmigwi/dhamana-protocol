@@ -57,6 +57,7 @@ const (
 
 	GetBonds         Method = "getBonds"
 	GetBondByAddress Method = "getBondByAddress"
+	GetChats         Method = "getChats"
 
 	// Local Utils Methods. Results not sent via the server
 
@@ -167,6 +168,12 @@ var (
 		// the sender if their current status status is past Negotiating stage.
 		// No parameter Required
 		GetBonds: {},
+		// getChats returns the conversation in the bond address provides.
+		// The specific bond must either be in the negotiation stage or
+		// the sender is a party to the bond.
+		// Parameter Required: bondAddress string
+		// bondAddress => Defines the address of the bond in question.
+		GetChats: {AddressType},
 	}
 
 	// serverKeyMethod defines the method used to query the server keys
