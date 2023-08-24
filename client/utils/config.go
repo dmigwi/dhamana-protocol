@@ -41,13 +41,13 @@ const (
 	SqliteDriverName = "sqlite"
 )
 
-// SupportedDbDrivers defines mappings of the supported db pointing the regex
-// string the selects blind variable placeholder in a prepared statement.
-// By default the prepared statements are set in pgsql standard but can be
-// easily transformed into sql standard via the regex strings below.
+// SupportedDbDrivers defines mappings of the supported db to the regex/replacement
+// string that modifies the blind variable placeholder in a prepared statement.
+// By default the prepared statements are set into pgsql standard but can be
+// easily transformed into the required standard via the strings below.
 var SupportedDbDrivers = map[string]string{
-	PostgresDriverName: `$\d`,
-	SqliteDriverName:   `?`,
+	PostgresDriverName: `(\$\d)`, // regex expression
+	SqliteDriverName:   "?",      // replacement string
 }
 
 // PrivateKey is generated using elliptic curve diffie-hellman algorithm. This

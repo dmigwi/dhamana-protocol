@@ -70,7 +70,6 @@ type bondByAddressResp struct {
 	*bondResp
 	Issuer          common.Address `json:"issuer_address"`
 	Holder          common.Address `json:"holder_address"`
-	TxHash          string         `json:"tx_hash"`
 	CreatedAtBlock  uint64         `json:"created_at_block"`
 	Principal       uint64         `json:"principal"`
 	CouponDate      time.Time      `json:"coupon_date"`
@@ -132,7 +131,7 @@ func (r *bondResp) Read(fn func(fields ...any) error) (interface{}, error) {
 func (r *bondByAddressResp) Read(fn func(fields ...any) error) (interface{}, error) {
 	var resp bondByAddressResp
 	err := fn(&resp.BondAddress, &resp.Issuer, &resp.Holder, &resp.CreatedTime,
-		&resp.TxHash, &resp.CreatedAtBlock, &resp.Principal, &resp.CouponRate,
+		&resp.CreatedAtBlock, &resp.Principal, &resp.CouponRate,
 		&resp.CouponDate, &resp.MaturityDate, &resp.Currency, &resp.IntroMessage,
 		&resp.LastStatus, &resp.LastUpdate, &resp.LastSyncedBlock,
 	)
