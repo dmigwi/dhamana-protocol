@@ -45,10 +45,6 @@ contract ChatContract {
     // they would like to deal with.
     event HolderUpdate(address bondAddress, address holder);
 
-    // BondDisputeResolved creates an event showing the sender has more disputes
-    // to resolve in the said bond.
-    event BondStatusSigned(address sender, address bondAddress, BondContract.StatusChoice status);
-
     // Creates a bonds mapping to their contract address.
     mapping (address => BondContract) private bonds;
 

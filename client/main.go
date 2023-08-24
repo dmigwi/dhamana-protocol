@@ -43,6 +43,12 @@ func run(ctx context.Context, cancelFunc context.CancelFunc) {
 		return
 	}
 
+	// Initiate the data syncer
+	if err = s.SyncData(); err != nil {
+		log.Errorf("SyncData failed error: %v", err)
+		return
+	}
+
 	// Run the server
 	if err = s.Run(); err != nil {
 		log.Errorf("Server failed error: %v", err)

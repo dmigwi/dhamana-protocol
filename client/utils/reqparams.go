@@ -61,6 +61,15 @@ const (
 	// Local Utils Methods. Results not sent via the server
 
 	GetLastSyncedBlock Method = "getLastSyncedBlock"
+
+	UpdateBondBodyTerms  Method = "updateBondBodyTerms"
+	UpdateBondMotivation Method = "updateBondMotivation"
+	UpdateHolder         Method = "updateHolder"
+	UpdateLastStatus     Method = "updateLastStatus"
+	InsertNewBondCreated Method = "insertNewBondCreated"
+	InsertNewChatMessage Method = "insertNewchatMsg"
+	InsertStatusChange   Method = "insertStatusChange"
+	InsertStatusSigned   Method = "insertStatusSigned"
 )
 
 var (

@@ -39,23 +39,35 @@ const (
 		"last_update TIMESTAMPTZ," +
 		"last_synced_block INTEGER)"
 
-	// createTableBondStatus is an sql statement creating a table with the name table_bond_status.
+	// createTableBondStatus is an sql statement creating a table with the name table_status.
 	// It creates the table if it doesn't exists.
-	createTableBondStatus = "CREATE TABLE IF NOT EXISTS table_bond_status (" +
+	createTableBondStatus = "CREATE TABLE IF NOT EXISTS table_status (" +
 		"id SERIAL PRIMARY KEY," +
-		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
+		"sender VARCHAR(42)," +
 		"bond_address VARCHAR(42)," +
-		"issuer_signed BOOLEAN," +
-		"holder_signed BOOLEAN," +
-		"update_time TIMESTAMPTZ)"
+		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
+		"added_on TIMESTAMPTZ," +
+		"last_synced_block INTEGER)"
+
+	// createTableBondStatusSigned is an sql statement creating a table with the name table_status.
+	// It creates the table if it doesn't exists.
+	createTableBondStatusSigned = "CREATE TABLE IF NOT EXISTS table_status_signed (" +
+		"id SERIAL PRIMARY KEY," +
+		"sender VARCHAR(42)," +
+		"bond_address VARCHAR(42)," +
+		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
+		"signed_on TIMESTAMPTZ," +
+		"last_synced_block INTEGER)"
 
 	// createChatTable is an sql statement creating a table with the name table_chat.
 	// It creates the table if it doesn't exists.
 	createChatTable = "CREATE TABLE IF NOT EXISTS table_chat (" +
 		"id SERIAL PRIMARY KEY," +
 		"sender VARCHAR(42)," +
+		"bond_address VARCHAR(42)," +
 		"chat_msg TEXT," +
-		"recieved TIMESTAMPTZ)"
+		"created_at TIMESTAMPTZ," +
+		"last_synced_block INTEGER)"
 
 	// fetchBonds is an sql query that fetches all the bonds that are owned
 	// by bond party or they are still in the negotiation stage.
@@ -74,7 +86,46 @@ const (
 		"ORDER BY 'last_update'"
 
 	// fetchLastSyncBlock returns the last block to be synced on the table_bond.
-	fetchLastSyncBlock = "SELECT last_synced_block FROM table_bond ORDER BY last_synced_block DESC LIMIT 1"
+	fetchLastSyncBlock = "SELECT last_synced_block FROM table_bond ORDER BY" +
+		" last_synced_block DESC LIMIT 1"
+
+	// setBondBodyTerms updates the table_bond with data from the BondBodyTerms event.
+	setBondBodyTerms = "UPDATE table_bond SET principal = ?, coupon_rate = ?, " +
+		"coupon_date = ?, maturity_date = ?, currency = ?, last_update = ?, " +
+		"last_synced_block = ? WHERE bond_address = ?"
+
+	// setBondMotivation update the table_bond with data from BondMotivation event.
+	setBondMotivation = "UPDATE table_bond SET intro_msg = ?, last_update = ?," +
+		" last_synced_block = ?  WHERE bond_address = ?"
+
+	// setHolder updates table_bond with data from HolderUpdate event.
+	setHolder = "UPDATE table_bond SET holder_address = ?, last_update = ?, " +
+		"last_synced_block = ?  WHERE bond_address = ?"
+
+	// setLastStatus updates table_bond with data from StatusChange event.
+	setLastStatus = "UPDATE table_bond SET last_status = ?, last_update = ?, " +
+		"last_synced_block = ? WHERE bond_address = ?"
+
+	// addNewBondCreated inserts into table_bond new data from event NewBondCreated.
+	addNewBondCreated = "INSERT INTO table_bond (bond_address, issuer_address, " +
+		"last_update, last_synced_block) VALUES (?, ?, ?, ?)"
+
+	// ddNewChatMessage inserts into table_chat new data from event NewChatMessage.
+	addNewChatMessage = "INSERT INTO table_chat (sender, bond_address, " +
+		" chat_msg, created_at, last_synced_block) VALUES (?, ?, ?, ?, ?)"
+
+	// addStatusChange inserts into table_status new data from event StatusChange.
+	addStatusChange = "INSERT INTO table_status (sender, bond_address, " +
+		"bond_status, added_on, last_synced_block) VALUES (?, ?, ?, ?, ?)"
+
+	// addStatusSigned inserts into table_status_signed new data from event StatusSigned.
+	addStatusSigned = "INSERT INTO table_status_signed (sender, bond_address, " +
+		"bond_status, signed_on, last_synced_block) VALUES (?, ?, ?, ?, ?)"
+
+	dropTableBondRecords         = "DELETE * FROM table_bond WHERE last_synced_block = ?"
+	dropTableStatusRecords       = "DELETE * FROM table_status WHERE last_synced_block = ?"
+	dropTableStatusSignedRecords = "DELETE * FROM table_status_signed WHERE last_synced_block = ?"
+	dropTableChatRecords         = "DELETE * FROM table_chat WHERE last_synced_block = ?"
 )
 
 // tablesToSQLStmt is an array of sql statements used to create the missing tables
@@ -82,7 +133,17 @@ const (
 var tablesSQLStmt = []string{
 	createTableBond,
 	createTableBondStatus,
+	createTableBondStatusSigned,
 	createChatTable,
+}
+
+// This are clean up methods employed if corrupt or dirty writes are made at
+// a certain last synced block.
+var cleanUpStmt = []string{
+	dropTableBondRecords,
+	dropTableStatusRecords,
+	dropTableStatusSignedRecords,
+	dropTableChatRecords,
 }
 
 // reqToStmt matches the respective local type Methods supported to their sql queries.
@@ -92,11 +153,20 @@ var reqToStmt = map[utils.Method]string{
 
 	// method needed locally. Results are not sent via the server
 	utils.GetLastSyncedBlock: fetchLastSyncBlock,
+
+	utils.UpdateBondBodyTerms:  setBondBodyTerms,
+	utils.UpdateBondMotivation: setBondMotivation,
+	utils.UpdateHolder:         setHolder,
+	utils.UpdateLastStatus:     setLastStatus,
+	utils.InsertNewBondCreated: addNewBondCreated,
+	utils.InsertNewChatMessage: addNewChatMessage,
+	utils.InsertStatusChange:   addStatusChange,
+	utils.InsertStatusSigned:   addStatusSigned,
 }
 
 // DB defines the parameters needed to use a persistence db instance connect to.
 type DB struct {
-	*sql.DB
+	db  *sql.DB
 	ctx context.Context
 }
 
@@ -134,7 +204,7 @@ func NewDB(ctx context.Context, port uint16,
 	}
 
 	return &DB{
-		DB:  db,
+		db:  db,
 		ctx: ctx,
 	}, nil
 }
@@ -143,7 +213,7 @@ func NewDB(ctx context.Context, port uint16,
 // method and uses the reader interface provided to read the row data result set.
 // It then returns an array of data for each row read successfully otherwise
 // an error is returned.
-func (db *DB) QueryLocalData(method utils.Method, r Reader, sender string,
+func (d *DB) QueryLocalData(method utils.Method, r Reader, sender string,
 	params ...interface{},
 ) ([]interface{}, error) {
 	stmt, ok := reqToStmt[method]
@@ -157,7 +227,7 @@ func (db *DB) QueryLocalData(method utils.Method, r Reader, sender string,
 		params = append(params, []interface{}{sender, sender, sender}...)
 	}
 
-	rows, err := db.QueryContext(db.ctx, stmt, params)
+	rows, err := d.db.QueryContext(d.ctx, stmt, params)
 	if err != nil {
 		return nil, fmt.Errorf("fetching query for method %q failed: %v", method, err)
 	}
@@ -173,4 +243,33 @@ func (db *DB) QueryLocalData(method utils.Method, r Reader, sender string,
 	}
 
 	return data, nil
+}
+
+// SetLocalData inserts the provided data using the sql staements associated with
+// method param provided.
+func (d *DB) SetLocalData(method utils.Method, params ...interface{}) error {
+	stmt, ok := reqToStmt[method]
+	if !ok {
+		return fmt.Errorf("missing query for method %q", method)
+	}
+
+	_, err := d.db.ExecContext(d.ctx, stmt, params...)
+	if err != nil {
+		err = fmt.Errorf("inserting data for method %q failed: %v", method, err)
+		return err
+	}
+
+	return nil
+}
+
+// CleanUpLocalData removes any dirty writes that may have been written on a certain
+// last synced block.
+func (d *DB) CleanUpLocalData(lastSyncedBlock uint64) {
+	for _, stmt := range cleanUpStmt {
+		// if an error in one query occurs, do no stop.
+		_, err := d.db.ExecContext(d.ctx, stmt, lastSyncedBlock)
+		if err != nil {
+			log.Errorf("query %q failed: %v", stmt, err)
+		}
+	}
 }
