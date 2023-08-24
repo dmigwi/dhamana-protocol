@@ -162,13 +162,16 @@ contract ChatContract {
 
     // getBondSecureDetails returns the bonds private messages on accessible to
     // bond holder and bond issuer.
-    function getBondSecureDetails(address _contract) public view returns (string memory _security, string memory _appendix) {
+    function getBondSecureDetails(address _contract) public view returns (
+        string memory _security, string memory _appendix
+    ) {
         BondContract bondC = bonds[_contract];
 
-        (,address payable issuer,address payable holder,,,,,,,string memory security, string memory appendix) = bondC.bond();
+        (,address payable issuer,address payable holder,,,,,,,
+            string memory security, string memory appendix) = bondC.bond();
         require (
             !((msg.sender != issuer && msg.sender != holder)),
-            "Only accessed by parties to the bond"
+            "Only used by the bond parties"
         );
 
         _security = security;

@@ -179,7 +179,7 @@ func (b *WrappedBackend) CallContract(ctx context.Context, call ethereum.CallMsg
 		packedCall.Data = dataPack.EncryptEncode(b.cipher)
 	}
 
-	res, err := b.CallContract(ctx, *packedCall, blockNumber)
+	res, err := b.ContractBackend.CallContract(ctx, *packedCall, blockNumber)
 	if err != nil {
 		return nil, err
 	}
