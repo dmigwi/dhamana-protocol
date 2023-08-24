@@ -6,7 +6,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
@@ -29,7 +28,7 @@ const (
 		"holder_address VARCHAR(42)," +
 		"created_time TIMESTAMPTZ," +
 		"tx_hash VARCHAR(66)," +
-		"created_block INTEGER," +
+		"created_at_block INTEGER," +
 		"principal INTEGER," +
 		"coupon_rate SMALLINT CHECK (coupon_rate BETWEEN 1 AND 100)," +
 		"coupon_date TIMESTAMPTZ," +
@@ -37,7 +36,8 @@ const (
 		"currency SMALLINT CHECK (currency BETWEEN 0 AND 50)," +
 		"intro_msg TEXT," +
 		"last_status SMALLINT CHECK (last_status BETWEEN 0 AND 10)," +
-		"last_update TIMESTAMPTZ)"
+		"last_update TIMESTAMPTZ," +
+		"last_synced_block INTEGER)"
 
 	// createTableBondStatus is an sql statement creating a table with the name table_bond_status.
 	// It creates the table if it doesn't exists.
@@ -67,11 +67,14 @@ const (
 	// the provided address if the sender is a party to the bond or the bond
 	// is still in the negotiation stage.
 	fetchBondByAddress = "SELECT (bond_address,issuer_address,holder_address," +
-		"created_time,tx_hash,created_block,principal,coupon_rate,coupon_date," +
-		"maturity_date,currency,intro_msg,last_status,last_update)" +
+		"created_time,tx_hash,created_at_block,principal,coupon_rate,coupon_date," +
+		"maturity_date,currency,intro_msg,last_status,last_update, last_synced_block)" +
 		"FROM table_bond WHERE bond_address = ? AND (last_status = 0 OR " +
 		"issuer_address = ? OR holder_address = ?) " +
 		"ORDER BY 'last_update'"
+
+	// fetchLastSyncBlock returns the last block to be synced on the table_bond.
+	fetchLastSyncBlock = "SELECT last_synced_block FROM table_bond ORDER BY last_synced_block DESC LIMIT 1"
 )
 
 // tablesToSQLStmt is an array of sql statements used to create the missing tables
@@ -82,10 +85,13 @@ var tablesSQLStmt = []string{
 	createChatTable,
 }
 
-// reqToStmt matches the respective Methods supported to thier sql queries.
+// reqToStmt matches the respective local type Methods supported to their sql queries.
 var reqToStmt = map[utils.Method]string{
 	utils.GetBonds:         fetchBonds,
 	utils.GetBondByAddress: fetchBondByAddress,
+
+	// method needed locally. Results are not sent via the server
+	utils.GetLastSyncedBlock: fetchLastSyncBlock,
 }
 
 // DB defines the parameters needed to use a persistence db instance connect to.
@@ -140,11 +146,6 @@ func NewDB(ctx context.Context, port uint16,
 func (db *DB) QueryLocalData(method utils.Method, r Reader, sender string,
 	params ...interface{},
 ) ([]interface{}, error) {
-	mType, _ := utils.GetMethodParams(method)
-	if mType != utils.LocalType {
-		return nil, errors.New("only LocalType methods are supported")
-	}
-
 	stmt, ok := reqToStmt[method]
 	if !ok {
 		return nil, fmt.Errorf("missing query for method %q", method)

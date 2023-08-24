@@ -40,7 +40,7 @@ const (
 
 	// --- Server methods supported ---
 
-	// contract type methods
+	// contract type methods - Sent via the server
 
 	CreateBond       Method = "createBond"
 	AddMessage       Method = "addMessage"
@@ -49,14 +49,18 @@ const (
 	UpdateBondHolder Method = "updateBondHolder"
 	UpdateBondStatus Method = "updateBondStatus"
 
-	// server key type method
+	// server key type method - Sent via the server
 
 	GetServerPubKey Method = "getServerPubKey"
 
-	// Local type methods
+	// Local type methods - Sent via the server
 
 	GetBonds         Method = "getBonds"
 	GetBondByAddress Method = "getBondByAddress"
+
+	// Local Utils Methods. Results not sent via the server
+
+	GetLastSyncedBlock Method = "getLastSyncedBlock"
 )
 
 var (

@@ -68,16 +68,20 @@ type bondResp struct {
 // details. Secure bond details require a separate request to access them.
 type bondByAddressResp struct {
 	*bondResp
-	Issuer         common.Address `json:"issuer_address"`
-	Holder         common.Address `json:"holder_address"`
-	TxHash         string         `json:"tx_hash"`
-	CreatedAtBlock uint32         `json:"created_at_block"`
-	Principal      uint64         `json:"principal"`
-	CouponDate     time.Time      `json:"coupon_date"`
-	MaturityDate   time.Time      `json:"maturity_date"`
-	IntroMessage   string         `json:"intro_msg"`
-	LastUpdate     time.Time      `json:"last_update"`
+	Issuer          common.Address `json:"issuer_address"`
+	Holder          common.Address `json:"holder_address"`
+	TxHash          string         `json:"tx_hash"`
+	CreatedAtBlock  uint32         `json:"created_at_block"`
+	Principal       uint64         `json:"principal"`
+	CouponDate      time.Time      `json:"coupon_date"`
+	MaturityDate    time.Time      `json:"maturity_date"`
+	IntroMessage    string         `json:"intro_msg"`
+	LastUpdate      time.Time      `json:"last_update"`
+	LastSyncedBlock uint32         `json:"last_synced_block"`
 }
+
+// lastSyncedBlockResp defines the block last synced.
+type lastSyncedBlockResp uint32
 
 // packServerError packs the errors identified into a response ready to be sent
 // to the client.
@@ -130,7 +134,15 @@ func (r *bondByAddressResp) Read(fn func(fields ...any) error) (interface{}, err
 	err := fn(&resp.BondAddress, &resp.Issuer, &resp.Holder, &resp.CreatedTime,
 		&resp.TxHash, &resp.CreatedAtBlock, &resp.Principal, &resp.CouponRate,
 		&resp.CouponDate, &resp.MaturityDate, &resp.Currency, &resp.IntroMessage,
-		&resp.LastStatus, &resp.LastUpdate,
+		&resp.LastStatus, &resp.LastUpdate, &resp.LastSyncedBlock,
 	)
+	return &resp, err
+}
+
+// Reader interface implementation for type lastSyncedBlockResp.
+func (r *lastSyncedBlockResp) Read(fn func(fields ...any) error) (interface{}, error) {
+	var resp uint32
+
+	err := fn(&resp)
 	return &resp, err
 }

@@ -70,14 +70,27 @@ func getDeploymentTime(net utils.NetworkType) (timestamp time.Time) {
 }
 
 // getDeployedTxHash returns the transaction hash when the current contract was deployed.
-func getDeployedTxHash(net utils.NetworkType) (tx string) {
+func getDeployedTxHash(net utils.NetworkType) (tx common.Hash) {
 	switch net {
 	case utils.SapphireTestnet:
-		tx = sapphiretestnet.GetTransactionHash()
+		tx = common.HexToHash(sapphiretestnet.GetTransactionHash())
 	case utils.SapphireLocalnet:
-		tx = sapphirelocalnet.GetTransactionHash()
+		tx = common.HexToHash(sapphirelocalnet.GetTransactionHash())
 	case utils.SapphireMainnet:
-		tx = sapphiremainnet.GetTransactionHash()
+		tx = common.HexToHash(sapphiremainnet.GetTransactionHash())
+	}
+	return
+}
+
+// getDeployedBlock returns the block number when the current contract was deployed.
+func getDeployedBlock(net utils.NetworkType) (block uint32) {
+	switch net {
+	case utils.SapphireTestnet:
+		block = sapphiretestnet.GetDeploymentBlock()
+	case utils.SapphireLocalnet:
+		block = sapphirelocalnet.GetDeploymentBlock()
+	case utils.SapphireMainnet:
+		block = sapphiremainnet.GetDeploymentBlock()
 	}
 	return
 }

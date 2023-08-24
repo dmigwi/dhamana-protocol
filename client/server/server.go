@@ -74,12 +74,19 @@ func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
 
 	// query the deployed transaction hash
 	txHash := getDeployedTxHash(net)
-	if txHash == "" {
+	if txHash == common.HexToHash("") {
 		log.Error("Missing transaction hash")
 		return nil, utils.ErrCorruptedConfig // tx hash mismatch
 	}
 
-	log.Infof("Contract in use was deployed on Tx: %q", txHash)
+	// query the deployed block number
+	blockNo := getDeployedBlock(net)
+	if blockNo == 0 {
+		log.Error("Missing block number")
+		return nil, utils.ErrCorruptedConfig // block no mismatch
+	}
+
+	log.Infof("Contract in use was deployed on Tx: %q and block: %d", txHash, blockNo)
 
 	// query the network params
 	networkParams, err := utils.GetNetworkConfig(net)

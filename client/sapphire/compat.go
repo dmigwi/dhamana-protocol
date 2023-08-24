@@ -23,8 +23,15 @@ const (
 	DefaultBlockRange = 15
 )
 
-type WrappedBackend struct {
+// sapphireBackend defines the interfaces required to implement the client
+// layer on top of sapphire backend.
+type sapphireBackend interface {
 	bind.ContractBackend
+	ethereum.TransactionReader
+}
+
+type WrappedBackend struct {
+	sapphireBackend
 	chainID    big.Int
 	cipher     Cipher
 	signerFunc SignerFn
@@ -34,8 +41,8 @@ type WrappedBackend struct {
 	noSend     bool // Used for running tests on a mocked wrapper instance.
 }
 
-// Confirm that WrappedBacked implements the bind.ContractBackend interface.
-var _ bind.ContractBackend = (*WrappedBackend)(nil)
+// Confirm that WrappedBacked implements the sapphireBackend interface.
+var _ sapphireBackend = (*WrappedBackend)(nil)
 
 // SignerFn is a function that produces secp256k1 signatures in RSV format.
 type SignerFn = func(digest [32]byte, privateKey []byte) ([]byte, error)
@@ -64,7 +71,7 @@ func NewCipher(ctx context.Context, net utils.NetworkType) (Cipher, error) {
 }
 
 // WrapClient wraps an ethclient.Client so that it can talk to Sapphire.
-func WrapClient(ctx context.Context, c bind.ContractBackend, net utils.NetworkType, sign SignerFn) (*WrappedBackend, error) {
+func WrapClient(ctx context.Context, c sapphireBackend, net utils.NetworkType, sign SignerFn) (*WrappedBackend, error) {
 	network, err := utils.GetNetworkConfig(net)
 	if err != nil {
 		return nil, err
@@ -84,7 +91,7 @@ func WrapClient(ctx context.Context, c bind.ContractBackend, net utils.NetworkTy
 	}
 
 	return &WrappedBackend{
-		ContractBackend: c,
+		sapphireBackend: c,
 		chainID:         network.ChainID,
 		cipher:          cipher,
 		signerFunc:      sign,
@@ -154,14 +161,14 @@ func (b *WrappedBackend) CallContract(ctx context.Context, call ethereum.CallMsg
 		if blockNumber != nil {
 			leashBlockNumber.Sub(blockNumber, big.NewInt(1))
 		} else {
-			latestHeader, err := b.ContractBackend.HeaderByNumber(ctx, nil)
+			latestHeader, err := b.sapphireBackend.HeaderByNumber(ctx, nil)
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch latest block number: %w", err)
 			}
 			leashBlockNumber.Sub(latestHeader.Number, big.NewInt(1))
 		}
 
-		header, err := b.ContractBackend.HeaderByNumber(ctx, leashBlockNumber)
+		header, err := b.sapphireBackend.HeaderByNumber(ctx, leashBlockNumber)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch leash block header: %w", err)
 		}
@@ -179,7 +186,7 @@ func (b *WrappedBackend) CallContract(ctx context.Context, call ethereum.CallMsg
 		packedCall.Data = dataPack.EncryptEncode(b.cipher)
 	}
 
-	res, err := b.ContractBackend.CallContract(ctx, *packedCall, blockNumber)
+	res, err := b.sapphireBackend.CallContract(ctx, *packedCall, blockNumber)
 	if err != nil {
 		return nil, err
 	}
