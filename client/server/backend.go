@@ -265,7 +265,7 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 			arrayData, err = s.db.QueryLocalData(msg.Method, new(bondByAddressResp),
 				msg.Sender.Address.String(), msg.Params...)
 			// data response expected is just one record here.
-			if len(arrayData) != 0 {
+			if len(arrayData) > 0 {
 				res = arrayData[0]
 			}
 		case utils.GetChats:
@@ -314,26 +314,43 @@ func castType(param interface{}, pType utils.ParamType) (v interface{}, err erro
 		// JSON returns all numbers as float64 values.
 		// https://www.webdatarocks.com/doc/data-types-in-json/#number
 		rawInt := uint(t)
+		var maxVal uint
 
 		switch pType {
 		case utils.Uint8Type:
+			maxVal = math.MaxUint8
 			if rawInt <= math.MaxUint8 {
 				v = uint8(rawInt)
 			}
 		case utils.Uint16Type:
+			maxVal = math.MaxUint16
 			if rawInt <= math.MaxUint16 {
-				v = uint8(rawInt)
+				v = uint16(rawInt)
 			}
 		case utils.Uint32Type:
+			maxVal = math.MaxUint32
 			if rawInt <= math.MaxUint32 {
-				v = uint8(rawInt)
+				v = uint32(rawInt)
+			}
+		case utils.Uint64Type:
+			maxVal = math.MaxUint64
+			if rawInt <= math.MaxUint64 {
+				v = uint64(rawInt)
 			}
 		case utils.LimitType:
-			if rawInt <= uint(utils.MaxLimit) {
+			// Enforce the max limit if higher limit was provided.
+			if rawInt <= utils.MaxLimit {
 				v = uint8(rawInt)
+			} else {
+				v = utils.MaxLimit
 			}
 		default:
 			typeFound = "number"
+		}
+
+		// Prevents integer overflow by only assigning numbers that meet the required size
+		if maxVal > 0 && v == nil {
+			err = fmt.Errorf("expected a max value of %d but found %d", maxVal, rawInt)
 		}
 	}
 

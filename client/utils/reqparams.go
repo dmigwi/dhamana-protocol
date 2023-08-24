@@ -24,18 +24,21 @@ const (
 	// Uint32Type defines unsigned integer parameter value type of uint32.
 	Uint32Type ParamType = "uint32"
 
+	// Uint64Type defines unsigned integer parameter value type of uint64.
+	Uint64Type ParamType = "uint64"
+
 	// AddressType defines the address type as supportted in ethereum types.
 	AddressType ParamType = "address"
 
 	// StringType defines a string value type.
 	StringType ParamType = "string"
 
-	// LimitType defines unsigned LIMIT integer parameter of value type uint16.
-	LimitType ParamType = "uint16_LIMIT"
+	// LimitType defines unsigned LIMIT integer parameter of value type uint8.
+	LimitType ParamType = "uint8_LIMIT"
 
 	// MaxLimit restricts the max limit that can be set into 100 when querying
 	// more than 1 record.
-	MaxLimit = uint16(100)
+	MaxLimit = uint(100)
 
 	// UnsupportedType defines all other types not classified as int, float or string
 	UnsupportedType ParamType = "unsupported"
@@ -110,7 +113,7 @@ var (
 		SignBondStatus: {AddressType},
 
 		// updateBodyInfo is used to update the body fields.
-		// Parameter Required: bondAddress address, principal uint32,
+		// Parameter Required: bondAddress address, principal uint64,
 		// 		couponRate uint8, couponDate uint32, maturityDate uint32, currency uint8
 		// bondAddress => Defines the address of the bond in question.
 		// principal => Defines the asking amount in the currency type supported.
@@ -136,7 +139,7 @@ var (
 		// 			Currency: 4 => represents Ripple
 		// 			Currency: 5 => represents Tether Coin.
 		// 			Currency: 6 => represents Decred Coin.
-		UpdateBodyInfo: {AddressType, Uint32Type, Uint8Type, Uint32Type, Uint32Type, Uint8Type},
+		UpdateBodyInfo: {AddressType, Uint64Type, Uint8Type, Uint32Type, Uint32Type, Uint8Type},
 
 		// updateBondHolder is used by the issuer during the HolderSelection stage to set
 		// a potential bond holder.
