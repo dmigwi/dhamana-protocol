@@ -17,9 +17,12 @@ import (
 const (
 	// regexString defines the regex string used to extract the required data from
 	// from the deployment log.
-	regexString = `("%s"):(["]*[\w]*["]*)`
+	// regexString = `("%s"):(["]*[\w]*["]*)`
+	regexString = `(> %s:[[:space:]']*)([\w]*)`
+
 	// deploymentPkg defines the folder of the auto-generated configuration files.
 	deploymentPkg = "deployment"
+
 	// deploymentFile auto-generated file name.
 	deploymentFile = "deployment.go"
 
@@ -60,45 +63,40 @@ package xxxx
 `
 	fields = []FieldInfo{
 		{
-			Identifier: "network",
+			Identifier: "Network name",
 			FuncName:   "GetNetwork",
 			ReturnType: "string",
 			Comment:    "returns the network used to make the deployment.",
 		}, {
-			Identifier: "blockLimit",
+			Identifier: "Block gas limit",
 			FuncName:   "GetBlockGasLimit",
-			ReturnType: "string",
+			ReturnType: "uint64",
 			Comment:    "returns the block gas limit set during deployment.",
 		}, {
-			Identifier: "networkId",
+			Identifier: "Network id",
 			FuncName:   "GetChainID",
 			ReturnType: "uint64",
 			Comment:    "returns the chain ID of the network used to make the deployment.",
 		}, {
-			Identifier: "contractName",
-			FuncName:   "GetContractName",
-			ReturnType: "string",
-			Comment:    "returns the name of the contract deployed.",
-		}, {
-			Identifier: "address",
+			Identifier: "contract address",
 			FuncName:   "GetContractAddress",
 			ReturnType: "string",
 			Comment:    "returns the address of the deployed contract.",
 		}, {
-			Identifier: "deployed",
-			FuncName:   "IsDeployed",
-			ReturnType: "bool",
-			Comment:    "confirms if the contract was successfully deployed. If yes, it succeeded",
-		}, {
-			Identifier: "transactionHash",
+			Identifier: "transaction hash",
 			FuncName:   "GetTransactionHash",
 			ReturnType: "string",
 			Comment:    "returns the tx hash when the contract we deployed.",
 		}, {
-			Identifier: "timestamp",
+			Identifier: "block timestamp",
 			FuncName:   "GetDeploymentTime",
 			ReturnType: "uint64",
 			Comment:    "returns the timestamp in seconds when the contract was actually deployed ",
+		}, {
+			Identifier: "block number",
+			FuncName:   "GetDeploymentBlock",
+			ReturnType: "uint64",
+			Comment:    "returns the block number when the contract was actually deployed ",
 		},
 	}
 )
@@ -131,7 +129,11 @@ func main() {
 		}
 
 		v := strings.SplitAfter(strMatched[0], ":")
-		fields[i].Value = v[1]
+		vStr := strings.TrimSpace(v[1])
+		fields[i].Value = vStr
+		if info.ReturnType == "string" {
+			fields[i].Value = fmt.Sprintf("%q", vStr)
+		}
 
 		err := t.Execute(buf, fields[i])
 		if err != nil {
@@ -147,6 +149,9 @@ func main() {
 
 	// replace the escaped comma character and convert it back to bytes
 	escapedData = strings.ReplaceAll(escapedData, "&#34;", `"`)
+
+	// replace the escaped signle quote character and convert it back to bytes
+	escapedData = strings.ReplaceAll(escapedData, "&#39;", ``)
 
 	path := filepath.Join("client", deploymentPkg, netpkg)
 	if _, err = os.Stat(path); err != nil {

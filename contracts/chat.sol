@@ -23,39 +23,36 @@ contract ChatContract {
     enum MessageTag { InitConversation, Introduction, Security, Appendix }
 
     // NewBondCreated creates new event showing the a new contract has been created.
-    event NewBondCreated(address sender, address bondAddress, uint timestamp);
+    event NewBondCreated(address sender, address bondAddress);
 
-    // FinalBondTerms creates a new bonds with final terms once the terms are
-    // agreed upon by both parties.
-    event FinalBondTerms(uint32 principal, uint8 couponRate, uint32 couponDate,
+    // BondBodyTerms creates a new bonds with the terms body terms update made.
+    event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint32 couponDate,
         uint32 maturityDate, BondContract.CurrencyType currency);
 
     // BondMotivation creates a new event that comprises of the bond introduction
     // message sent by the bond issuer.
-    event BondMotivation(address sender, address bondAddress, string message);
+    event BondMotivation(address bondAddress, string message);
 
-    // BondUnderDispute creates an event to mark the specified bond is under
-    // dispute. This information is exposed to the world so as to prevent
-    // malicious characters from misuing the bond system.
-    event BondUnderDispute(address sender, address bondAddress);
+    // Statuschange creates a new event sent every time the bond status is
+    // changed by either the issuer or the holder.
+    event StatusChange(address sender, address bondAddress, BondContract.StatusChoice status);
 
-    // BondDisputeResolved creates an event showing the sender has more disputes
-    // to resolve in the said bond.
-    event BondDisputeResolved(address sender, address bondAddress);
+    // StatusUpdate creates a new event sent every time the issuer or the holder
+    // sign the current status as a sign of consensus.
+    event StatusSigned(address sender, address bondAddress, BondContract.StatusChoice status);
+
+    // HolderUpdate creates an event when the issuer selects the potential holder
+    // they would like to deal with.
+    event HolderUpdate(address bondAddress, address holder);
 
     // Creates a bonds mapping to their contract address.
     mapping (address => BondContract) private bonds;
 
-    struct MessageInfo {
-        address sender;         // Address of the message sender.
-        string message;         // Actual encrypted message sent.
-        uint256 timestamp;      // Time when message was received.
-    }
-
     // NewChatMessage creates a new event when a new message as part of the
     // negotiation chat is received. Past negotaiation stage, events will still
     // be sent but only the bond issuer and holder can send those messages.
-    event NewChatMessage(address bondAddress, MessageInfo chat);
+    // message should always be encrypted depending on the information sensitivity.
+    event NewChatMessage(address bondAddress,  address sender, string message);
 
     // createBond creates a new bond associated with the user who calls it.
     function createBond() external {
@@ -65,9 +62,11 @@ contract ChatContract {
         // Append the new contract created.
         bonds[bondAddress] = bond;
 
-        emit NewBondCreated(msg.sender, bondAddress, uint256(block.timestamp));
+        emit NewBondCreated(msg.sender, bondAddress);
     }
 
+    // updateBodyInfo updates the bond body details and emits an event.
+    // Only the bond issuer allowed to make this changes.
     function updateBodyInfo(
         address _contract, uint32 _principal, uint8 _couponRate, uint32 _couponDate,
         uint32 _maturityDate, BondContract.CurrencyType _currency
@@ -75,31 +74,25 @@ contract ChatContract {
         BondContract bond = bonds[_contract];
 
         bond.setBodyInfo(_currency, _principal, _couponRate, _couponDate, _maturityDate, msg.sender);
+
+        // BondBodyTerms emits an event showing the latest update in bond body terms.
+        emit BondBodyTerms(_contract, _principal, _couponRate, _couponDate, _maturityDate, _currency);
     }
 
+    // updateBondStatus moves the bond along its various lifecycle stages (statuses).
+    // For every status change an event is emitted recording the status change.
     function updateBondStatus(address _contract, BondContract.StatusChoice _status) external {
         BondContract bondC = bonds[_contract];
 
         bondC.setStatus(_status);
 
-        // Shares this publicly to prevent malicious freezing of the bond.
-        if (_status == BondContract.StatusChoice.BondInDispute) {
-            emit BondUnderDispute(msg.sender, _contract);
-        }
-
-        // If the terms have been agreed upon create an event displaying the
-        // bond body information.
-        if (_status == BondContract.StatusChoice.TermsAgreement) {
-            (
-                ,,,, uint32 principal, uint8 couponRate, uint32 couponDate,
-                uint32 maturityDate, BondContract.CurrencyType currency,,
-            ) = bondC.bond();
-
-            emit FinalBondTerms(principal, couponRate, couponDate, maturityDate, currency);
-        }
+        // StatusChange event is emitted for every status change.
+        emit StatusChange(msg.sender, _contract, _status);
     }
 
     // addMessage handles the messages received that finally make up the bond.
+    // Events are emitted for the message tags apart from security and appendix
+    // information accessed by the bond parties on demand.
     function addMessage(address _contract, MessageTag _tag, string memory _message) external {
         BondContract bondC = bonds[_contract];
 
@@ -123,22 +116,19 @@ contract ChatContract {
 
         // Messages not part of the negotiations shouldn't get to the chat.
         if (_tag == MessageTag.InitConversation) {
-            MessageInfo memory chat = MessageInfo({sender: msg.sender, message: _message, timestamp: block.timestamp});
-
             // Chat are messages not stored because they have very little effect on the
             // final bond. Also storing them would create unnecessary data stored in
             // the contracts. The same data can be obtained from the event logs.
-            emit NewChatMessage(_contract, chat);
+            emit NewChatMessage(_contract, msg.sender, _message);
         }
 
         // Only the bond issuer can make this encrypted messages edits below.
-
         if (_tag == MessageTag.Introduction) {
             bondC.setIntro(_message, msg.sender);
 
             // Introduction message is accessible to everyone via events but only
             // editted by the bond issuer.
-            emit BondMotivation(msg.sender, _contract, _message);
+            emit BondMotivation(_contract, _message);
         } else if (_tag == MessageTag.Security) {
             bondC.setSecurity(_message, msg.sender);
         } else if (_tag == MessageTag.Appendix) {
@@ -153,6 +143,9 @@ contract ChatContract {
         BondContract bondC = bonds[_contract];
 
         bondC.setBondHolder(payable(_holder), payable(msg.sender));
+
+        // HolderUpdate emits the event for every successful status change.
+        emit HolderUpdate(_contract, _holder);
     }
 
     // signBondStatus allows the parties involved to sign the current bond status.
@@ -163,21 +156,22 @@ contract ChatContract {
 
         (,,, BondContract.StatusChoice status,,,,,,,) = bondC.bond();
 
-        // If status signed is the BondInDispute emit its event.
-        if (status == BondContract.StatusChoice.BondInDispute) {
-            emit BondDisputeResolved(msg.sender, _contract);
-        }
+        // for every successful status signed, StatusSigned event is emitted.
+        emit StatusSigned(msg.sender, _contract, status);
     }
 
     // getBondSecureDetails returns the bonds private messages on accessible to
     // bond holder and bond issuer.
-    function getBondSecureDetails(address _contract) public view returns (string memory _security, string memory _appendix) {
+    function getBondSecureDetails(address _contract) public view returns (
+        string memory _security, string memory _appendix
+    ) {
         BondContract bondC = bonds[_contract];
 
-        (,address payable issuer,address payable holder,,,,,,,string memory security, string memory appendix) = bondC.bond();
+        (,address payable issuer,address payable holder,,,,,,,
+            string memory security, string memory appendix) = bondC.bond();
         require (
             !((msg.sender != issuer && msg.sender != holder)),
-            "Only accessed by parties to the bond"
+            "Only used by the bond parties"
         );
 
         _security = security;

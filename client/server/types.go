@@ -5,6 +5,7 @@ package server
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,10 +16,10 @@ import (
 // rpcMessage defines the structure accepted for all requests and responses.
 // This struct is compatible with JSON-RPC version 2.0.
 type rpcMessage struct {
-	ID      uint16      `json:"id"`
-	Version string      `json:"jsonrpc"`          // required on a request and a response.
-	Method  string      `json:"method,omitempty"` // required on a request
-	Sender  *senderInfo `json:"sender,omitempty"` // required on a request
+	ID      uint16       `json:"id"`
+	Version string       `json:"jsonrpc"`          // required on a request and a response.
+	Method  utils.Method `json:"method,omitempty"` // required on a request
+	Sender  *senderInfo  `json:"sender,omitempty"` // required on a request
 
 	Params []interface{}   `json:"params,omitempty"`
 	Result json.RawMessage `json:"result,omitempty"`
@@ -51,6 +52,44 @@ type serverKeyResp struct {
 
 	// private fields not exported
 	sharedKey []byte // Generate using the remote Pubkey + local private key.
+}
+
+// BondResp defines the response returned in an array form that is returned
+// when get bonds local type method is queried by the client.
+type bondResp struct {
+	BondAddress common.Address `json:"bond_address"`
+	CreatedTime time.Time      `json:"created_time"`
+	CouponRate  uint8          `json:"coupon_rate"`
+	Currency    uint8          `json:"currency"`
+	LastStatus  uint8          `json:"last_status"`
+}
+
+// bondByAddressResp defines the complete bond details excluding the secure
+// details. Secure bond details require a separate request to access them.
+type bondByAddressResp struct {
+	*bondResp
+	Issuer          common.Address `json:"issuer_address"`
+	Holder          common.Address `json:"holder_address"`
+	CreatedAtBlock  uint64         `json:"created_at_block"`
+	Principal       uint64         `json:"principal"`
+	CouponDate      time.Time      `json:"coupon_date"`
+	MaturityDate    time.Time      `json:"maturity_date"`
+	IntroMessage    string         `json:"intro_msg"`
+	LastUpdate      time.Time      `json:"last_update"`
+	LastSyncedBlock uint64         `json:"last_synced_block"`
+}
+
+// lastSyncedBlockResp defines the block last synced.
+type lastSyncedBlockResp uint64
+
+// chatMsgsResp defines the response returned in an array form when get
+// chats local type method is queried by the client.
+type chatMsgsResp struct {
+	Sender          common.Address `json:"sender"`
+	BondAddress     common.Address `json:"bond_address"`
+	Message         string         `json:"chat_msg"`
+	CreatedTime     time.Time      `json:"created_at"`
+	LastSyncedBlock uint64         `json:"last_synced_block"`
 }
 
 // packServerError packs the errors identified into a response ready to be sent
@@ -87,4 +126,41 @@ func (msg *rpcMessage) packServerResult(data interface{}) {
 
 	// push the data bytes into the msg.Result.
 	_ = json.Unmarshal(b, &msg.Result)
+}
+
+// Reader interface implementation for type bondResp.
+func (r *bondResp) Read(fn func(fields ...any) error) (interface{}, error) {
+	var resp bondResp
+	err := fn(&resp.BondAddress, &resp.CreatedTime, &resp.CouponRate,
+		&resp.Currency, &resp.LastStatus,
+	)
+	return &resp, err
+}
+
+// Reader interface implementation for type bondByAddressResp.
+func (r *bondByAddressResp) Read(fn func(fields ...any) error) (interface{}, error) {
+	var resp bondByAddressResp
+	err := fn(&resp.BondAddress, &resp.Issuer, &resp.Holder, &resp.CreatedTime,
+		&resp.CreatedAtBlock, &resp.Principal, &resp.CouponRate,
+		&resp.CouponDate, &resp.MaturityDate, &resp.Currency, &resp.IntroMessage,
+		&resp.LastStatus, &resp.LastUpdate, &resp.LastSyncedBlock,
+	)
+	return &resp, err
+}
+
+// Reader interface implementation for type lastSyncedBlockResp.
+func (r *lastSyncedBlockResp) Read(fn func(fields ...any) error) (interface{}, error) {
+	var resp uint32
+
+	err := fn(&resp)
+	return &resp, err
+}
+
+// Reader interface implementation for type chatMsgsResp.
+func (r *chatMsgsResp) Read(fn func(fields ...any) error) (interface{}, error) {
+	var resp chatMsgsResp
+	err := fn(&resp.Sender, &resp.BondAddress, &resp.Message,
+		&resp.CreatedTime, &resp.LastSyncedBlock,
+	)
+	return &resp, err
 }

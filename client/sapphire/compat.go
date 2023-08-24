@@ -154,14 +154,14 @@ func (b *WrappedBackend) CallContract(ctx context.Context, call ethereum.CallMsg
 		if blockNumber != nil {
 			leashBlockNumber.Sub(blockNumber, big.NewInt(1))
 		} else {
-			latestHeader, err := b.ContractBackend.HeaderByNumber(ctx, nil)
+			latestHeader, err := b.HeaderByNumber(ctx, nil)
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch latest block number: %w", err)
 			}
 			leashBlockNumber.Sub(latestHeader.Number, big.NewInt(1))
 		}
 
-		header, err := b.ContractBackend.HeaderByNumber(ctx, leashBlockNumber)
+		header, err := b.HeaderByNumber(ctx, leashBlockNumber)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch leash block header: %w", err)
 		}

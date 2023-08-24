@@ -12,8 +12,8 @@ func GetNetwork() (string) {
 }
 
 // GetBlockGasLimit returns the block gas limit set during deployment.
-func GetBlockGasLimit() (string) {
-	return ""
+func GetBlockGasLimit() (uint64) {
+	return 0
 }
 
 // GetChainID returns the chain ID of the network used to make the deployment.
@@ -21,19 +21,9 @@ func GetChainID() (uint64) {
 	return 0
 }
 
-// GetContractName returns the name of the contract deployed.
-func GetContractName() (string) {
-	return ""
-}
-
 // GetContractAddress returns the address of the deployed contract.
 func GetContractAddress() (string) {
 	return ""
-}
-
-// IsDeployed confirms if the contract was successfully deployed. If yes, it succeeded
-func IsDeployed() (bool) {
-	return false
 }
 
 // GetTransactionHash returns the tx hash when the contract we deployed.
@@ -43,5 +33,10 @@ func GetTransactionHash() (string) {
 
 // GetDeploymentTime returns the timestamp in seconds when the contract was actually deployed 
 func GetDeploymentTime() (uint64) {
+	return 0
+}
+
+// GetDeploymentBlock returns the block number when the contract was actually deployed 
+func GetDeploymentBlock() (uint64) {
 	return 0
 }

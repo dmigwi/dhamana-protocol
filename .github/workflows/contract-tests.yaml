@@ -63,6 +63,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Lint
+        run: pnpm run lint
+
       - name: Run test contracts
         working-directory: contracts
         run: pnpm run test

@@ -3,11 +3,16 @@
 
 package utils
 
-// ParamType defines supported request parameters.
-type ParamType string
+type (
+	// ParamType defines supported request parameters.
+	ParamType string
 
-// MethodType defines type in relation to how the method is implemented
-type MethodType int
+	// MethodType defines type in relation to how the method is implemented
+	MethodType int
+
+	// Method defines the specific method names implemented.
+	Method string
+)
 
 const (
 	// Uint8Type defines unsigned integer parameter value type of uint8.
@@ -19,11 +24,21 @@ const (
 	// Uint32Type defines unsigned integer parameter value type of uint32.
 	Uint32Type ParamType = "uint32"
 
+	// Uint64Type defines unsigned integer parameter value type of uint64.
+	Uint64Type ParamType = "uint64"
+
 	// AddressType defines the address type as supportted in ethereum types.
 	AddressType ParamType = "address"
 
 	// StringType defines a string value type.
 	StringType ParamType = "string"
+
+	// LimitType defines unsigned LIMIT integer parameter of value type uint8.
+	LimitType ParamType = "uint8_LIMIT"
+
+	// MaxLimit restricts the max limit that can be set into 100 when querying
+	// more than 1 record.
+	MaxLimit = uint(100)
 
 	// UnsupportedType defines all other types not classified as int, float or string
 	UnsupportedType ParamType = "unsupported"
@@ -32,16 +47,50 @@ const (
 	ContractType                    // Implemented by the contracts
 	ServerKeyType                   // Method for route /serverpubkey
 	UnknownType                     // method not supported
+
+	// --- Server methods supported ---
+
+	// contract type methods - Sent via the server
+
+	CreateBond       Method = "createBond"
+	AddMessage       Method = "addMessage"
+	SignBondStatus   Method = "signBondStatus"
+	UpdateBodyInfo   Method = "updateBodyInfo"
+	UpdateBondHolder Method = "updateBondHolder"
+	UpdateBondStatus Method = "updateBondStatus"
+
+	// server key type method - Sent via the server
+
+	GetServerPubKey Method = "getServerPubKey"
+
+	// Local type methods - Sent via the server
+
+	GetBonds         Method = "getBonds"
+	GetBondByAddress Method = "getBondByAddress"
+	GetChats         Method = "getChats"
+
+	// Local Utils Methods. Results not sent via the server
+
+	GetLastSyncedBlock Method = "getLastSyncedBlock"
+
+	UpdateBondBodyTerms  Method = "updateBondBodyTerms"
+	UpdateBondMotivation Method = "updateBondMotivation"
+	UpdateHolder         Method = "updateHolder"
+	UpdateLastStatus     Method = "updateLastStatus"
+	InsertNewBondCreated Method = "insertNewBondCreated"
+	InsertNewChatMessage Method = "insertNewchatMsg"
+	InsertStatusChange   Method = "insertStatusChange"
+	InsertStatusSigned   Method = "insertStatusSigned"
 )
 
 var (
-	// ContractMethods is a mapping of the supported contract methods with their respective
+	// contractMethods is a mapping of the supported contract methods with their respective
 	// parameter types and count expected. Parameter types are placed at the
 	// position they are expected.
-	ContractMethods = map[string][]ParamType{
+	contractMethods = map[Method][]ParamType{
 		// createBond creates a new bond instance owned by the method sender.
 		// No user parameters are expected.
-		"createBond": {},
+		CreateBond: {},
 
 		// addMessage is used to update the bond details and also send bond chats.
 		// Parameters Required: bondAddress address, tag uint8, message string
@@ -53,7 +102,7 @@ var (
 		// 			tag 3: => Bond Appendix by the issuer.
 		// message => Defines the actual message being sent. Should be limited
 		// to 1000 characters before encryption.
-		"addMessage": {AddressType, Uint8Type, StringType},
+		AddMessage: {AddressType, Uint8Type, StringType},
 
 		// signBondStatus is used to show the sender has approved changes to the
 		// bond as they are in the current bond status. i.e. To approve the
@@ -61,10 +110,10 @@ var (
 		// dispute the sender signs the BondInDispute status for the specific bond.
 		// Parameters Required: bondAddress address
 		// bondAddress => Defines the address of the bond in question.
-		"signBondStatus": {AddressType},
+		SignBondStatus: {AddressType},
 
 		// updateBodyInfo is used to update the body fields.
-		// Parameter Required: bondAddress address, principal uint32,
+		// Parameter Required: bondAddress address, principal uint64,
 		// 		couponRate uint8, couponDate uint32, maturityDate uint32, currency uint8
 		// bondAddress => Defines the address of the bond in question.
 		// principal => Defines the asking amount in the currency type supported.
@@ -90,14 +139,14 @@ var (
 		// 			Currency: 4 => represents Ripple
 		// 			Currency: 5 => represents Tether Coin.
 		// 			Currency: 6 => represents Decred Coin.
-		"updateBodyInfo": {AddressType, Uint32Type, Uint8Type, Uint32Type, Uint32Type, Uint8Type},
+		UpdateBodyInfo: {AddressType, Uint64Type, Uint8Type, Uint32Type, Uint32Type, Uint8Type},
 
 		// updateBondHolder is used by the issuer during the HolderSelection stage to set
 		// a potential bond holder.
 		// Parameter Required: bondAddress string, holderAddress string
 		// bondAddress => Defines the address of the bond in question.
 		// holderAddress => Defines the address of potential holder choosen.
-		"updateBondHolder": {AddressType, AddressType},
+		UpdateBondHolder: {AddressType, AddressType},
 
 		// updateBondStatus is used to move the bond along the supported bond status
 		// stages.
@@ -111,59 +160,63 @@ var (
 		// 	 		status: 4 => represents ContractSigned
 		// 	 		status: 5 => represents BondReselling
 		// 	 		status: 6 => represents BondFinalised
-		"updateBondStatus": {AddressType, Uint8Type},
+		UpdateBondStatus: {AddressType, Uint8Type},
 	}
 
-	// LocalMethods is a mapping of the supported locally implemented methods with
+	// localMethods is a mapping of the supported locally implemented methods with
 	// their respective parameter types and count expected. Parameter types are
 	// placed at the position they are expected to be.
-	LocalMethods = map[string][]ParamType{
+	localMethods = map[Method][]ParamType{
 		// getBondByAddress returns a bond at any status if the request sender is
 		// also the bond issuer otherwise only returns bond with status
 		// Negotiating.
 		// Parameter Required: bondAddress string
 		// bondAddress => Defines the address of the bond in question.
-		"getBondByAddress": {AddressType},
+		GetBondByAddress: {AddressType},
 
-		// getBondsByStatus returns all the bonds status Negotiating or only
-		// bonds owned by the sender if any other status is used.
-		// Parameter Required: status uint8
-		// status => Defines the bond stages in its lifecycle
-		// 	 		status: 0 => represents Negotiating
-		// 	 		status: 1 => represents HolderSelection
-		// 	 		status: 2 => represents BondInDispute
-		// 	 		status: 3 => represents TermsAgreement
-		// 	 		status: 4 => represents ContractSigned
-		// 	 		status: 5 => represents BondReselling
-		// 	 		status: 6 => represents BondFinalised
-		"getBondsByStatus": {Uint8Type},
+		// getBonds returns all the bonds with status Negotiating or owned by
+		// the sender if their current status status is past Negotiating stage.
+		// Parameter Required: limit uint16, offset uint16
+		// limit => Defines the number of bonds to return. Max value is 100
+		// offset => Defines the number of bonds to skip before returning the
+		//  	require number of bonds.
+		GetBonds: {LimitType, Uint16Type},
+		// getChats returns the conversation in the bond address provides.
+		// The specific bond must either be in the negotiation stage or
+		// the sender is a party to the bond.
+		// Parameter Required: bondAddress string, limit uint16, offset uint16
+		// bondAddress => Defines the address of the bond in question.
+		// limit => Defines the number of chats to return. Max value is 100
+		// offset => Defines the number of chats to skip before returning the
+		//  	require number of chats.
+		GetChats: {AddressType, LimitType, Uint16Type},
 	}
 
-	// ServerKeyMethod defines the method used to query the server keys
-	ServerKeyMethod = map[string][]ParamType{
+	// serverKeyMethod defines the method used to query the server keys
+	serverKeyMethod = map[Method][]ParamType{
 		// getServerPubKey is used to query the session's server public key.
 		// Parameter Required: clientPubkey string
 		// The client provides its public key and in return the server sends
 		// back its public key. Using diffie-hellman, a sharedkey developed
 		// is used to communicate securely between the client and the server.
-		"getServerPubKey": {StringType},
+		GetServerPubKey: {StringType},
 	}
 )
 
 // GetMethodParams returns the parameters of the method provided if supported.
-func GetMethodParams(method string) (implementation MethodType, param []ParamType) {
+func GetMethodParams(method Method) (implementation MethodType, param []ParamType) {
 	// contract implemented methods
-	if data, ok := ContractMethods[method]; ok {
+	if data, ok := contractMethods[method]; ok {
 		return ContractType, data
 	}
 
 	// Local methods
-	if data, ok := LocalMethods[method]; ok {
+	if data, ok := localMethods[method]; ok {
 		return LocalType, data
 	}
 
 	// Server keys method
-	if data, ok := ServerKeyMethod[method]; ok {
+	if data, ok := serverKeyMethod[method]; ok {
 		return ServerKeyType, data
 	}
 

@@ -14,6 +14,7 @@ import (
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // sessionTime defines the duration when the server public key is valid.
@@ -194,9 +195,8 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	// Only allow contract methods to be executed.
-	// TODO: Allow execution of locally implementated methods too.
-	if methodType != utils.ContractType {
+	// Only allow contract and local type methods to be executed.
+	if methodType != utils.ContractType && methodType != utils.LocalType {
 		err := fmt.Errorf("unsupported method %s found for this route", msg.Method)
 		msg.packServerError(utils.ErrUnknownMethod, err)
 		writeResponse(w, msg)
@@ -246,14 +246,48 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 	auth := s.backend.Transactor(sender)
 	transactor := contracts.ChatRaw{Contract: s.bondChat}
 
-	tx, err := transactor.Transact(auth, msg.Method, msg.Params...)
+	var res interface{}
+
+	switch methodType {
+	case utils.ContractType:
+		var tx *types.Transaction
+		tx, err = transactor.Transact(auth, string(msg.Method), msg.Params...)
+		if err != nil && tx != nil {
+			res = tx.Hash().String()
+		}
+	case utils.LocalType:
+		switch msg.Method {
+		case utils.GetBonds:
+			res, err = s.db.QueryLocalData(msg.Method, new(bondResp),
+				msg.Sender.Address.String(), msg.Params...)
+		case utils.GetBondByAddress:
+			var arrayData []interface{}
+			arrayData, err = s.db.QueryLocalData(msg.Method, new(bondByAddressResp),
+				msg.Sender.Address.String(), msg.Params...)
+			// data response expected is just one record here.
+			if len(arrayData) > 0 {
+				res = arrayData[0]
+			}
+		case utils.GetChats:
+			res, err = s.db.QueryLocalData(msg.Method, new(chatMsgsResp),
+				msg.Sender.Address.String(), msg.Params...)
+		default:
+			err = fmt.Errorf("missing implementation for method %s", msg.Method)
+		}
+	}
+
+	// if res hasn't be populated yet, data returned was empty.
+	if res == nil {
+		res = struct{}{}
+	}
+
 	if err != nil {
 		msg.packServerError(utils.ErrInternalFailure, err)
 		writeResponse(w, msg)
 		return
 	}
 
-	msg.packServerResult(tx)
+	msg.packServerResult(res)
 	writeResponse(w, msg)
 }
 
@@ -279,28 +313,49 @@ func castType(param interface{}, pType utils.ParamType) (v interface{}, err erro
 		// JSON distinct types do not differentiate between integers and floats.
 		// JSON returns all numbers as float64 values.
 		// https://www.webdatarocks.com/doc/data-types-in-json/#number
-		rawInt := int(t)
+		rawInt := uint(t)
+		var maxVal uint
 
 		switch pType {
 		case utils.Uint8Type:
+			maxVal = math.MaxUint8
 			if rawInt <= math.MaxUint8 {
 				v = uint8(rawInt)
 			}
 		case utils.Uint16Type:
+			maxVal = math.MaxUint16
 			if rawInt <= math.MaxUint16 {
-				v = uint8(rawInt)
+				v = uint16(rawInt)
 			}
 		case utils.Uint32Type:
+			maxVal = math.MaxUint32
 			if rawInt <= math.MaxUint32 {
+				v = uint32(rawInt)
+			}
+		case utils.Uint64Type:
+			maxVal = math.MaxUint64
+			if rawInt <= math.MaxUint64 {
+				v = uint64(rawInt)
+			}
+		case utils.LimitType:
+			// Enforce the max limit if higher limit was provided.
+			if rawInt <= utils.MaxLimit {
 				v = uint8(rawInt)
+			} else {
+				v = utils.MaxLimit
 			}
 		default:
 			typeFound = "number"
 		}
+
+		// Prevents integer overflow by only assigning numbers that meet the required size
+		if maxVal > 0 && v == nil {
+			err = fmt.Errorf("expected a max value of %d but found %d", maxVal, rawInt)
+		}
 	}
 
 	// Casting to the require parameter failed due to use of incorrect parameter value
-	if v == nil {
+	if v == nil && err == nil {
 		err = fmt.Errorf("expected param %v to be of type %v but found it to be %s", param, pType, typeFound)
 	}
 	return
