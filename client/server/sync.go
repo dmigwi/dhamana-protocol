@@ -127,6 +127,7 @@ func (s *ServerConfig) SyncData() error {
 	go s.processEvents()
 
 	// ---- Process all the historical events data in a blocking operation ----
+	log.Info("Processing all the historical events data in a blocking operation...")
 
 	// Create a logging ticker timer.
 	ticker := time.NewTicker(loggingInterval)
@@ -143,7 +144,7 @@ func (s *ServerConfig) SyncData() error {
 			// If context is shut during the looping, exit
 			return nil
 		case <-ticker.C:
-			log.Infof("Syncing data from block=%s To target block=%d, events previously processed=%d",
+			log.Infof("Syncing data from block=%d To target block=%d, events processed=%d",
 				filterOpts.FromBlock.Int64(), targetBlock, eventCounter)
 
 			totalEvents += eventCounter
@@ -164,10 +165,11 @@ func (s *ServerConfig) SyncData() error {
 		eventCounter += counter
 	}
 
-	log.Infof("Processed events=%d from start block=%d to target block=%d",
+	log.Infof("Total processed events=%d from start block=%d to target block=%d",
 		totalEvents, syncedBlock, targetBlock)
 
 	// ---Process asynchronously all the future events data, till shutdown ----
+	log.Info("Processing asynchronously all the future events data, till shutdown...")
 
 	// Reset the ticker timer to be used in polling the future events data.
 	ticker.Reset(pollinginterval)
@@ -326,6 +328,7 @@ func (s *ServerConfig) processEvents() {
 			default:
 			eventsDataLoop:
 				for info := range eventsData {
+					log.Debugf("Local method type=%s is being processed", info.method)
 					if err := s.db.SetLocalData(info.method, info.params...); err != nil {
 
 						// clean dirty writes made before on the current block.

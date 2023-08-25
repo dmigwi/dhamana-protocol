@@ -12,6 +12,7 @@ import (
 	"github.com/btcsuite/btclog"
 	"github.com/dmigwi/dhamana-protocol/client/sapphire"
 	"github.com/dmigwi/dhamana-protocol/client/server"
+	"github.com/dmigwi/dhamana-protocol/client/storage"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/jrick/logrotate/rotator"
 )
@@ -27,6 +28,7 @@ var (
 	log         = backendLog.Logger("MAIN")
 	serverLog   = backendLog.Logger("SERVER")
 	sapphireLog = backendLog.Logger("SPPHRE")
+	storageLog  = backendLog.Logger("STORE")
 
 	// logRotator is one of the logging outputs.  It should be closed on
 	// application shutdown.
@@ -37,6 +39,7 @@ var (
 func init() {
 	server.UseLogger(serverLog)
 	sapphire.UseLogger(sapphireLog)
+	storage.UseLogger(storageLog)
 }
 
 // logWriter implements an io.Writer that outputs to both standard output and

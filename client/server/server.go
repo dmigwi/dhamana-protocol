@@ -52,7 +52,7 @@ func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
 		return nil, utils.ErrCorruptedConfig // network mismatch
 	}
 
-	log.Infof("Running on the network: %q", net)
+	log.Infof("Running on the network=%s", net)
 
 	address := getContractAddress(net)
 	if address == common.HexToAddress("") {
@@ -60,7 +60,7 @@ func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
 		return nil, utils.ErrCorruptedConfig // Address mismatch
 	}
 
-	log.Infof("Deployed contract address found: %q", address.String())
+	log.Infof("Deployed contract address=%s", address.String())
 
 	// query the deployed time.
 	deployedTime := getDeploymentTime(net)
@@ -69,7 +69,7 @@ func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
 		return nil, utils.ErrCorruptedConfig // timestamp mismatch
 	}
 
-	log.Infof("Contract in use was deployed on Date: %q",
+	log.Infof("Contract in use was deployed on Date=%s",
 		deployedTime.Format(utils.FullDateformat))
 
 	// query the deployed transaction hash
@@ -86,7 +86,7 @@ func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
 		return nil, utils.ErrCorruptedConfig // block no mismatch
 	}
 
-	log.Infof("Contract in use was deployed on Tx: %q and block: %d", txHash, blockNo)
+	log.Infof("Contract was deployed on Tx=%s and block=%d", txHash, blockNo)
 
 	// query the network params
 	networkParams, err := utils.GetNetworkConfig(net)
@@ -117,6 +117,10 @@ func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
 			}
 			return crypto.Sign(digest[:], key)
 		})
+	if err != nil {
+		log.Errorf("wrapping the sapphire client failed: %v", err)
+		return nil, err
+	}
 
 	// Create the chat instance to be used.
 	chatInstance, err := contracts.NewChat(address, backend)
@@ -179,7 +183,7 @@ func (s *ServerConfig) Run() error {
 	certPath := filepath.Join(s.datadir, s.tlsCertFile)
 	keyPath := filepath.Join(s.datadir, s.tlsKeyFile)
 
-	log.Infof("Initiating the server on: %q", s.serverURL)
+	log.Infof("Initiating the server on=%s", s.serverURL)
 
 	return srv.ListenAndServeTLS(certPath, keyPath)
 }
