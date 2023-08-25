@@ -69,8 +69,8 @@ type eventData struct {
 	params  []interface{}
 }
 
-// SyncData creates a listener that waits for events data to be received then
-// updates it to the local data persistence storage.
+// SyncData polls for the historical events data in a blocking operation before
+// shifting to poll for future blocks asynchronously.
 func (s *ServerConfig) SyncData() error {
 	// fetch the block at which the contract was deployed
 	deployedBlock := int64(getDeployedBlock(s.network))
@@ -96,9 +96,13 @@ func (s *ServerConfig) SyncData() error {
 		return err
 	}
 
-	targetBlock := s.bestBlock()
-	endBlock := syncedBlock + blocksFilterInterval
+	targetBlock, err := s.bestBlock()
+	if err != nil {
+		// Exit the sync, if fetching the best block failed.
+		return err
+	}
 
+	endBlock := syncedBlock + blocksFilterInterval
 	filterOpts := ethereum.FilterQuery{
 		FromBlock: big.NewInt(syncedBlock),
 		ToBlock:   big.NewInt(endBlock),
@@ -107,6 +111,7 @@ func (s *ServerConfig) SyncData() error {
 	}
 
 	// filterLogsFunc requests the filtered logs using the set filter query options.
+	// It returns a count of the processed filtered logs events.
 	filterLogsFunc := func() (int, error) {
 		logs, err := s.backend.FilterLogs(s.ctx, filterOpts)
 		if err != nil {
@@ -114,38 +119,37 @@ func (s *ServerConfig) SyncData() error {
 				syncedBlock, endBlock, err)
 		}
 
-		if err = s.parseEvents(logs); err != nil {
-			return 0, err
-		}
-		return 0, nil
+		return len(logs), s.parseEvents(logs)
 	}
 
-	var eventCounter, totalEvents int
+	// Process all the recieved events asynchronously by piping them into their
+	// respectived channel types for further processing.
+	go s.processEvents()
 
-	// Process all the recieved events.
-	s.processEvents()
+	// ---- Process all the historical events data in a blocking operation ----
 
 	// Create a logging ticker timer.
 	ticker := time.NewTicker(loggingInterval)
 
-	// ---- process all the historical events data in a blocking operation ----
+	var eventCounter, totalEvents int
 
 	// Block till the blocks are synced to the target block.
 	for endBlock <= targetBlock {
 		select {
 		case <-quit:
+			// shutdown request was received, so exit.
 			return nil
 		case <-s.ctx.Done():
 			// If context is shut during the looping, exit
 			return nil
 		case <-ticker.C:
-			log.Infof("Syncing data from block=%s with target block=%d, events processed=%d",
+			log.Infof("Syncing data from block=%s To target block=%d, events previously processed=%d",
 				filterOpts.FromBlock.Int64(), targetBlock, eventCounter)
 
-			// reset the events counter.
 			totalEvents += eventCounter
-			eventCounter = 0
+			eventCounter = 0 // reset the events counter.
 		default:
+			// no shutdown or ticker event received.
 		}
 
 		counter, err := filterLogsFunc()
@@ -153,7 +157,6 @@ func (s *ServerConfig) SyncData() error {
 			return err
 		}
 
-		// Manage the polling interval for the historical data.
 		filterOpts.FromBlock = big.NewInt(endBlock)
 		endBlock += blocksFilterInterval
 		filterOpts.ToBlock = big.NewInt(endBlock)
@@ -174,7 +177,7 @@ func (s *ServerConfig) SyncData() error {
 
 	// At the end of the polling interval a variable number of blocks could have
 	// been added. ToBlock is set to nil so that the returned logs can have the
-	// latest block
+	// latest best block logs.
 	filterOpts.ToBlock = nil
 
 	go func() {
@@ -193,11 +196,16 @@ func (s *ServerConfig) SyncData() error {
 					return
 				}
 
-				currentBestBlock := s.bestBlock()
+				currentBestBlock, err := s.bestBlock()
+				if err != nil {
+					quitWithErr <- err
+					return
+				}
+
+				filterOpts.FromBlock.SetInt64(currentBestBlock)
 
 				log.Infof("Processed events=%d upto the current best block=%d",
 					counter, currentBestBlock)
-				filterOpts.FromBlock.SetInt64(currentBestBlock)
 			}
 		}
 	}()
@@ -316,6 +324,7 @@ func (s *ServerConfig) processEvents() {
 				}
 
 			default:
+			eventsDataLoop:
 				for info := range eventsData {
 					if err := s.db.SetLocalData(info.method, info.params...); err != nil {
 
@@ -327,7 +336,7 @@ func (s *ServerConfig) processEvents() {
 						quitWithErr <- err
 
 						// exit the for loop so that the shutdown error can be processed.
-						break
+						break eventsDataLoop
 					}
 				}
 			}
@@ -396,7 +405,7 @@ func (s *ServerConfig) parseEvents(logs []types.Log) error {
 
 		// If one of the parsers failed to return a positive match then there
 		// must be an unsupported event in the returned logs.
-		return fmt.Errorf("unsupported event at Contract Address: %v and Block No: %v ",
+		return fmt.Errorf("unsupported event at contract address: %v and Block No: %v ",
 			eventLog.Address, eventLog.BlockNumber)
 	}
 	return nil
@@ -404,13 +413,12 @@ func (s *ServerConfig) parseEvents(logs []types.Log) error {
 
 // bestBlock returns the current chain best block. In case of an error,
 // -1 is returned.
-func (s *ServerConfig) bestBlock() int64 {
+func (s *ServerConfig) bestBlock() (int64, error) {
 	targetHeader, err := s.backend.HeaderByNumber(s.ctx, nil)
 	if err != nil {
-		log.Errorf("fetching the current best block failed: %v", err)
-		return -1
+		return -1, fmt.Errorf("fetching the current bestblock failed: %v", err)
 	}
-	return targetHeader.Number.Int64()
+	return targetHeader.Number.Int64(), nil
 }
 
 // fetchTopics returns the search parameters for all the supported events,
