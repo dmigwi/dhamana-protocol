@@ -24,7 +24,7 @@ func run(ctx context.Context, cancelFunc context.CancelFunc) {
 		return
 	}
 
-	log.Infof("Using data directory: %s", config.DataDirPath)
+	log.Infof("Using data directory=%s", config.DataDirPath)
 
 	// Initialize the logger while creating the data dir if it doesn't exists.
 	if err := initLogRotator(config.DataDirPath, 50); err != nil {

@@ -188,6 +188,8 @@ func NewDB(ctx context.Context, port uint16,
 	connInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
 
+	log.Infof("Creating a new database instance with the driver=%s", driverName)
+
 	db, err := sql.Open(driverName, connInfo)
 	if err != nil {
 		log.Errorf("unable to open to %s: err %v", driverName, err)
@@ -199,12 +201,15 @@ func NewDB(ctx context.Context, port uint16,
 		return nil, err
 	}
 
+	log.Info("Confirming that all the database tables exists")
 	for i, stmt := range tablesSQLStmt {
 		if _, err := db.ExecContext(ctx, stmt); err != nil {
 			log.Errorf("creating a table index (%d) failed Error: %v", i, err)
 			return nil, err
 		}
 	}
+
+	log.Infof("Confirmed all the %d tables exists", len(tablesSQLStmt))
 
 	return &DB{
 		db:     db,
