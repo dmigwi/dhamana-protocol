@@ -5,12 +5,61 @@ package server
 
 import (
 	"fmt"
+	"math/big"
+	"strings"
 	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+)
+
+const (
+	// blocksFilterInterval defines the number of blocks that can be filtered at ago.
+	blocksFilterInterval int64 = 100
+
+	// loggingInterval describes the intervals at which historical events
+	// sync progress is logged.
+	loggingInterval = 10 * time.Second
+
+	// pollinginterval describes the intervals at which future events are polled.
+	pollinginterval = 2 * time.Minute
+)
+
+var (
+	// bondBodyTermsChan defines the BondBodyTerms event listener channel.
+	bondBodyTermsChan = make(chan *contracts.ChatBondBodyTerms)
+	// bondMotivationChan defines the BondMotivation event listener channel.
+	bondMotivationChan = make(chan *contracts.ChatBondMotivation)
+	// holderUpdateChan defines the HolderUpdate event listener channel.
+	holderUpdateChan = make(chan *contracts.ChatHolderUpdate)
+	// newBondCreatedChan defines the NewBondCreated event listener channel.
+	newBondCreatedChan = make(chan *contracts.ChatNewBondCreated)
+	// newChatMessageChan defines the NewChatMessage event listener channel.
+	newChatMessageChan = make(chan *contracts.ChatNewChatMessage)
+	// statusChangeChan defines the StatusChange event listener channel.
+	statusChangeChan = make(chan *contracts.ChatStatusChange)
+	// statusSignedChan defines the StatusSigned event listener channel.
+	statusSignedChan = make(chan *contracts.ChatStatusSigned)
+
+	// quit is used to indicate that a shutdown request was recieved and the
+	// loop or goroutine should exit too.
+	quit = make(chan struct{})
+
+	// quitWithErr allows the error that initiates listeners and loops shutdown
+	// to be sent via it.
+	quitWithErr = make(chan error)
+
+	// eventNames defines a list of all event names currently supported.
+	// If a new event is introduced, it must be added here otherwise the system
+	// will exit with an error when parsing the logs.
+	eventNames = []string{
+		"NewBondCreated", "NewChatMessage", "StatusChange", "StatusSigned",
+		"BondBodyTerms", "BondMotivation", "HolderUpdate",
+	}
 )
 
 // eventData contains data packed from each event recieved.
@@ -24,129 +73,152 @@ type eventData struct {
 // updates it to the local data persistence storage.
 func (s *ServerConfig) SyncData() error {
 	// fetch the block at which the contract was deployed
-	deployedBlock := getDeployedBlock(s.network)
+	deployedBlock := int64(getDeployedBlock(s.network))
 
 	// fetch the last synced block from the database.
 	lastSyncedBlock, _ := s.db.QueryLocalData(utils.GetLastSyncedBlock,
 		new(lastSyncedBlockResp), "")
 
-	var syncedBlock uint64
+	var syncedBlock int64
 	if len(lastSyncedBlock) > 0 {
 		// To start on the next block yet to be synced add 1.
-		syncedBlock = lastSyncedBlock[0].(uint64) + 1
+		syncedBlock = lastSyncedBlock[0].(int64) + 1
 	}
 
-	// compare the two blocks and pick the latests one.
+	// compare the two blocks and pick the latest one.
 	if deployedBlock > syncedBlock {
 		syncedBlock = deployedBlock
 	}
 
-	start := uint64(syncedBlock)
-	watchOpts := &bind.WatchOpts{
-		Context: s.ctx,
-		Start:   &start,
-	}
-
-	// Event listener channels.
-	bondBodyTermsChan := make(chan *contracts.ChatBondBodyTerms)
-	bondMotivationChan := make(chan *contracts.ChatBondMotivation)
-	holderUpdateChan := make(chan *contracts.ChatHolderUpdate)
-	newbondCreatedChan := make(chan *contracts.ChatNewBondCreated)
-	newChatMessageChan := make(chan *contracts.ChatNewChatMessage)
-	statusChangeChan := make(chan *contracts.ChatStatusChange)
-	statusSignedChan := make(chan *contracts.ChatStatusSigned)
-
-	log.Infof("Subscribing to all contract events listeners starting from block %d", syncedBlock)
-	bondBodyTerms, err := s.bondChat.ChatFilterer.WatchBondBodyTerms(watchOpts, bondBodyTermsChan)
+	// Fetch the events search parameters.
+	topics, err := s.fetchTopics()
 	if err != nil {
-		err = fmt.Errorf("subscribing to event BondBodyTerms failed Error: %v", err)
 		return err
 	}
 
-	bondMotivation, err := s.bondChat.ChatFilterer.WatchBondMotivation(watchOpts, bondMotivationChan)
-	if err != nil {
-		err = fmt.Errorf("subscribing to event BondMotivation failed Error: %v", err)
-		return err
+	targetBlock := s.bestBlock()
+	endBlock := syncedBlock + blocksFilterInterval
+
+	filterOpts := ethereum.FilterQuery{
+		FromBlock: big.NewInt(syncedBlock),
+		ToBlock:   big.NewInt(endBlock),
+		Addresses: []common.Address{getContractAddress(s.network)},
+		Topics:    topics,
 	}
 
-	holderUpdate, err := s.bondChat.ChatFilterer.WatchHolderUpdate(watchOpts, holderUpdateChan)
-	if err != nil {
-		err = fmt.Errorf("subscribing to event HolderUpdate failed Error: %v", err)
-		return err
+	// filterLogsFunc requests the filtered logs using the set filter query options.
+	filterLogsFunc := func() (int, error) {
+		logs, err := s.backend.FilterLogs(s.ctx, filterOpts)
+		if err != nil {
+			return 0, fmt.Errorf("fetching logs between block %d and %d failed: %v",
+				syncedBlock, endBlock, err)
+		}
+
+		if err = s.parseEvents(logs); err != nil {
+			return 0, err
+		}
+		return 0, nil
 	}
 
-	newBondCreated, err := s.bondChat.ChatFilterer.WatchNewBondCreated(watchOpts, newbondCreatedChan)
-	if err != nil {
-		err = fmt.Errorf("subscribing to event NewBondCreated failed Error: %v", err)
-		return err
+	var eventCounter, totalEvents int
+
+	// Process all the recieved events.
+	s.processEvents()
+
+	// Create a logging ticker timer.
+	ticker := time.NewTicker(loggingInterval)
+
+	// ---- process all the historical events data in a blocking operation ----
+
+	// Block till the blocks are synced to the target block.
+	for endBlock <= targetBlock {
+		select {
+		case <-quit:
+			return nil
+		case <-s.ctx.Done():
+			// If context is shut during the looping, exit
+			return nil
+		case <-ticker.C:
+			log.Infof("Syncing data from block=%s with target block=%d, events processed=%d",
+				filterOpts.FromBlock.Int64(), targetBlock, eventCounter)
+
+			// reset the events counter.
+			totalEvents += eventCounter
+			eventCounter = 0
+		default:
+		}
+
+		counter, err := filterLogsFunc()
+		if err != nil {
+			return err
+		}
+
+		// Manage the polling interval for the historical data.
+		filterOpts.FromBlock = big.NewInt(endBlock)
+		endBlock += blocksFilterInterval
+		filterOpts.ToBlock = big.NewInt(endBlock)
+
+		eventCounter += counter
 	}
 
-	newchatMsg, err := s.bondChat.ChatFilterer.WatchNewChatMessage(watchOpts, newChatMessageChan)
-	if err != nil {
-		err = fmt.Errorf("subscribing to event NewChatMessage failed Error: %v", err)
-		return err
-	}
+	log.Infof("Processed events=%d from start block=%d to target block=%d",
+		totalEvents, syncedBlock, targetBlock)
 
-	statusChange, err := s.bondChat.ChatFilterer.WatchStatusChange(watchOpts, statusChangeChan)
-	if err != nil {
-		err = fmt.Errorf("subscribing to event StatusChange failed Error: %v", err)
-		return err
-	}
+	// ---Process asynchronously all the future events data, till shutdown ----
 
-	statusSigned, err := s.bondChat.ChatFilterer.WatchStatusSigned(watchOpts, statusSignedChan)
-	if err != nil {
-		err = fmt.Errorf("subscribing to event StatusSigned failed Error: %v", err)
-		return err
-	}
+	// Reset the ticker timer to be used in polling the future events data.
+	ticker.Reset(pollinginterval)
 
-	// eventsSubscriptions maps the event name with their respective subscription instance.
-	eventsSubscriptions := map[string]event.Subscription{
-		"BondBodyTerms":  bondBodyTerms,
-		"BondMotivation": bondMotivation,
-		"HolderUpdate":   holderUpdate,
-		"NewBondCreated": newBondCreated,
-		"NewChatMessage": newchatMsg,
-		"StatusChange":   statusChange,
-		"StatusSigned":   statusSigned,
-	}
+	syncedBlock = filterOpts.ToBlock.Int64()
+	filterOpts.FromBlock.SetInt64(syncedBlock)
 
-	// quitWithErr receives the error that shutdowns the listeners and events subscription.
-	quitWithErr := make(chan error)
-	// eventsExit shutdowns the events subscription.
-	eventsExit := make(chan struct{})
+	// At the end of the polling interval a variable number of blocks could have
+	// been added. ToBlock is set to nil so that the returned logs can have the
+	// latest block
+	filterOpts.ToBlock = nil
 
-	for name, ev := range eventsSubscriptions {
-		// Launches several goroutines whose purpose is to listen to errors from
-		// events and pipe them into a single channel.
-		go func(n string, evSub event.Subscription) {
-			for {
-				select {
-				case <-eventsExit:
+	go func() {
+		for {
+			select {
+			case <-quit:
+				// shutdown request recieved
+				return
+			case <-s.ctx.Done():
+				// context is already cancelled.
+				return
+			case <-ticker.C:
+				counter, err := filterLogsFunc()
+				if err != nil {
+					quitWithErr <- err
 					return
-				case err := <-evSub.Err():
-					quitWithErr <- fmt.Errorf("event: %s error: %v", n, err)
 				}
-			}
-		}(name, ev)
-	}
 
-	// eventsData is an buffered chan that allows each event to submit its data
+				currentBestBlock := s.bestBlock()
+
+				log.Infof("Processed events=%d upto the current best block=%d",
+					counter, currentBestBlock)
+				filterOpts.FromBlock.SetInt64(currentBestBlock)
+			}
+		}
+	}()
+
+	return nil
+}
+
+func (s *ServerConfig) processEvents() {
+	// eventsData is a buffered chan that allows each event to submit its data
 	// atleast twice before its considered full.
-	eventsData := make(chan *eventData, len(eventsSubscriptions)*2)
+	eventsData := make(chan *eventData, len(eventNames)*2)
 
 	go func() {
 		for {
 			select {
 			case err := <-quitWithErr:
 				log.Info("Sync shutdown request recieved")
-				// Shutdowns the error listeners immediately the context is cancelled
-				close(eventsExit)
 
-				for _, event := range eventsSubscriptions {
-					event.Unsubscribe()
-				}
+				// trigger all other loops and listeners to close too.
+				close(quit)
 
-				// This attempts to empty all app pending write requests.
 			loop:
 				for {
 					select {
@@ -194,7 +266,7 @@ func (s *ServerConfig) SyncData() error {
 					},
 				}
 
-			case data := <-newbondCreatedChan:
+			case data := <-newBondCreatedChan:
 				eventsData <- &eventData{
 					method:  utils.InsertNewBondCreated,
 					blockNo: data.Raw.BlockNumber,
@@ -261,6 +333,104 @@ func (s *ServerConfig) SyncData() error {
 			}
 		}
 	}()
+}
 
+// parseEvents attempts to match the returned logs with one of the event parsers.
+// If none of the parsers was a postive match then an error is returned to indicate
+// presence of an unsupported event.
+func (s *ServerConfig) parseEvents(logs []types.Log) error {
+	var eventsCount int
+	for _, eventLog := range logs {
+		select {
+		case <-quit:
+			break // Breaks the for-loop
+		case <-s.ctx.Done():
+			break // Breaks the for-loop
+		default:
+			// No shutdown request received.
+		}
+
+		eventsCount++
+
+		newBondCreated, _ := s.bondChat.ChatFilterer.ParseNewBondCreated(eventLog)
+		if newBondCreated != nil {
+			newBondCreatedChan <- newBondCreated
+			continue
+		}
+
+		newChatMessage, _ := s.bondChat.ChatFilterer.ParseNewChatMessage(eventLog)
+		if newChatMessage != nil {
+			newChatMessageChan <- newChatMessage
+			continue
+		}
+
+		statusChange, _ := s.bondChat.ChatFilterer.ParseStatusChange(eventLog)
+		if statusChange != nil {
+			statusChangeChan <- statusChange
+			continue
+		}
+
+		statusSigned, _ := s.bondChat.ChatFilterer.ParseStatusSigned(eventLog)
+		if statusSigned != nil {
+			statusSignedChan <- statusSigned
+			continue
+		}
+
+		bondBodyTerms, _ := s.bondChat.ChatFilterer.ParseBondBodyTerms(eventLog)
+		if bondBodyTerms != nil {
+			bondBodyTermsChan <- bondBodyTerms
+			continue
+		}
+
+		bondMotivation, _ := s.bondChat.ChatFilterer.ParseBondMotivation(eventLog)
+		if bondMotivation != nil {
+			bondMotivationChan <- bondMotivation
+			continue
+		}
+
+		holderUpdate, _ := s.bondChat.ChatFilterer.ParseHolderUpdate(eventLog)
+		if holderUpdate != nil {
+			holderUpdateChan <- holderUpdate
+			continue
+		}
+
+		// If one of the parsers failed to return a positive match then there
+		// must be an unsupported event in the returned logs.
+		return fmt.Errorf("unsupported event at Contract Address: %v and Block No: %v ",
+			eventLog.Address, eventLog.BlockNumber)
+	}
 	return nil
+}
+
+// bestBlock returns the current chain best block. In case of an error,
+// -1 is returned.
+func (s *ServerConfig) bestBlock() int64 {
+	targetHeader, err := s.backend.HeaderByNumber(s.ctx, nil)
+	if err != nil {
+		log.Errorf("fetching the current best block failed: %v", err)
+		return -1
+	}
+	return targetHeader.Number.Int64()
+}
+
+// fetchTopics returns the search parameters for all the supported events,
+// this helps to narrow down the events topics search to only the supported
+// events.
+func (s *ServerConfig) fetchTopics() ([][]common.Hash, error) {
+	chatABI, err := abi.JSON(strings.NewReader(contracts.ChatABI))
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse the ABI interface: %v", err)
+	}
+
+	var query [][]interface{}
+	for _, n := range eventNames {
+		query = append([][]interface{}{{chatABI.Events[n].ID}}, query...)
+	}
+
+	topics, err := abi.MakeTopics(query...)
+	if err != nil {
+		return nil, fmt.Errorf("unable generate event topics: %v", err)
+	}
+
+	return topics, nil
 }
