@@ -115,8 +115,8 @@ func (s *ServerConfig) SyncData() error {
 	filterLogsFunc := func() (int, error) {
 		logs, err := s.backend.FilterLogs(s.ctx, filterOpts)
 		if err != nil {
-			return 0, fmt.Errorf("fetching logs between block %d and %d failed: %v",
-				syncedBlock, endBlock, err)
+			return 0, fmt.Errorf("syncing between block %d and %d failed: %v",
+				filterOpts.FromBlock.Int64(), filterOpts.ToBlock.Int64(), err)
 		}
 
 		return len(logs), s.parseEvents(logs)
@@ -134,6 +134,8 @@ func (s *ServerConfig) SyncData() error {
 
 	var eventCounter, totalEvents int
 
+	log.Infof("Starting data sync from block=%d To target block=%d",
+		syncedBlock, targetBlock)
 	// Block till the blocks are synced to the target block.
 	for endBlock <= targetBlock {
 		select {
