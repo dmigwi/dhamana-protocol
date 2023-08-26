@@ -5,7 +5,7 @@ const truffleAssert = require("truffle-assertions");
 const currency = 2;
 const principal = 12323;
 const couponRate = 2;
-const couponDate = 1690670000;
+const couponDate =  3;
 const maturityDate = 1690869606;
 const chatMsg = "This text is a placeholder of an encrypted message";
 

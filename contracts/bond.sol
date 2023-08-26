@@ -78,7 +78,8 @@ contract BondContract {
         uint8 couponRate;
         // couponDate decribes the interval i.e. monthly, quartely, yearly etc
         // when the interest is due to be paid to the holder.
-        uint32 couponDate;
+        // https://www.causal.app/whats-the-difference/maturity-date-vs-coupon-date
+        uint8 couponDate;
         // maturityDate decribes date when the whole amount owed to the holder
         // should be cleared/paid in full.
         uint32 maturityDate;
@@ -163,7 +164,7 @@ contract BondContract {
     // this change.
     function setBodyInfo(
         CurrencyType _currency, uint32 _principal, uint8 _couponRate,
-        uint32 _couponDate, uint32 _maturityDate, address _sender
+        uint8 _couponDate, uint32 _maturityDate, address _sender
     ) public onlyIssuerAllowed(_sender) bondDetailsInDispute termsUpdateDisabled {
         bond.currency = _currency;
         bond.principal = _principal;

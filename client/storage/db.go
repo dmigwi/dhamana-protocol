@@ -38,7 +38,7 @@ const (
 		"created_at_block INTEGER NOT NULL," +
 		"principal INTEGER," +
 		"coupon_rate SMALLINT CHECK (coupon_rate BETWEEN 1 AND 100)," +
-		"coupon_date TIMESTAMPTZ," +
+		"coupon_date SMALLINT," +
 		"maturity_date TIMESTAMPTZ," +
 		"currency SMALLINT CHECK (currency BETWEEN 0 AND 50)," +
 		"intro_msg TEXT," +

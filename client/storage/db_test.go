@@ -280,7 +280,7 @@ func TestQueryLocalData(t *testing.T) {
 		Holder:          common.HexToAddress("0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6dhod"),
 		CreatedAtBlock:  71,
 		Principal:       14000,
-		CouponDate:      time.Time{},
+		CouponDate:      2,
 		MaturityDate:    time.Time{},
 		IntroMessage:    "",
 		LastUpdate:      time.Time{},

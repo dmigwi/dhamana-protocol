@@ -72,7 +72,7 @@ type BondByAddressResp struct {
 	Holder          common.Address `json:"holder_address"`
 	CreatedAtBlock  uint64         `json:"created_at_block"`
 	Principal       uint64         `json:"principal"`
-	CouponDate      time.Time      `json:"coupon_date"`
+	CouponDate      uint8          `json:"coupon_date"`
 	MaturityDate    time.Time      `json:"maturity_date"`
 	IntroMessage    string         `json:"intro_msg"`
 	LastUpdate      time.Time      `json:"last_update"`

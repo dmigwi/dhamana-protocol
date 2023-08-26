@@ -26,7 +26,7 @@ contract ChatContract {
     event NewBondCreated(address sender, address bondAddress);
 
     // BondBodyTerms creates a new bonds with the terms body terms update made.
-    event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint32 couponDate,
+    event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint8 couponDate,
         uint32 maturityDate, BondContract.CurrencyType currency);
 
     // BondMotivation creates a new event that comprises of the bond introduction
@@ -68,7 +68,7 @@ contract ChatContract {
     // updateBodyInfo updates the bond body details and emits an event.
     // Only the bond issuer allowed to make this changes.
     function updateBodyInfo(
-        address _contract, uint32 _principal, uint8 _couponRate, uint32 _couponDate,
+        address _contract, uint32 _principal, uint8 _couponRate, uint8 _couponDate,
         uint32 _maturityDate, BondContract.CurrencyType _currency
     ) external {
         BondContract bond = bonds[_contract];
