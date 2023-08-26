@@ -223,10 +223,6 @@ func (s *ServerConfig) processEvents() {
 	// atleast twice before its considered full.
 	eventsData := make(chan *eventData, len(eventNames)*2)
 
-	secsToTime := func(secs uint32) time.Time {
-		return time.Unix(int64(secs), 0).UTC()
-	}
-
 	go func() {
 		for {
 			select {
@@ -258,8 +254,8 @@ func (s *ServerConfig) processEvents() {
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
 						data.Principal, data.CouponRate, data.CouponDate,
-						secsToTime(data.MaturityDate), data.Currency,
-						time.Now().UTC(), data.Raw.BlockNumber, data.BondAddress,
+						time.Unix(int64(data.MaturityDate), 0).UTC(), data.Currency,
+						data.Raw.BlockNumber, data.BondAddress,
 					},
 				}
 
@@ -268,8 +264,7 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.UpdateBondMotivation,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Message, time.Now().UTC(),
-						data.Raw.BlockNumber, data.BondAddress,
+						data.Message, data.Raw.BlockNumber, data.BondAddress,
 					},
 				}
 
@@ -278,8 +273,7 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.UpdateHolder,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Holder, time.Now().UTC(),
-						data.Raw.BlockNumber, data.BondAddress,
+						data.Holder, data.Raw.BlockNumber, data.BondAddress,
 					},
 				}
 
@@ -316,8 +310,7 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.UpdateLastStatus,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Status, time.Now().UTC(),
-						data.Raw.BlockNumber, data.BondAddress,
+						data.Status, data.Raw.BlockNumber, data.BondAddress,
 					},
 				}
 

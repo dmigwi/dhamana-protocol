@@ -26,7 +26,7 @@ const (
 	createVersionTable = "CREATE TABLE IF NOT EXISTS tables_version(" +
 		"id SERIAL PRIMARY KEY," +
 		"sem_version VARCHAR(10) UNIQUE," +
-		"tables_created_on TIMESTAMPTZ DEFAULT NOW())"
+		"tables_created_on TIMESTAMPTZ ON DEFAULT CURRENT_TIMESTAMP)"
 
 	// createTableBond is a prepared statement creating a table identified with the
 	// name table_bond if it doesn't exists.
@@ -34,16 +34,16 @@ const (
 		"bond_address VARCHAR(42) PRIMARY KEY," +
 		"issuer_address VARCHAR(42) NOT NULL," +
 		"holder_address VARCHAR(42)," +
-		"created_at TIMESTAMPTZ DEFAULT NOW()," +
+		"created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
 		"created_at_block INTEGER NOT NULL," +
 		"principal INTEGER," +
 		"coupon_rate SMALLINT CHECK (coupon_rate BETWEEN 1 AND 100)," +
-		"coupon_date SMALLINT," +
+		"coupon_date SMALLINT (coupon_date BETWEEN 0 AND 50)," +
 		"maturity_date TIMESTAMPTZ," +
 		"currency SMALLINT CHECK (currency BETWEEN 0 AND 50)," +
 		"intro_msg TEXT," +
 		"last_status SMALLINT CHECK (last_status BETWEEN 0 AND 10)," +
-		"last_update TIMESTAMPTZ DEFAULT NOW()," +
+		"last_update TIMESTAMPTZ ON UPDATE CURRENT_TIMESTAMP," +
 		"last_synced_block INTEGER NOT NULL)"
 
 	// createTableBondStatus is a prepared statement creating a table identified
@@ -53,7 +53,7 @@ const (
 		"sender VARCHAR(42) NOT NULL," +
 		"bond_address VARCHAR(42) NOT NULL," +
 		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
-		"added_on TIMESTAMPTZ DEFAULT NOW()," +
+		"added_on TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
 		"last_synced_block INTEGER NOT NULL)"
 
 	// createTableBondStatusSigned is a prepared statement creating a table
@@ -63,7 +63,7 @@ const (
 		"sender VARCHAR(42) NOT NULL," +
 		"bond_address VARCHAR(42) NOT NULL," +
 		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
-		"signed_on TIMESTAMPTZ DEFAULT NOW()," +
+		"signed_on TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
 		"last_synced_block INTEGER NOT NULL)"
 
 	// createChatTable is a prepared statement creating a table identified with
@@ -73,7 +73,7 @@ const (
 		"sender VARCHAR(42) NOT NULL," +
 		"bond_address VARCHAR(42) NOT NULL," +
 		"chat_msg TEXT NOT NULL," +
-		"created_at TIMESTAMPTZ DEFAULT NOW()," +
+		"created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
 		"last_synced_block INTEGER NOT NULL)"
 
 	// fetchBonds is a prepared statement that fetches all the bonds that owned
@@ -109,28 +109,28 @@ const (
 
 	// setBondBodyTerms updates the table_bond with data from the BondBodyTerms event.
 	setBondBodyTerms = "UPDATE table_bond SET principal = $1, coupon_rate = $2, " +
-		"coupon_date = $3, maturity_date = $4, currency = $5, last_update = $6, " +
-		"last_synced_block = $7 WHERE bond_address = $8"
+		"coupon_date = $3, maturity_date = $4, currency = $5, " +
+		"last_synced_block = $6 WHERE bond_address = $7"
 
 	// setBondMotivation update the table_bond with data from BondMotivation event.
-	setBondMotivation = "UPDATE table_bond SET intro_msg = $1, last_update = $2," +
-		" last_synced_block = $3  WHERE bond_address = $4"
+	setBondMotivation = "UPDATE table_bond SET intro_msg = $1, last_synced_block = $2" +
+		" WHERE bond_address = $3"
 
 	// setHolder updates table_bond with data from HolderUpdate event.
-	setHolder = "UPDATE table_bond SET holder_address = $1, last_update = $2, " +
-		"last_synced_block = $3 WHERE bond_address = $4"
+	setHolder = "UPDATE table_bond SET holder_address = $1, last_synced_block = $2" +
+		" WHERE bond_address = $3"
 
 	// setLastStatus updates table_bond with data from StatusChange event.
-	setLastStatus = "UPDATE table_bond SET last_status = $1, last_update = $2, " +
-		"last_synced_block = $3 WHERE bond_address = $4"
+	setLastStatus = "UPDATE table_bond SET last_status = $1, last_synced_block = $2" +
+		" WHERE bond_address = $3"
 
 	// addNewBondCreated inserts into table_bond new data from event NewBondCreated.
 	addNewBondCreated = "INSERT INTO table_bond (bond_address, issuer_address, " +
-		"last_update, last_synced_block) VALUES ($1, $2, $3, $4)"
+		"last_synced_block) VALUES ($1, $2, $3)"
 
 	// ddNewChatMessage inserts into table_chat new data from event NewChatMessage.
 	addNewChatMessage = "INSERT INTO table_chat (sender, bond_address, " +
-		" chat_msg, last_synced_block) VALUES ($1, $2, $3, $5)"
+		" chat_msg, last_synced_block) VALUES ($1, $2, $3, $4)"
 
 	// addStatusChange inserts into table_status new data from event StatusChange.
 	addStatusChange = "INSERT INTO table_status (sender, bond_address, " +
