@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
+	"github.com/dmigwi/dhamana-protocol/client/servertypes"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -77,7 +78,7 @@ func (s *ServerConfig) SyncData() error {
 
 	// fetch the last synced block from the database.
 	lastSyncedBlock, _ := s.db.QueryLocalData(utils.GetLastSyncedBlock,
-		new(lastSyncedBlockResp), "")
+		new(servertypes.LastSyncedBlockResp), "")
 
 	var syncedBlock int64
 	if len(lastSyncedBlock) > 0 {

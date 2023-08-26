@@ -80,7 +80,7 @@ const (
 
 	// fetchBonds is a prepared statement that fetches all the bonds that owned
 	// by the bond party with the address or they are still in the negotiation stage.
-	fetchBonds = "SELECT (bond_address,created_at,coupon_rate,currency,last_status)" +
+	fetchBonds = "SELECT (bond_address,issuer_address,created_at,coupon_rate,currency,last_status)" +
 		"FROM table_bond WHERE issuer_address = $1 OR last_status = 0 " +
 		"Or holder_address = $2 ORDER BY last_update DESC LIMIT $3 OFFSET $4"
 
@@ -306,6 +306,8 @@ func (d *DB) QueryLocalData(method utils.Method, r Reader, sender string,
 	if err != nil {
 		return nil, fmt.Errorf("fetching query for method %q failed: %v", method, err)
 	}
+
+	defer rows.Close()
 
 	var data []interface{}
 	for rows.Next() {

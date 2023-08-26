@@ -14,6 +14,7 @@ require (
 	github.com/oasisprotocol/deoxysii v0.0.0-20220228165953-2091330c22b7
 	github.com/oasisprotocol/oasis-core/go v0.2202.10
 	golang.org/x/crypto v0.12.0
+	golang.org/x/text v0.12.0
 	modernc.org/sqlite v1.25.0
 )
 
