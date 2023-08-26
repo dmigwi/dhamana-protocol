@@ -199,13 +199,16 @@ type Reader interface {
 	Read(fn func(fields ...any) error) (interface{}, error)
 }
 
+// ConnectionString returns on the connection string format supported by postgres.
+// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+func ConnectionString(port uint16, host, user, password, dbname string) string {
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+}
+
 // NewDB returns an opened db instance whose connection has been tested with
 // ping request. It generates the required tables if they don't exist.
-func NewDB(ctx context.Context, port uint16, host, user, password, dbname string,
-) (*DB, error) {
-	connInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
-
+func NewDB(ctx context.Context, connInfo string) (*DB, error) {
 	db, err := sql.Open("postgres", connInfo)
 	if err != nil {
 		log.Errorf("unable to open to postgres db: err %v", err)

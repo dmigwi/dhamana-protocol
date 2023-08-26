@@ -24,8 +24,11 @@ const (
 	WelcomeText = "Pi encrypted  715b48145c501951595355505d194050475a135a5d4251595d5d" +
 		"40021301705647585b5d600c7d527f615760417f63477d5a696045610348437f470d790757"
 
-	// FullDateformat defines the full date format supported for user display.
-	FullDateformat = "Mon 15:04:05 2006-01-02"
+	// FullDateFormat defines the full date format supported for user display.
+	FullDateFormat = "Mon 15:04:05 2006-01-02"
+
+	// PgDateFormat defines the format of data stored in postgres.
+	PgDateFormat = "2006-01-02 15:04:05.99999-07"
 
 	// FilePerm defines the file permission used to manage the application data.
 	FilePerm = os.FileMode(0o0700)

@@ -70,7 +70,7 @@ func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
 	}
 
 	log.Infof("Contract in use was deployed on Date=%s",
-		deployedTime.Format(utils.FullDateformat))
+		deployedTime.Format(utils.FullDateFormat))
 
 	// query the deployed transaction hash
 	txHash := getDeployedTxHash(net)
@@ -129,7 +129,8 @@ func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
 		return nil, err
 	}
 
-	db, err := storage.NewDB(ctx, port, dbHost, dbUser, dbPassword, dbName)
+	db, err := storage.NewDB(ctx,
+		storage.ConnectionString(port, dbHost, dbUser, dbPassword, dbName))
 	if err != nil {
 		return nil, err
 	}

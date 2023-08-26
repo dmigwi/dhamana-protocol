@@ -223,6 +223,10 @@ func (s *ServerConfig) processEvents() {
 	// atleast twice before its considered full.
 	eventsData := make(chan *eventData, len(eventNames)*2)
 
+	secsToTime := func(secs uint32) time.Time {
+		return time.Unix(int64(secs), 0).UTC()
+	}
+
 	go func() {
 		for {
 			select {
@@ -254,8 +258,8 @@ func (s *ServerConfig) processEvents() {
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
 						data.Principal, data.CouponRate, data.CouponDate,
-						data.MaturityDate, data.Currency, time.Now().UTC(),
-						data.Raw.BlockNumber, data.BondAddress,
+						secsToTime(data.MaturityDate), data.Currency,
+						time.Now().UTC(), data.Raw.BlockNumber, data.BondAddress,
 					},
 				}
 
