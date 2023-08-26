@@ -284,8 +284,7 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.InsertNewBondCreated,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.BondAddress, data.Sender, time.Now().UTC(),
-						data.Raw.BlockNumber,
+						data.BondAddress, data.Sender, data.Raw.BlockNumber,
 					},
 				}
 
@@ -295,7 +294,7 @@ func (s *ServerConfig) processEvents() {
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
 						data.Sender, data.BondAddress, data.Message,
-						time.Now().UTC(), data.Raw.BlockNumber,
+						data.Raw.BlockNumber,
 					},
 				}
 
@@ -305,7 +304,7 @@ func (s *ServerConfig) processEvents() {
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
 						data.Sender, data.BondAddress, data.Status,
-						time.Now().UTC(), data.Raw.BlockNumber,
+						data.Raw.BlockNumber,
 					},
 				}
 
@@ -324,7 +323,7 @@ func (s *ServerConfig) processEvents() {
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
 						data.Sender, data.BondAddress, data.Status,
-						time.Now().UTC(), data.Raw.BlockNumber,
+						data.Raw.BlockNumber,
 					},
 				}
 

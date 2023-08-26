@@ -3,12 +3,12 @@ package storage
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/servertypes"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
-	"golang.org/x/text/currency"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 
 	ctx, cancelFn = context.WithCancel(context.Background())
 
-	db, err = NewDB(ctx, 0, utils.SqliteDriverName, "", "", "", "", filepath.Join(dir, "db"))
+	db, err = NewDB(ctx, 0, "", "", "", "", "")
 	if err != nil {
 		cancelFn()
 		log.Error(err)
@@ -173,32 +173,33 @@ func insertTestData() error {
 // TestQueryLocalData tests the functionality of QueryLocalData method.
 func TestQueryLocalData(t *testing.T) {
 	sender := "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6dhod"
+	limit := 5
+	offset := 0
 
 	expectedData := []servertypes.BondResp{
 		{
-			BondAddress:   "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756dha", // bond_address
-			Issuer: "0xf977814e90da44bfa03b6295a0616a897441aadd", // issuer_address
+			BondAddress: common.HexToAddress("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756dha"), // bond_address
+			Issuer:      common.HexToAddress("0xf977814e90da44bfa03b6295a0616a897441aadd"), // issuer_address
 			CreatedTime: time.Time{},
-			CouponRate: 0,
-			Currency: 0,
-			LastStatus: 0,
+			CouponRate:  0,
+			Currency:    0,
+			LastStatus:  0,
 		}, {
-			BondAddress:   "0xc61b9bb3a7a0767e3179713f3a5c7a9aedce1dhb",
-			Issuer: "0x2b6ed29a95753c3ad948348e3e7b1a251080fadd",
+			BondAddress: common.HexToAddress("0xc61b9bb3a7a0767e3179713f3a5c7a9aedce1dhb"),
+			Issuer:      common.HexToAddress("0x2b6ed29a95753c3ad948348e3e7b1a251080fadd"),
 			CreatedTime: time.Time{},
-			CouponRate: 0,
-			Currency: 0,
-			LastStatus: 0,
+			CouponRate:  0,
+			Currency:    0,
+			LastStatus:  0,
 		}, {
-			BondAddress:   "0xc61b9bb3a7a0767e3179713f3a5c7a9aedce1dhc",
-			Issuer: "0x2b6ed29a95753c3ad948348e3e7b1a251080fadd",
+			BondAddress: common.HexToAddress("0xc61b9bb3a7a0767e3179713f3a5c7a9aedce1dhc"),
+			Issuer:      common.HexToAddress("0x2b6ed29a95753c3ad948348e3e7b1a251080fadd"),
 			CreatedTime: time.Time{},
-			CreatedTime: time.Time{},
-			CouponRate: 0,
-			Currency: 0,
-			LastStatus: 0,
+			CouponRate:  0,
+			Currency:    0,
+			LastStatus:  0,
 		},
 	}
 
-	db.QueryLocalData(method utils.Method, r Reader, sender string, params ...interface{})
+	data, err := db.QueryLocalData(utils.GetBonds, new(servertypes.BondResp), sender, limit, offset)
 }

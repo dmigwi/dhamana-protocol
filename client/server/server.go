@@ -43,7 +43,7 @@ type ServerConfig struct {
 // NewServer validates the deployment configuration information before
 // creating a sapphire client wrapped around an eth client.
 func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
-	network, serverURL, dbDriver, dbHost, dbName, dbUser, dbPassword string,
+	network, serverURL, dbHost, dbName, dbUser, dbPassword string,
 ) (*ServerConfig, error) {
 	// Validate deployment information first.
 	net := utils.ToNetType(network)
@@ -129,8 +129,7 @@ func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
 		return nil, err
 	}
 
-	db, err := storage.NewDB(ctx, port, dbDriver, dbHost, dbUser, dbPassword,
-		dbName, datadir)
+	db, err := storage.NewDB(ctx, port, dbHost, dbUser, dbPassword, dbName)
 	if err != nil {
 		return nil, err
 	}

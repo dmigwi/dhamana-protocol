@@ -35,7 +35,6 @@ type config struct {
 
 	// DB configuration
 	DbPort     uint16 `long:"db_port" description:"Port to use when connecting to the db" default:"5432"`
-	DbDriver   string `long:"db_driver" description:"Driver name of the database to use {postgres,sqlite}" default:"postgres"`
 	DbHost     string `long:"db_host" description:"Host to use in connecting to the db" default:"localhost"`
 	DbUser     string `long:"db_user" description:"Username to use in connecting to the db" default:"ana"`
 	DbPassword string `long:"db_password" description:"Password of the database username to use" default:"ana"`
@@ -149,11 +148,6 @@ func validateTLSCerts(conf *config) error {
 // isDbConfig confirms that the provided db config is valid.
 func isDbConfig(conf *config) bool {
 	if conf.DbPort == 0 {
-		return false
-	}
-
-	// confirm the db driver is among the supported ones.
-	if _, ok := utils.SupportedDbDrivers[conf.DbDriver]; !ok {
 		return false
 	}
 

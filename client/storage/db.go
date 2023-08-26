@@ -7,12 +7,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"regexp"
 	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
-	_ "github.com/lib/pq"  // postgres
-	_ "modernc.org/sqlite" // sqlite
+	_ "github.com/lib/pq" // postgres
 )
 
 const (
@@ -28,7 +26,7 @@ const (
 	createVersionTable = "CREATE TABLE IF NOT EXISTS tables_version(" +
 		"id SERIAL PRIMARY KEY," +
 		"sem_version VARCHAR(10) UNIQUE," +
-		"tables_created_on TIMESTAMPTZ NOT NULL)"
+		"tables_created_on TIMESTAMPTZ DEFAULT NOW())"
 
 	// createTableBond is a prepared statement creating a table identified with the
 	// name table_bond if it doesn't exists.
@@ -36,7 +34,7 @@ const (
 		"bond_address VARCHAR(42) PRIMARY KEY," +
 		"issuer_address VARCHAR(42) NOT NULL," +
 		"holder_address VARCHAR(42)," +
-		"created_at TIMESTAMPTZ NOT NULL," +
+		"created_at TIMESTAMPTZ DEFAULT NOW()," +
 		"created_at_block INTEGER NOT NULL," +
 		"principal INTEGER," +
 		"coupon_rate SMALLINT CHECK (coupon_rate BETWEEN 1 AND 100)," +
@@ -45,7 +43,7 @@ const (
 		"currency SMALLINT CHECK (currency BETWEEN 0 AND 50)," +
 		"intro_msg TEXT," +
 		"last_status SMALLINT CHECK (last_status BETWEEN 0 AND 10)," +
-		"last_update TIMESTAMPTZ NOT NULL," +
+		"last_update TIMESTAMPTZ DEFAULT NOW()," +
 		"last_synced_block INTEGER NOT NULL)"
 
 	// createTableBondStatus is a prepared statement creating a table identified
@@ -55,7 +53,7 @@ const (
 		"sender VARCHAR(42) NOT NULL," +
 		"bond_address VARCHAR(42) NOT NULL," +
 		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
-		"added_on TIMESTAMPTZ NOT NULL," +
+		"added_on TIMESTAMPTZ DEFAULT NOW()," +
 		"last_synced_block INTEGER NOT NULL)"
 
 	// createTableBondStatusSigned is a prepared statement creating a table
@@ -65,7 +63,7 @@ const (
 		"sender VARCHAR(42) NOT NULL," +
 		"bond_address VARCHAR(42) NOT NULL," +
 		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
-		"signed_on TIMESTAMPTZ NOT NULL," +
+		"signed_on TIMESTAMPTZ DEFAULT NOW()," +
 		"last_synced_block INTEGER NOT NULL)"
 
 	// createChatTable is a prepared statement creating a table identified with
@@ -75,7 +73,7 @@ const (
 		"sender VARCHAR(42) NOT NULL," +
 		"bond_address VARCHAR(42) NOT NULL," +
 		"chat_msg TEXT NOT NULL," +
-		"created_at TIMESTAMPTZ NOT NULL," +
+		"created_at TIMESTAMPTZ DEFAULT NOW()," +
 		"last_synced_block INTEGER NOT NULL)"
 
 	// fetchBonds is a prepared statement that fetches all the bonds that owned
@@ -132,19 +130,18 @@ const (
 
 	// ddNewChatMessage inserts into table_chat new data from event NewChatMessage.
 	addNewChatMessage = "INSERT INTO table_chat (sender, bond_address, " +
-		" chat_msg, created_at, last_synced_block) VALUES ($1, $2, $3, $4, $5)"
+		" chat_msg, last_synced_block) VALUES ($1, $2, $3, $5)"
 
 	// addStatusChange inserts into table_status new data from event StatusChange.
 	addStatusChange = "INSERT INTO table_status (sender, bond_address, " +
-		"bond_status, added_on, last_synced_block) VALUES ($1, $2, $3, $4, $5)"
+		"bond_status, last_synced_block) VALUES ($1, $2, $3, $4)"
 
 	// addStatusSigned inserts into table_status_signed new data from event StatusSigned.
 	addStatusSigned = "INSERT INTO table_status_signed (sender, bond_address, " +
-		"bond_status, signed_on, last_synced_block) VALUES ($1, $2, $3, $4, $5)"
+		"bond_status, last_synced_block) VALUES ($1, $2, $3, $4)"
 
 	// addTablesVersion inserts into tables_version the latest supported tables version.
-	addTablesVersion = "INSERT INTO tables_version (sem_version,tables_created_on) " +
-		"VALUES ($1, $2)"
+	addTablesVersion = "INSERT INTO tables_version (sem_version) VALUES ($1)"
 
 	dropTableBondRecords         = "DELETE * FROM table_bond WHERE last_synced_block = $1"
 	dropTableStatusRecords       = "DELETE * FROM table_status WHERE last_synced_block = $1"
@@ -192,9 +189,8 @@ var reqToStmt = map[utils.Method]string{
 
 // DB defines the parameters needed to use a persistence db instance connect to.
 type DB struct {
-	db     *sql.DB
-	ctx    context.Context
-	driver string
+	db  *sql.DB
+	ctx context.Context
 }
 
 // Reader defines the method that reads the row fields into the require data interface.
@@ -204,29 +200,20 @@ type Reader interface {
 }
 
 // NewDB returns an opened db instance whose connection has been tested with
-// ping request. The driverName is required for specifying which db type to use.
-// It generates the required tables if they don't exist.
-// datadir is used when running on sqlite database instance.
-func NewDB(ctx context.Context, port uint16,
-	driverName, host, user, password, dbname, datadir string,
+// ping request. It generates the required tables if they don't exist.
+func NewDB(ctx context.Context, port uint16, host, user, password, dbname string,
 ) (*DB, error) {
 	connInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
-	if driverName == utils.SqliteDriverName {
-		// sqlite connection information is the path to data dir.
-		connInfo = datadir
-	}
 
-	log.Infof("Creating a new database instance with the driver=%s", driverName)
-
-	db, err := sql.Open(driverName, connInfo)
+	db, err := sql.Open("postgres", connInfo)
 	if err != nil {
-		log.Errorf("unable to open to %s: err %v", driverName, err)
+		log.Errorf("unable to open to postgres db: err %v", err)
 		return nil, err
 	}
 
 	if err = db.PingContext(ctx); err != nil {
-		log.Errorf("connection to %s failed: err %v", driverName, err)
+		log.Errorf("connection to postgres db failed: err %v", err)
 		return nil, err
 	}
 
@@ -239,9 +226,8 @@ func NewDB(ctx context.Context, port uint16,
 	}
 
 	dbInstance := &DB{
-		db:     db,
-		ctx:    ctx,
-		driver: driverName,
+		db:  db,
+		ctx: ctx,
 	}
 
 	// -- Confirm the semantic version match the required on --
@@ -259,8 +245,7 @@ func NewDB(ctx context.Context, port uint16,
 	case "":
 		log.Infof("Versioning the newly created tables with version=%s", semVersion)
 
-		stmt := dbInstance.formatPreparedStmt(addTablesVersion)
-		_, err = db.ExecContext(ctx, stmt, semVersion, time.Now().UTC())
+		_, err = db.ExecContext(ctx, addTablesVersion, semVersion, time.Now().UTC())
 		if err != nil {
 			log.Errorf("unable version the newly created tables : %v", err)
 			return nil, err
@@ -302,7 +287,7 @@ func (d *DB) QueryLocalData(method utils.Method, r Reader, sender string,
 		params = append(params, lastParams...)
 	}
 
-	rows, err := d.db.QueryContext(d.ctx, d.formatPreparedStmt(stmt), params)
+	rows, err := d.db.QueryContext(d.ctx, stmt, params)
 	if err != nil {
 		return nil, fmt.Errorf("fetching query for method %q failed: %v", method, err)
 	}
@@ -330,7 +315,7 @@ func (d *DB) SetLocalData(method utils.Method, params ...interface{}) error {
 		return fmt.Errorf("missing query for method %q", method)
 	}
 
-	_, err := d.db.ExecContext(d.ctx, d.formatPreparedStmt(stmt), params...)
+	_, err := d.db.ExecContext(d.ctx, stmt, params...)
 	if err != nil {
 		err = fmt.Errorf("inserting data for method %q failed: %v", method, err)
 		return err
@@ -344,20 +329,9 @@ func (d *DB) SetLocalData(method utils.Method, params ...interface{}) error {
 func (d *DB) CleanUpLocalData(lastSyncedBlock uint64) {
 	for _, stmt := range cleanUpStmt {
 		// if an error in one query occurs, do no stop.
-		_, err := d.db.ExecContext(d.ctx, d.formatPreparedStmt(stmt), lastSyncedBlock)
+		_, err := d.db.ExecContext(d.ctx, stmt, lastSyncedBlock)
 		if err != nil {
 			log.Errorf("query %q failed: %v", stmt, err)
 		}
 	}
-}
-
-// formatPreparedStmt sets the required blind placedholder in the prepared
-// statement. By default they are set to postgres standard placeholder.
-func (d *DB) formatPreparedStmt(stmt string) string {
-	if d.driver != utils.PostgresDriverName {
-		placeholderRegex := utils.SupportedDbDrivers[utils.PostgresDriverName]
-		replacementStr, _ := utils.SupportedDbDrivers[d.driver]
-		stmt = regexp.MustCompile(placeholderRegex).ReplaceAllString(stmt, replacementStr)
-	}
-	return stmt
 }

@@ -24,7 +24,7 @@ const (
 	WelcomeText = "Pi encrypted  715b48145c501951595355505d194050475a135a5d4251595d5d" +
 		"40021301705647585b5d600c7d527f615760417f63477d5a696045610348437f470d790757"
 
-	// FullDateformat defines the full date format supported
+	// FullDateformat defines the full date format supported for user display.
 	FullDateformat = "Mon 15:04:05 2006-01-02"
 
 	// FilePerm defines the file permission used to manage the application data.
@@ -36,18 +36,11 @@ const (
 
 	// PostgresDriverName defines the postgres driver name.
 	PostgresDriverName = "postgres"
-
-	// SqliteDriverName defines the sqlite driver name.
-	SqliteDriverName = "sqlite"
 )
 
-// SupportedDbDrivers defines mappings of the supported db to the regex/replacement
-// string that modifies the blind variable placeholder in a prepared statement.
-// By default the prepared statements are set into pgsql standard but can be
-// easily transformed into the required standard via the strings below.
+// SupportedDbDrivers defines mappings of the supported db drivers.
 var SupportedDbDrivers = map[string]string{
-	PostgresDriverName: `(\$\d)`, // regex expression
-	SqliteDriverName:   "?",      // replacement string
+	PostgresDriverName: "", // regex expression
 }
 
 // PrivateKey is generated using elliptic curve diffie-hellman algorithm. This
