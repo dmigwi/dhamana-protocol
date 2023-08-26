@@ -129,7 +129,8 @@ func NewServer(ctx context.Context, port uint16, certfile, keyfile, datadir,
 		return nil, err
 	}
 
-	db, err := storage.NewDB(ctx, port, dbDriver, dbHost, dbUser, dbPassword, dbName)
+	db, err := storage.NewDB(ctx, port, dbDriver, dbHost, dbUser, dbPassword,
+		dbName, datadir)
 	if err != nil {
 		return nil, err
 	}

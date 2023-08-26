@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	_ "github.com/lib/pq"  // postgres
@@ -15,14 +16,28 @@ import (
 )
 
 const (
+	// semVersion holds the current semantic version requires for the tables.
+	// The semantic version stored in the tables_version must match this value
+	// otherwise the system will not be able initiate the db instance until the
+	// user manually handles the data migration or creates a new
+	// database to use with the new tables.
+	semVersion = "v0.0.1"
+
+	// createVersionTable enables version tables preventing tables with
+	// incompatible schemas from being used.
+	createVersionTable = "CREATE TABLE IF NOT EXISTS tables_version(" +
+		"id SERIAL PRIMARY KEY," +
+		"sem_version VARCHAR(10) UNIQUE," +
+		"tables_created_on TIMESTAMPTZ NOT NULL)"
+
 	// createTableBond is a prepared statement creating a table identified with the
 	// name table_bond if it doesn't exists.
 	createTableBond = "CREATE TABLE IF NOT EXISTS table_bond (" +
 		"bond_address VARCHAR(42) PRIMARY KEY," +
-		"issuer_address VARCHAR(42)," +
+		"issuer_address VARCHAR(42) NOT NULL," +
 		"holder_address VARCHAR(42)," +
-		"created_at TIMESTAMPTZ," +
-		"created_at_block INTEGER," +
+		"created_at TIMESTAMPTZ NOT NULL," +
+		"created_at_block INTEGER NOT NULL," +
 		"principal INTEGER," +
 		"coupon_rate SMALLINT CHECK (coupon_rate BETWEEN 1 AND 100)," +
 		"coupon_date TIMESTAMPTZ," +
@@ -30,38 +45,38 @@ const (
 		"currency SMALLINT CHECK (currency BETWEEN 0 AND 50)," +
 		"intro_msg TEXT," +
 		"last_status SMALLINT CHECK (last_status BETWEEN 0 AND 10)," +
-		"last_update TIMESTAMPTZ," +
-		"last_synced_block INTEGER)"
+		"last_update TIMESTAMPTZ NOT NULL," +
+		"last_synced_block INTEGER NOT NULL)"
 
 	// createTableBondStatus is a prepared statement creating a table identified
 	// with the name table_status if it doesn't exists.
 	createTableBondStatus = "CREATE TABLE IF NOT EXISTS table_status (" +
 		"id SERIAL PRIMARY KEY," +
-		"sender VARCHAR(42)," +
-		"bond_address VARCHAR(42)," +
+		"sender VARCHAR(42) NOT NULL," +
+		"bond_address VARCHAR(42) NOT NULL," +
 		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
-		"added_on TIMESTAMPTZ," +
-		"last_synced_block INTEGER)"
+		"added_on TIMESTAMPTZ NOT NULL," +
+		"last_synced_block INTEGER NOT NULL)"
 
 	// createTableBondStatusSigned is a prepared statement creating a table
 	// identified with the name table_status if it doesn't exists.
 	createTableBondStatusSigned = "CREATE TABLE IF NOT EXISTS table_status_signed (" +
 		"id SERIAL PRIMARY KEY," +
-		"sender VARCHAR(42)," +
-		"bond_address VARCHAR(42)," +
+		"sender VARCHAR(42) NOT NULL," +
+		"bond_address VARCHAR(42) NOT NULL," +
 		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
-		"signed_on TIMESTAMPTZ," +
-		"last_synced_block INTEGER)"
+		"signed_on TIMESTAMPTZ NOT NULL," +
+		"last_synced_block INTEGER NOT NULL)"
 
 	// createChatTable is a prepared statement creating a table identified with
 	// the name table_chat if it doesn't exists.
 	createChatTable = "CREATE TABLE IF NOT EXISTS table_chat (" +
 		"id SERIAL PRIMARY KEY," +
-		"sender VARCHAR(42)," +
-		"bond_address VARCHAR(42)," +
-		"chat_msg TEXT," +
-		"created_at TIMESTAMPTZ," +
-		"last_synced_block INTEGER)"
+		"sender VARCHAR(42) NOT NULL," +
+		"bond_address VARCHAR(42) NOT NULL," +
+		"chat_msg TEXT NOT NULL," +
+		"created_at TIMESTAMPTZ NOT NULL," +
+		"last_synced_block INTEGER NOT NULL)"
 
 	// fetchBonds is a prepared statement that fetches all the bonds that owned
 	// by the bond party with the address or they are still in the negotiation stage.
@@ -85,6 +100,10 @@ const (
 		"FROM table_chat as c LEFT JOIN table_bond as b WHERE c.bond_address = b.bond_address AND " +
 		"(b.issuer_address = $1 OR b.last_status = 0 Or b.holder_address = $2)" +
 		" ORDER BY c.created_at DESC LIMIT $3 OFFSET $4"
+
+	// fetchTableVersion fetches the last set tables version.
+	fetchTableVersion = "SELECT (sem_version,tables_created_on) " +
+		"FROM tables_version ORDER BY id DESC LIMIT 1"
 
 	// fetchLastSyncBlock returns the last block to be synced on the table_bond.
 	fetchLastSyncBlock = "SELECT last_synced_block FROM table_bond ORDER BY" +
@@ -123,6 +142,10 @@ const (
 	addStatusSigned = "INSERT INTO table_status_signed (sender, bond_address, " +
 		"bond_status, signed_on, last_synced_block) VALUES ($1, $2, $3, $4, $5)"
 
+	// addTablesVersion inserts into tables_version the latest supported tables version.
+	addTablesVersion = "INSERT INTO tables_version (sem_version,tables_created_on) " +
+		"VALUES ($1, $2)"
+
 	dropTableBondRecords         = "DELETE * FROM table_bond WHERE last_synced_block = $1"
 	dropTableStatusRecords       = "DELETE * FROM table_status WHERE last_synced_block = $1"
 	dropTableStatusSignedRecords = "DELETE * FROM table_status_signed WHERE last_synced_block = $1"
@@ -132,6 +155,7 @@ const (
 // tablesToSQLStmt is an array of sql statements used to create the missing tables
 // if they don't exist.
 var tablesSQLStmt = []string{
+	createVersionTable,
 	createTableBond,
 	createTableBondStatus,
 	createTableBondStatusSigned,
@@ -182,11 +206,16 @@ type Reader interface {
 // NewDB returns an opened db instance whose connection has been tested with
 // ping request. The driverName is required for specifying which db type to use.
 // It generates the required tables if they don't exist.
+// datadir is used when running on sqlite database instance.
 func NewDB(ctx context.Context, port uint16,
-	driverName, host, user, password, dbname string,
+	driverName, host, user, password, dbname, datadir string,
 ) (*DB, error) {
 	connInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
+	if driverName == utils.SqliteDriverName {
+		// sqlite connection information is the path to data dir.
+		connInfo = datadir
+	}
 
 	log.Infof("Creating a new database instance with the driver=%s", driverName)
 
@@ -209,13 +238,45 @@ func NewDB(ctx context.Context, port uint16,
 		}
 	}
 
-	log.Infof("Confirmed all the %d tables exists", len(tablesSQLStmt))
-
-	return &DB{
+	dbInstance := &DB{
 		db:     db,
 		ctx:    ctx,
 		driver: driverName,
-	}, nil
+	}
+
+	// -- Confirm the semantic version match the required on --
+
+	var tableversion string
+	var createdDate time.Time
+
+	err = db.QueryRowContext(ctx, fetchTableVersion).Scan(&tableversion, &createdDate)
+	if err != nil && err != sql.ErrNoRows {
+		log.Errorf("unable to fetch tables versions: %v", err)
+		return nil, err
+	}
+
+	switch tableversion {
+	case "":
+		log.Infof("Versioning the newly created tables with version=%s", semVersion)
+
+		stmt := dbInstance.formatPreparedStmt(addTablesVersion)
+		_, err = db.ExecContext(ctx, stmt, semVersion, time.Now().UTC())
+		if err != nil {
+			log.Errorf("unable version the newly created tables : %v", err)
+			return nil, err
+		}
+	case semVersion:
+		// The correct tables version was found.
+		log.Infof("Confirmed all the %d versioned tables exists", len(tablesSQLStmt))
+
+	default:
+		// versions mismatch found. Exit till the issue is resolved.
+		err = fmt.Errorf("expected the tables version %s but found version %s created on = %v",
+			semVersion, tableversion, createdDate)
+		return nil, err
+	}
+
+	return dbInstance, nil
 }
 
 // QueryLocalData executes the sql statement associated with the provided local
