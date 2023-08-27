@@ -45,7 +45,7 @@ type RPCError struct {
 // ---------HTTP Result Response Types-----------
 
 // ServerKeyResp defines the response returned once the server public key is
-// requested by a client.
+// requested by a POA (Point Of Access) client.
 type ServerKeyResp struct {
 	Pubkey string `json:"pubkey"`
 	Expiry uint64 `json:"expiry"` // timestamp in seconds at UTC timezone
@@ -54,8 +54,8 @@ type ServerKeyResp struct {
 	SharedKey []byte `json:"-"` // Generate using the remote Pubkey + local private key.
 }
 
-// BondResp defines the response returned in an array form that is returned
-// when get bonds local type method is queried by the client.
+// BondResp defines the response returned in an array form
+// when get bonds local type method is queried by a POA client.
 type BondResp struct {
 	BondAddress common.Address `json:"bond_address"`
 	Issuer      common.Address `json:"issuer_address"`

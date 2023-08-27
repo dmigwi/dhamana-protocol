@@ -3,9 +3,7 @@
 
 package server
 
-import (
-	"github.com/btcsuite/btclog"
-)
+import "github.com/btcsuite/btclog"
 
 var log btclog.Logger
 

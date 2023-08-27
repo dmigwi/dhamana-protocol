@@ -175,7 +175,7 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 		Expiry: uint64(time.Now().UTC().Add(sessionTime).Unix()),
 	}
 
-	// sent the sender before packing the result because its zeroed while preparing
+	// Set the sender before packing the result because its zeroed while preparing
 	// the client response.
 	sender := msg.Sender.Address
 
@@ -183,7 +183,8 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 	writeResponse(w, msg)
 
 	// Appends the sharedkey after sending the user response. This shared key is
-	// what this client should use to encrypt information shared with the server.
+	// what the POA (Point Of Access) client should use to encrypt information
+	// shared with the server.
 	data.SharedKey = sharedkey
 	s.sessionKeys.Store(sender, data)
 }
@@ -256,13 +257,20 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 		var tx *types.Transaction
 		tx, err = transactor.Transact(auth, string(msg.Method), msg.Params...)
 		if err != nil && tx != nil {
-			res = tx.Hash().String()
+			// Return the tx hash for contract backend methods executed successfully.
+			res = struct {
+				TxHash string `json:"tx_hash"`
+			}{
+				TxHash: tx.Hash().String(),
+			}
 		}
+
 	case utils.LocalType:
 		switch msg.Method {
 		case utils.GetBonds:
 			res, err = s.db.QueryLocalData(msg.Method, new(servertypes.BondResp),
 				msg.Sender.Address.String(), msg.Params...)
+
 		case utils.GetBondByAddress:
 			var arrayData []interface{}
 			arrayData, err = s.db.QueryLocalData(msg.Method, new(servertypes.BondByAddressResp),
@@ -271,9 +279,11 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 			if len(arrayData) > 0 {
 				res = arrayData[0]
 			}
+
 		case utils.GetChats:
 			res, err = s.db.QueryLocalData(msg.Method, new(servertypes.ChatMsgsResp),
 				msg.Sender.Address.String(), msg.Params...)
+
 		default:
 			err = fmt.Errorf("missing implementation for method %s", msg.Method)
 		}

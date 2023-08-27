@@ -23,20 +23,20 @@ func GetChainID() (uint64) {
 
 // GetContractAddress returns the address of the deployed contract.
 func GetContractAddress() (string) {
-	return "0x22bB522c7356A8a6EAbd8ebd2B48d690FcB01787"
+	return "0x3A46b54c82e2e1023c0C8638b079b4B5471c057F"
 }
 
 // GetTransactionHash returns the tx hash when the contract we deployed.
 func GetTransactionHash() (string) {
-	return "0xea8794eed416a9759d2cf646f139de2b3fbd0d25586dd9a76cbf02a20d5c906c"
+	return "0xb4f1742a5eda1198dcd63237f1bbe55b6744fb47b10d6b02099be16ccd0c23e9"
 }
 
 // GetDeploymentTime returns the timestamp in seconds when the contract was actually deployed 
 func GetDeploymentTime() (uint64) {
-	return 1692704415
+	return 1693133504
 }
 
 // GetDeploymentBlock returns the block number when the contract was actually deployed 
 func GetDeploymentBlock() (uint64) {
-	return 2310736
+	return 2368923
 }
