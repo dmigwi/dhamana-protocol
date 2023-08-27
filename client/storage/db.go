@@ -7,84 +7,103 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"regexp"
+	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/utils"
-	_ "github.com/lib/pq"  // postgres
-	_ "modernc.org/sqlite" // sqlite
+	_ "github.com/lib/pq" // postgres
 )
 
 const (
+	// semVersion holds the current semantic version requires for the tables.
+	// The semantic version stored in the tables_version must match this value
+	// otherwise the system will not be able initiate the db instance until the
+	// user manually handles the data migration or creates a new
+	// database to use with the new tables.
+	semVersion = "v0.0.1"
+
+	// createVersionTable enables version tables preventing tables with
+	// incompatible schemas from being used.
+	createVersionTable = "CREATE TABLE IF NOT EXISTS tables_version (" +
+		"id SERIAL PRIMARY KEY," +
+		"sem_version VARCHAR(10) UNIQUE," +
+		"tables_created_on TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)"
+
 	// createTableBond is a prepared statement creating a table identified with the
 	// name table_bond if it doesn't exists.
 	createTableBond = "CREATE TABLE IF NOT EXISTS table_bond (" +
-		"bond_address VARCHAR(42) PRIMARY KEY," +
-		"issuer_address VARCHAR(42)," +
+		"id SERIAL PRIMARY KEY," +
+		"bond_address VARCHAR(42) UNIQUE NOT NULL," +
+		"issuer_address VARCHAR(42) NOT NULL," +
 		"holder_address VARCHAR(42)," +
-		"created_at TIMESTAMPTZ," +
-		"created_at_block INTEGER," +
+		"created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
+		"created_at_block INTEGER NOT NULL," +
 		"principal INTEGER," +
-		"coupon_rate SMALLINT CHECK (coupon_rate BETWEEN 1 AND 100)," +
-		"coupon_date TIMESTAMPTZ," +
+		"coupon_rate SMALLINT CHECK (coupon_rate BETWEEN 0 AND 100)," +
+		"coupon_date SMALLINT CHECK (coupon_date BETWEEN 0 AND 50)," +
 		"maturity_date TIMESTAMPTZ," +
 		"currency SMALLINT CHECK (currency BETWEEN 0 AND 50)," +
 		"intro_msg TEXT," +
 		"last_status SMALLINT CHECK (last_status BETWEEN 0 AND 10)," +
-		"last_update TIMESTAMPTZ," +
-		"last_synced_block INTEGER)"
+		"last_update TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
+		"last_synced_block INTEGER NOT NULL)"
 
 	// createTableBondStatus is a prepared statement creating a table identified
 	// with the name table_status if it doesn't exists.
 	createTableBondStatus = "CREATE TABLE IF NOT EXISTS table_status (" +
 		"id SERIAL PRIMARY KEY," +
-		"sender VARCHAR(42)," +
-		"bond_address VARCHAR(42)," +
+		"sender VARCHAR(42) NOT NULL," +
+		"bond_address VARCHAR(42) NOT NULL," +
 		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
-		"added_on TIMESTAMPTZ," +
-		"last_synced_block INTEGER)"
+		"added_on TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
+		"last_synced_block INTEGER NOT NULL)"
 
 	// createTableBondStatusSigned is a prepared statement creating a table
 	// identified with the name table_status if it doesn't exists.
 	createTableBondStatusSigned = "CREATE TABLE IF NOT EXISTS table_status_signed (" +
 		"id SERIAL PRIMARY KEY," +
-		"sender VARCHAR(42)," +
-		"bond_address VARCHAR(42)," +
+		"sender VARCHAR(42) NOT NULL," +
+		"bond_address VARCHAR(42) NOT NULL," +
 		"bond_status SMALLINT NOT NULL CHECK(bond_status BETWEEN 0 AND 10)," +
-		"signed_on TIMESTAMPTZ," +
-		"last_synced_block INTEGER)"
+		"signed_on TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
+		"last_synced_block INTEGER NOT NULL)"
 
 	// createChatTable is a prepared statement creating a table identified with
 	// the name table_chat if it doesn't exists.
 	createChatTable = "CREATE TABLE IF NOT EXISTS table_chat (" +
 		"id SERIAL PRIMARY KEY," +
-		"sender VARCHAR(42)," +
-		"bond_address VARCHAR(42)," +
-		"chat_msg TEXT," +
-		"created_at TIMESTAMPTZ," +
-		"last_synced_block INTEGER)"
+		"sender VARCHAR(42) NOT NULL," +
+		"bond_address VARCHAR(42) NOT NULL," +
+		"chat_msg TEXT NOT NULL," +
+		"created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
+		"last_synced_block INTEGER NOT NULL)"
 
 	// fetchBonds is a prepared statement that fetches all the bonds that owned
 	// by the bond party with the address or they are still in the negotiation stage.
-	fetchBonds = "SELECT (bond_address,created_at,coupon_rate,currency,last_status)" +
+	fetchBonds = "SELECT bond_address,issuer_address,created_at,coupon_rate,currency,last_status " +
 		"FROM table_bond WHERE issuer_address = $1 OR last_status = 0 " +
-		"Or holder_address = $2 ORDER BY last_update DESC LIMIT $3 OFFSET $4"
+		"OR holder_address = $2 ORDER BY last_update DESC LIMIT $3 OFFSET $4"
 
 	// fetchBondByAddress is a prepared statement that returns a bond identified by
 	// the provided address if the sender is a party to the bond or the bond
 	// is still in the negotiation stage.
-	fetchBondByAddress = "SELECT (bond_address,issuer_address,holder_address," +
+	fetchBondByAddress = "SELECT bond_address,issuer_address,holder_address," +
 		"created_at,created_at_block,principal,coupon_rate,coupon_date," +
-		"maturity_date,currency,intro_msg,last_status,last_update,last_synced_block)" +
+		"maturity_date,currency,intro_msg,last_status,last_update,last_synced_block " +
 		"FROM table_bond WHERE bond_address = $1 AND " +
 		"(last_status = 0 OR issuer_address = $2 OR holder_address = $3)"
 
 	// fetchChats is a prepared statement that fetches the conversation within
 	// the bond identified by the provided address if the sender is a bond party
 	// or its still in the negotiation stage.
-	fetchChats = "SELECT (c.sender, c.bond_address, c.chat_msg, c.created_at, c.last_synced_block)" +
-		"FROM table_chat as c LEFT JOIN table_bond as b WHERE c.bond_address = b.bond_address AND " +
-		"(b.issuer_address = $1 OR b.last_status = 0 Or b.holder_address = $2)" +
-		" ORDER BY c.created_at DESC LIMIT $3 OFFSET $4"
+	fetchChats = "SELECT c.sender, c.bond_address, c.chat_msg, c.created_at, " +
+		"c.last_synced_block FROM table_chat as c LEFT JOIN table_bond as b " +
+		"ON c.bond_address = b.bond_address WHERE b.bond_address = $1 AND " +
+		"(b.issuer_address = $2 OR b.last_status = 0 OR b.holder_address = $3) " +
+		"ORDER BY c.created_at DESC LIMIT $4 OFFSET $5"
+
+	// fetchTableVersion fetches the last set tables version.
+	fetchTableVersion = "SELECT sem_version,tables_created_on " +
+		"FROM tables_version ORDER BY id DESC LIMIT 1"
 
 	// fetchLastSyncBlock returns the last block to be synced on the table_bond.
 	fetchLastSyncBlock = "SELECT last_synced_block FROM table_bond ORDER BY" +
@@ -96,11 +115,11 @@ const (
 		"last_synced_block = $7 WHERE bond_address = $8"
 
 	// setBondMotivation update the table_bond with data from BondMotivation event.
-	setBondMotivation = "UPDATE table_bond SET intro_msg = $1, last_update = $2," +
-		" last_synced_block = $3  WHERE bond_address = $4"
+	setBondMotivation = "UPDATE table_bond SET intro_msg = $1, last_update = $2, " +
+		"last_synced_block = $3 WHERE bond_address = $4"
 
 	// setHolder updates table_bond with data from HolderUpdate event.
-	setHolder = "UPDATE table_bond SET holder_address = $1, last_update = $2, " +
+	setHolder = "UPDATE table_bond SET holder_address = $1, last_update = $2," +
 		"last_synced_block = $3 WHERE bond_address = $4"
 
 	// setLastStatus updates table_bond with data from StatusChange event.
@@ -109,29 +128,33 @@ const (
 
 	// addNewBondCreated inserts into table_bond new data from event NewBondCreated.
 	addNewBondCreated = "INSERT INTO table_bond (bond_address, issuer_address, " +
-		"last_update, last_synced_block) VALUES ($1, $2, $3, $4)"
+		"created_at_block, last_synced_block) VALUES ($1, $2, $3, $4)"
 
 	// ddNewChatMessage inserts into table_chat new data from event NewChatMessage.
 	addNewChatMessage = "INSERT INTO table_chat (sender, bond_address, " +
-		" chat_msg, created_at, last_synced_block) VALUES ($1, $2, $3, $4, $5)"
+		"chat_msg, last_synced_block) VALUES ($1, $2, $3, $4)"
 
 	// addStatusChange inserts into table_status new data from event StatusChange.
 	addStatusChange = "INSERT INTO table_status (sender, bond_address, " +
-		"bond_status, added_on, last_synced_block) VALUES ($1, $2, $3, $4, $5)"
+		"bond_status, last_synced_block) VALUES ($1, $2, $3, $4)"
 
 	// addStatusSigned inserts into table_status_signed new data from event StatusSigned.
 	addStatusSigned = "INSERT INTO table_status_signed (sender, bond_address, " +
-		"bond_status, signed_on, last_synced_block) VALUES ($1, $2, $3, $4, $5)"
+		"bond_status, last_synced_block) VALUES ($1, $2, $3, $4)"
 
-	dropTableBondRecords         = "DELETE * FROM table_bond WHERE last_synced_block = $1"
-	dropTableStatusRecords       = "DELETE * FROM table_status WHERE last_synced_block = $1"
-	dropTableStatusSignedRecords = "DELETE * FROM table_status_signed WHERE last_synced_block = $1"
-	dropTableChatRecords         = "DELETE * FROM table_chat WHERE last_synced_block = $1"
+	// addTablesVersion inserts into tables_version the latest supported tables version.
+	addTablesVersion = "INSERT INTO tables_version (sem_version) VALUES ($1)"
+
+	dropTableBondRecords         = "DELETE FROM table_bond WHERE last_synced_block = $1"
+	dropTableStatusRecords       = "DELETE FROM table_status WHERE last_synced_block = $1"
+	dropTableStatusSignedRecords = "DELETE FROM table_status_signed WHERE last_synced_block = $1"
+	dropTableChatRecords         = "DELETE FROM table_chat WHERE last_synced_block = $1"
 )
 
 // tablesToSQLStmt is an array of sql statements used to create the missing tables
 // if they don't exist.
 var tablesSQLStmt = []string{
+	createVersionTable,
 	createTableBond,
 	createTableBondStatus,
 	createTableBondStatusSigned,
@@ -168,9 +191,8 @@ var reqToStmt = map[utils.Method]string{
 
 // DB defines the parameters needed to use a persistence db instance connect to.
 type DB struct {
-	db     *sql.DB
-	ctx    context.Context
-	driver string
+	db  *sql.DB
+	ctx context.Context
 }
 
 // Reader defines the method that reads the row fields into the require data interface.
@@ -179,25 +201,24 @@ type Reader interface {
 	Read(fn func(fields ...any) error) (interface{}, error)
 }
 
-// NewDB returns an opened db instance whose connection has been tested with
-// ping request. The driverName is required for specifying which db type to use.
-// It generates the required tables if they don't exist.
-func NewDB(ctx context.Context, port uint16,
-	driverName, host, user, password, dbname string,
-) (*DB, error) {
-	connInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+// ConnectionString returns on the connection string format supported by postgres.
+// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+func ConnectionString(port uint16, host, user, password, dbname string) string {
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
+}
 
-	log.Infof("Creating a new database instance with the driver=%s", driverName)
-
-	db, err := sql.Open(driverName, connInfo)
+// NewDB returns an opened db instance whose connection has been tested with
+// ping request. It generates the required tables if they don't exist.
+func NewDB(ctx context.Context, connInfo string) (*DB, error) {
+	db, err := sql.Open("postgres", connInfo)
 	if err != nil {
-		log.Errorf("unable to open to %s: err %v", driverName, err)
+		log.Errorf("unable to open to postgres db: err %v", err)
 		return nil, err
 	}
 
 	if err = db.PingContext(ctx); err != nil {
-		log.Errorf("connection to %s failed: err %v", driverName, err)
+		log.Errorf("connection to postgres db failed: err %v", err)
 		return nil, err
 	}
 
@@ -209,13 +230,43 @@ func NewDB(ctx context.Context, port uint16,
 		}
 	}
 
-	log.Infof("Confirmed all the %d tables exists", len(tablesSQLStmt))
+	dbInstance := &DB{
+		db:  db,
+		ctx: ctx,
+	}
 
-	return &DB{
-		db:     db,
-		ctx:    ctx,
-		driver: driverName,
-	}, nil
+	// -- Confirm the semantic version matched the required one --
+
+	var tableversion string
+	var createdDate time.Time
+
+	err = db.QueryRowContext(ctx, fetchTableVersion).Scan(&tableversion, &createdDate)
+	if err != nil && err != sql.ErrNoRows {
+		log.Errorf("unable to fetch tables versions: %v", err)
+		return nil, err
+	}
+
+	switch tableversion {
+	case "":
+		log.Infof("Versioning the newly created tables with version=%s", semVersion)
+
+		if _, err = db.ExecContext(ctx, addTablesVersion, semVersion); err != nil {
+			log.Errorf("unable version the newly created tables : %v", err)
+			return nil, err
+		}
+
+	case semVersion:
+		// The correct tables version was found.
+		log.Infof("Confirmed all the %d versioned tables exists", len(tablesSQLStmt))
+
+	default:
+		// versions mismatch found. Exit till the issue is resolved.
+		err = fmt.Errorf("expected the tables version %s but found version %s created on = %v",
+			semVersion, tableversion, createdDate)
+		return nil, err
+	}
+
+	return dbInstance, nil
 }
 
 // QueryLocalData executes the sql statement associated with the provided local
@@ -231,20 +282,29 @@ func (d *DB) QueryLocalData(method utils.Method, r Reader, sender string,
 	}
 
 	switch method {
+	case utils.GetBondByAddress:
+		params = append(params, []interface{}{sender, sender}...)
+
 	case utils.GetBonds, utils.GetChats:
 		// The last two param values are always {limit, offset}.
 		// Append sender params before those two params.
 		n := len(params)
-		firstParams := params[:n-2]
-		lastParams := params[n-2:] // {limit, offset}.
-		params = append(firstParams, []interface{}{sender, sender}...)
-		params = append(params, lastParams...)
+		var data []interface{}
+		if len(params[:n-2]) > 0 {
+			data = append(data, params[:n-2]...)
+		}
+		data = append(data, []interface{}{sender, sender}...)
+		data = append(data, params[n-2:]...) // {limit, offset}.
+
+		params = data
 	}
 
-	rows, err := d.db.QueryContext(d.ctx, d.formatPreparedStmt(stmt), params)
+	rows, err := d.db.QueryContext(d.ctx, stmt, params...)
 	if err != nil {
 		return nil, fmt.Errorf("fetching query for method %q failed: %v", method, err)
 	}
+
+	defer rows.Close()
 
 	var data []interface{}
 	for rows.Next() {
@@ -267,8 +327,7 @@ func (d *DB) SetLocalData(method utils.Method, params ...interface{}) error {
 		return fmt.Errorf("missing query for method %q", method)
 	}
 
-	_, err := d.db.ExecContext(d.ctx, d.formatPreparedStmt(stmt), params...)
-	if err != nil {
+	if _, err := d.db.ExecContext(d.ctx, stmt, params...); err != nil {
 		err = fmt.Errorf("inserting data for method %q failed: %v", method, err)
 		return err
 	}
@@ -281,20 +340,8 @@ func (d *DB) SetLocalData(method utils.Method, params ...interface{}) error {
 func (d *DB) CleanUpLocalData(lastSyncedBlock uint64) {
 	for _, stmt := range cleanUpStmt {
 		// if an error in one query occurs, do no stop.
-		_, err := d.db.ExecContext(d.ctx, d.formatPreparedStmt(stmt), lastSyncedBlock)
-		if err != nil {
+		if _, err := d.db.ExecContext(d.ctx, stmt, lastSyncedBlock); err != nil {
 			log.Errorf("query %q failed: %v", stmt, err)
 		}
 	}
-}
-
-// formatPreparedStmt sets the required blind placedholder in the prepared
-// statement. By default they are set to postgres standard placeholder.
-func (d *DB) formatPreparedStmt(stmt string) string {
-	if d.driver != utils.PostgresDriverName {
-		placeholderRegex := utils.SupportedDbDrivers[utils.PostgresDriverName]
-		replacementStr, _ := utils.SupportedDbDrivers[d.driver]
-		stmt = regexp.MustCompile(placeholderRegex).ReplaceAllString(stmt, replacementStr)
-	}
-	return stmt
 }

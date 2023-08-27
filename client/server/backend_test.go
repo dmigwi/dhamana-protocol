@@ -15,6 +15,7 @@ import (
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
 	"github.com/dmigwi/dhamana-protocol/client/sapphire"
+	"github.com/dmigwi/dhamana-protocol/client/servertypes"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -70,18 +71,18 @@ func TestMain(m *testing.M) {
 		key2, _ := hexutil.Decode(sharedKey2)
 
 		// Store expired keys
-		expiredKey := serverKeyResp{
+		expiredKey := servertypes.ServerKeyResp{
 			Pubkey:    pubkey1,
 			Expiry:    uint64(time.Now().UTC().Unix()),
-			sharedKey: key1,
+			SharedKey: key1,
 		}
 		serverConf.sessionKeys.Store(sampleHexAddress1, expiredKey)
 
 		// store fresh keys with an expiry of 2 minutes
-		freshKey := serverKeyResp{
+		freshKey := servertypes.ServerKeyResp{
 			Pubkey:    pubkey2,
 			Expiry:    uint64(time.Now().UTC().Add(10 * time.Minute).Unix()),
-			sharedKey: key2,
+			SharedKey: key2,
 		}
 		serverConf.sessionKeys.Store(sampleHexAddress2, freshKey)
 
@@ -103,7 +104,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-http-method-support",
 				method:     http.MethodGet,
 				needSigner: false,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					Method: utils.GetServerPubKey,
 				},
 			},
@@ -124,7 +125,7 @@ func TestDecodeRequestBody(t *testing.T) {
 			val: output{
 				errCode:    1000,
 				shortErr:   utils.ErrInvalidJSON,
-				longErr:    "json: cannot unmarshal string into Go value of type server.rpcMessage",
+				longErr:    "json: cannot unmarshal string into Go value of type servertypes.RPCMessage",
 				methodType: utils.UnknownType,
 			},
 		},
@@ -133,7 +134,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-json-with-unsupported-rpc-version",
 				method:     http.MethodPost,
 				needSigner: false,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					Version: "1.0",
 					Method:  utils.GetServerPubKey,
 				},
@@ -150,7 +151,7 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-missing-method",
 				method:     http.MethodPost,
 				needSigner: false,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					Version: "2.0",
 					Method:  "",
 				},
@@ -167,10 +168,10 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-missing-sender-address",
 				method:     http.MethodPost,
 				needSigner: false,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					Version: "2.0",
 					Method:  utils.GetServerPubKey,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address: common.Address{},
 					},
 				},
@@ -187,10 +188,10 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-for-required-signer-key",
 				method:     http.MethodPost,
 				needSigner: true,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					Version: "2.0",
 					Method:  utils.CreateBond,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address:    sampleHexAddress,
 						SigningKey: "",
 					},
@@ -208,10 +209,10 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-for-supportted-methods",
 				method:     http.MethodPost,
 				needSigner: true,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					Version: "2.0",
 					Method:  utils.Method("createBondAndSign"),
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address:    sampleHexAddress,
 						SigningKey: sampleSigningKey,
 					},
@@ -229,10 +230,10 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-for-params-count-mismatch",
 				method:     http.MethodPost,
 				needSigner: false,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					Version: "2.0",
 					Method:  utils.GetServerPubKey,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address: sampleHexAddress,
 					},
 					Params: []interface{}{"client-pub-key", "unsupported-param"},
@@ -250,10 +251,10 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-for-params-type-mismatch",
 				method:     http.MethodPost,
 				needSigner: false,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					Version: "2.0",
 					Method:  utils.GetServerPubKey,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address: sampleHexAddress,
 					},
 					Params: []interface{}{int(200)},
@@ -271,10 +272,10 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-for-successful-serverkey-method",
 				method:     http.MethodPost,
 				needSigner: false,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					Version: "2.0",
 					Method:  utils.GetServerPubKey,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address: sampleHexAddress,
 					},
 					Params: []interface{}{"client-pub-key"},
@@ -292,11 +293,11 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-for-successful-contact-method",
 				method:     http.MethodPost,
 				needSigner: false,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					ID:      21,
 					Version: "2.0",
 					Method:  utils.SignBondStatus,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address:    sampleHexAddress,
 						SigningKey: sampleSigningKey,
 					},
@@ -315,11 +316,11 @@ func TestDecodeRequestBody(t *testing.T) {
 				testName:   "Test-for-successful-local-method",
 				method:     http.MethodPost,
 				needSigner: false,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					ID:      21,
 					Version: "2.0",
 					Method:  utils.GetBondByAddress,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address:    sampleHexAddress,
 						SigningKey: sampleSigningKey,
 					},
@@ -342,7 +343,7 @@ func TestDecodeRequestBody(t *testing.T) {
 
 			req := httptest.NewRequest(string(v.data.method), "/random-path", &buf)
 
-			msg := rpcMessage{}
+			msg := servertypes.RPCMessage{}
 			retType := decodeRequestBody(req, &msg, v.data.needSigner)
 
 			if retType != v.val.methodType {
@@ -477,11 +478,11 @@ func TestServerPubkey(t *testing.T) {
 			data: input{
 				testName: "Test-for-access-to-non-serverkey-method",
 				method:   http.MethodPost,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					ID:      20,
 					Version: "2.0",
 					Method:  utils.GetBondByAddress,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address: sampleHexAddress,
 					},
 					Params: []interface{}{sampleHexAddress1},
@@ -497,11 +498,11 @@ func TestServerPubkey(t *testing.T) {
 			data: input{
 				testName: "Test-for-successful-access-to-serverkey-method",
 				method:   http.MethodPost,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					ID:      20,
 					Version: "2.0",
 					Method:  utils.GetServerPubKey,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address: sampleHexAddress,
 					},
 					Params: []interface{}{pubkey2},
@@ -525,7 +526,7 @@ func TestServerPubkey(t *testing.T) {
 				t.Fatalf("expected no error but found %q", err)
 			}
 
-			msg := rpcMessage{}
+			msg := servertypes.RPCMessage{}
 			_ = json.Unmarshal(data, &msg)
 
 			if msg.Error == nil && v.val.shortErr != nil {
@@ -534,7 +535,7 @@ func TestServerPubkey(t *testing.T) {
 			}
 
 			if msg.Error == nil {
-				var result serverKeyResp
+				var result servertypes.ServerKeyResp
 				_ = json.Unmarshal(msg.Result, &result)
 
 				if result.Pubkey == "" {
@@ -580,11 +581,11 @@ func TestBackendQueryFunc(t *testing.T) {
 			data: input{
 				testName: "Test-for-access-to-non-contract-method",
 				method:   http.MethodPost,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					ID:      20,
 					Version: "2.0",
 					Method:  utils.GetServerPubKey,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address:    sampleHexAddress2,
 						SigningKey: sampleSigningKey,
 					},
@@ -601,11 +602,11 @@ func TestBackendQueryFunc(t *testing.T) {
 			data: input{
 				testName: "Test-for-missing-server-keys",
 				method:   http.MethodPost,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					ID:      20,
 					Version: "2.0",
 					Method:  utils.SignBondStatus,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address:    sampleHexAddress3,
 						SigningKey: sampleSigningKey,
 					},
@@ -622,11 +623,11 @@ func TestBackendQueryFunc(t *testing.T) {
 			data: input{
 				testName: "Test-for-expired-server-keys",
 				method:   http.MethodPost,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					ID:      20,
 					Version: "2.0",
 					Method:  utils.SignBondStatus,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address:    sampleHexAddress1,
 						SigningKey: sampleSigningKey,
 					},
@@ -643,11 +644,11 @@ func TestBackendQueryFunc(t *testing.T) {
 			data: input{
 				testName: "Test-for-successful-access-to-contract-method-with-no-param",
 				method:   http.MethodPost,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					ID:      20,
 					Version: "2.0",
 					Method:  utils.CreateBond,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address:    sampleHexAddress2,
 						SigningKey: sampleSigningKey,
 					},
@@ -658,11 +659,11 @@ func TestBackendQueryFunc(t *testing.T) {
 			data: input{
 				testName: "Test-for-successful-access-to-contract-method-with-one-param",
 				method:   http.MethodPost,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					ID:      20,
 					Version: "2.0",
 					Method:  utils.SignBondStatus,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address:    sampleHexAddress2,
 						SigningKey: sampleSigningKey,
 					},
@@ -674,11 +675,11 @@ func TestBackendQueryFunc(t *testing.T) {
 			data: input{
 				testName: "Test-for-successful-access-to-contract-method-with-multiple-params",
 				method:   http.MethodPost,
-				body: rpcMessage{
+				body: servertypes.RPCMessage{
 					ID:      20,
 					Version: "2.0",
 					Method:  utils.UpdateBondStatus,
-					Sender: &senderInfo{
+					Sender: &servertypes.SenderInfo{
 						Address:    sampleHexAddress2,
 						SigningKey: sampleSigningKey,
 					},
@@ -703,7 +704,7 @@ func TestBackendQueryFunc(t *testing.T) {
 				t.Fatalf("expected no error but found %q", err)
 			}
 
-			msg := rpcMessage{}
+			msg := servertypes.RPCMessage{}
 			_ = json.Unmarshal(data, &msg)
 
 			if msg.Error == nil && v.val.shortErr != nil {

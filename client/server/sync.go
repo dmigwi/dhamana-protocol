@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
+	"github.com/dmigwi/dhamana-protocol/client/servertypes"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -77,7 +78,7 @@ func (s *ServerConfig) SyncData() error {
 
 	// fetch the last synced block from the database.
 	lastSyncedBlock, _ := s.db.QueryLocalData(utils.GetLastSyncedBlock,
-		new(lastSyncedBlockResp), "")
+		new(servertypes.LastSyncedBlockResp), "")
 
 	var syncedBlock int64
 	if len(lastSyncedBlock) > 0 {
@@ -115,8 +116,8 @@ func (s *ServerConfig) SyncData() error {
 	filterLogsFunc := func() (int, error) {
 		logs, err := s.backend.FilterLogs(s.ctx, filterOpts)
 		if err != nil {
-			return 0, fmt.Errorf("fetching logs between block %d and %d failed: %v",
-				syncedBlock, endBlock, err)
+			return 0, fmt.Errorf("syncing between block %d and %d failed: %v",
+				filterOpts.FromBlock.Int64(), filterOpts.ToBlock.Int64(), err)
 		}
 
 		return len(logs), s.parseEvents(logs)
@@ -134,6 +135,8 @@ func (s *ServerConfig) SyncData() error {
 
 	var eventCounter, totalEvents int
 
+	log.Infof("Starting data sync from block=%d To target block=%d",
+		syncedBlock, targetBlock)
 	// Block till the blocks are synced to the target block.
 	for endBlock <= targetBlock {
 		select {
@@ -251,8 +254,8 @@ func (s *ServerConfig) processEvents() {
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
 						data.Principal, data.CouponRate, data.CouponDate,
-						data.MaturityDate, data.Currency, time.Now().UTC(),
-						data.Raw.BlockNumber, data.BondAddress,
+						time.Unix(int64(data.MaturityDate), 0).UTC(), data.Currency,
+						time.Now().UTC(), data.Raw.BlockNumber, data.BondAddress.Hex(),
 					},
 				}
 
@@ -261,8 +264,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.UpdateBondMotivation,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Message, time.Now().UTC(),
-						data.Raw.BlockNumber, data.BondAddress,
+						data.Message, time.Now().UTC(), data.Raw.BlockNumber,
+						data.BondAddress.Hex(),
 					},
 				}
 
@@ -271,8 +274,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.UpdateHolder,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Holder, time.Now().UTC(),
-						data.Raw.BlockNumber, data.BondAddress,
+						data.Holder.Hex(), time.Now().UTC(), data.Raw.BlockNumber,
+						data.BondAddress.Hex(),
 					},
 				}
 
@@ -281,8 +284,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.InsertNewBondCreated,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.BondAddress, data.Sender, time.Now().UTC(),
-						data.Raw.BlockNumber,
+						data.BondAddress.Hex(), data.Raw.BlockNumber,
+						data.Sender.Hex(), data.Raw.BlockNumber,
 					},
 				}
 
@@ -291,8 +294,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.InsertNewChatMessage,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Sender, data.BondAddress, data.Message,
-						time.Now().UTC(), data.Raw.BlockNumber,
+						data.Sender.Hex(), data.BondAddress.Hex(), data.Message,
+						data.Raw.BlockNumber,
 					},
 				}
 
@@ -301,8 +304,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.InsertStatusChange,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Sender, data.BondAddress, data.Status,
-						time.Now().UTC(), data.Raw.BlockNumber,
+						data.Sender.Hex(), data.BondAddress.Hex(), data.Status,
+						data.Raw.BlockNumber,
 					},
 				}
 
@@ -310,8 +313,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.UpdateLastStatus,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Status, time.Now().UTC(),
-						data.Raw.BlockNumber, data.BondAddress,
+						data.Status, time.Now().UTC(), data.Raw.BlockNumber,
+						data.BondAddress.Hex(),
 					},
 				}
 
@@ -320,8 +323,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.InsertStatusSigned,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Sender, data.BondAddress, data.Status,
-						time.Now().UTC(), data.Raw.BlockNumber,
+						data.Sender.Hex(), data.BondAddress.Hex(), data.Status,
+						data.Raw.BlockNumber,
 					},
 				}
 

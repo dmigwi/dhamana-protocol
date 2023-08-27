@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dmigwi/dhamana-protocol/client/contracts"
+	"github.com/dmigwi/dhamana-protocol/client/servertypes"
 	"github.com/dmigwi/dhamana-protocol/client/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -27,13 +28,15 @@ var ZeroAddress = common.HexToAddress("")
 // occured a response in bytes is returned. isSignerKeyRequired is used to set
 // when existence of the signer key should be checked.
 // Its returns the method type depending on how it is implemented.
-func decodeRequestBody(req *http.Request, msg *rpcMessage, isSignerKeyRequired bool) utils.MethodType {
+func decodeRequestBody(req *http.Request, msg *servertypes.RPCMessage,
+	isSignerKeyRequired bool,
+) utils.MethodType {
 	var msgError, err error
 
 	// creates the error response to be returned
 	defer func() {
 		if msgError != nil {
-			msg.packServerError(msgError, err)
+			msg.PackServerError(msgError, err)
 		}
 	}()
 
@@ -134,7 +137,7 @@ func (s *ServerConfig) welcomeTextFunc(w http.ResponseWriter, req *http.Request)
 // client must fetch a new server pubkey to keep the communication alive.
 // A session server pubkey is mapped to a specific user address.
 func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
-	var msg rpcMessage
+	var msg servertypes.RPCMessage
 	methodType := decodeRequestBody(req, &msg, false)
 	if msg.Error != nil {
 		writeResponse(w, msg)
@@ -144,7 +147,7 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 	// confirm server key methods match.
 	if methodType != utils.ServerKeyType {
 		err := fmt.Errorf("unsupported method %s found for this route", msg.Method)
-		msg.packServerError(utils.ErrUnknownMethod, err)
+		msg.PackServerError(utils.ErrUnknownMethod, err)
 		writeResponse(w, msg)
 		return
 	}
@@ -152,7 +155,7 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 	// Pass nil so that the default rand reader can be used.
 	privKey, err := utils.GeneratePrivKey(nil)
 	if err != nil {
-		msg.packServerError(utils.ErrInternalFailure, nil)
+		msg.PackServerError(utils.ErrInternalFailure, nil)
 		writeResponse(w, msg)
 		return
 	}
@@ -160,34 +163,35 @@ func (s *ServerConfig) serverPubkey(w http.ResponseWriter, req *http.Request) {
 	sharedkey, err := privKey.ComputeSharedKey(msg.Params[0].(string))
 	if err != nil {
 		err := errors.New("invalid client public key used")
-		msg.packServerError(utils.ErrInternalFailure, err)
+		msg.PackServerError(utils.ErrInternalFailure, err)
 		writeResponse(w, msg)
 		return
 	}
 
 	// server public key is valid for 10 minutes after which a new public key
 	// must be requested.
-	data := serverKeyResp{
+	data := servertypes.ServerKeyResp{
 		Pubkey: privKey.PubKeyToHexString(),
 		Expiry: uint64(time.Now().UTC().Add(sessionTime).Unix()),
 	}
 
-	// sent the sender before packing the result because its zeroed while preparing
+	// Set the sender before packing the result because its zeroed while preparing
 	// the client response.
 	sender := msg.Sender.Address
 
-	msg.packServerResult(data)
+	msg.PackServerResult(data)
 	writeResponse(w, msg)
 
 	// Appends the sharedkey after sending the user response. This shared key is
-	// what this client should use to encrypt information shared with the server.
-	data.sharedKey = sharedkey
+	// what the POA (Point Of Access) client should use to encrypt information
+	// shared with the server.
+	data.SharedKey = sharedkey
 	s.sessionKeys.Store(sender, data)
 }
 
 // backendQueryFunc recieves all the requests made to the contracts.
 func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request) {
-	var msg rpcMessage
+	var msg servertypes.RPCMessage
 
 	methodType := decodeRequestBody(req, &msg, true)
 	if msg.Error != nil {
@@ -198,7 +202,7 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 	// Only allow contract and local type methods to be executed.
 	if methodType != utils.ContractType && methodType != utils.LocalType {
 		err := fmt.Errorf("unsupported method %s found for this route", msg.Method)
-		msg.packServerError(utils.ErrUnknownMethod, err)
+		msg.PackServerError(utils.ErrUnknownMethod, err)
 		writeResponse(w, msg)
 		return
 	}
@@ -208,15 +212,15 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 	data, ok := s.sessionKeys.Load(sender)
 	if !ok {
 		err := errors.New("no server keys found associated with the sender")
-		msg.packServerError(utils.ErrMissingServerKey, err)
+		msg.PackServerError(utils.ErrMissingServerKey, err)
 		writeResponse(w, msg)
 		return
 	}
 
 	// check for the server keys expiry.
-	expiryTime := time.Unix(int64(data.(serverKeyResp).Expiry), 0).UTC()
+	expiryTime := time.Unix(int64(data.(servertypes.ServerKeyResp).Expiry), 0).UTC()
 	if time.Now().UTC().After(expiryTime) {
-		msg.packServerError(utils.ErrExpiredServerKey, nil)
+		msg.PackServerError(utils.ErrExpiredServerKey, nil)
 		writeResponse(w, msg)
 
 		// Delete expired keys
@@ -224,9 +228,9 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	sharedKey := data.(serverKeyResp).sharedKey
+	sharedKey := data.(servertypes.ServerKeyResp).SharedKey
 	if len(sharedKey) == 0 {
-		msg.packServerError(utils.ErrInvalidSigningKey, nil)
+		msg.PackServerError(utils.ErrInvalidSigningKey, nil)
 		writeResponse(w, msg)
 		return
 	}
@@ -235,7 +239,7 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 	// required to sign all tx by the current sender.
 	privKey, err := utils.DecryptAES(sharedKey, msg.Sender.SigningKey)
 	if err != nil {
-		msg.packServerError(utils.ErrInvalidSigningKey, err)
+		msg.PackServerError(utils.ErrInvalidSigningKey, err)
 		writeResponse(w, msg)
 		return
 	}
@@ -253,24 +257,33 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 		var tx *types.Transaction
 		tx, err = transactor.Transact(auth, string(msg.Method), msg.Params...)
 		if err != nil && tx != nil {
-			res = tx.Hash().String()
+			// Return the tx hash for contract backend methods executed successfully.
+			res = struct {
+				TxHash string `json:"tx_hash"`
+			}{
+				TxHash: tx.Hash().String(),
+			}
 		}
+
 	case utils.LocalType:
 		switch msg.Method {
 		case utils.GetBonds:
-			res, err = s.db.QueryLocalData(msg.Method, new(bondResp),
+			res, err = s.db.QueryLocalData(msg.Method, new(servertypes.BondResp),
 				msg.Sender.Address.String(), msg.Params...)
+
 		case utils.GetBondByAddress:
 			var arrayData []interface{}
-			arrayData, err = s.db.QueryLocalData(msg.Method, new(bondByAddressResp),
+			arrayData, err = s.db.QueryLocalData(msg.Method, new(servertypes.BondByAddressResp),
 				msg.Sender.Address.String(), msg.Params...)
 			// data response expected is just one record here.
 			if len(arrayData) > 0 {
 				res = arrayData[0]
 			}
+
 		case utils.GetChats:
-			res, err = s.db.QueryLocalData(msg.Method, new(chatMsgsResp),
+			res, err = s.db.QueryLocalData(msg.Method, new(servertypes.ChatMsgsResp),
 				msg.Sender.Address.String(), msg.Params...)
+
 		default:
 			err = fmt.Errorf("missing implementation for method %s", msg.Method)
 		}
@@ -282,12 +295,12 @@ func (s *ServerConfig) backendQueryFunc(w http.ResponseWriter, req *http.Request
 	}
 
 	if err != nil {
-		msg.packServerError(utils.ErrInternalFailure, err)
+		msg.PackServerError(utils.ErrInternalFailure, err)
 		writeResponse(w, msg)
 		return
 	}
 
-	msg.packServerResult(res)
+	msg.PackServerResult(res)
 	writeResponse(w, msg)
 }
 

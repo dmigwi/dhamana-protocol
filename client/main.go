@@ -35,8 +35,8 @@ func run(ctx context.Context, cancelFunc context.CancelFunc) {
 	level, _ := btclog.LevelFromString(config.LogLevel)
 	setLogLevel(level)
 
-	s, err := server.NewServer(ctx, config.DbPort, config.TLSCertFile, config.TLSKeyFile,
-		config.DataDirPath, config.Network, config.ServerURL, config.DbDriver,
+	s, err := server.NewServer(ctx, config.DbPort, config.TLSCertFile,
+		config.TLSKeyFile, config.DataDirPath, config.Network, config.ServerURL,
 		config.DbHost, config.DbName, config.DbUser, config.DbPassword)
 	if err != nil {
 		log.Errorf("Server Config error: %v", err)

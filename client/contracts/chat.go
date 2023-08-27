@@ -31,7 +31,7 @@ var (
 
 // ChatMetaData contains all meta data concerning the Chat contract.
 var ChatMetaData = &bind.MetaData{
-	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"principal\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"couponRate\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"couponDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"maturityDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"currency\",\"type\":\"uint8\"}],\"name\":\"BondBodyTerms\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"}],\"name\":\"BondMotivation\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"holder\",\"type\":\"address\"}],\"name\":\"HolderUpdate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"}],\"name\":\"NewBondCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"}],\"name\":\"NewChatMessage\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"status\",\"type\":\"uint8\"}],\"name\":\"StatusChange\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"status\",\"type\":\"uint8\"}],\"name\":\"StatusSigned\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumChatContract.MessageTag\",\"name\":\"_tag\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_message\",\"type\":\"string\"}],\"name\":\"addMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"createBond\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"getBondSecureDetails\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"_security\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_appendix\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"signBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"_principal\",\"type\":\"uint32\"},{\"internalType\":\"uint8\",\"name\":\"_couponRate\",\"type\":\"uint8\"},{\"internalType\":\"uint32\",\"name\":\"_couponDate\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_maturityDate\",\"type\":\"uint32\"},{\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"_currency\",\"type\":\"uint8\"}],\"name\":\"updateBodyInfo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_holder\",\"type\":\"address\"}],\"name\":\"updateBondHolder\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"_status\",\"type\":\"uint8\"}],\"name\":\"updateBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"principal\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"couponRate\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"couponDate\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"maturityDate\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"currency\",\"type\":\"uint8\"}],\"name\":\"BondBodyTerms\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"}],\"name\":\"BondMotivation\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"holder\",\"type\":\"address\"}],\"name\":\"HolderUpdate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"}],\"name\":\"NewBondCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"message\",\"type\":\"string\"}],\"name\":\"NewChatMessage\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"status\",\"type\":\"uint8\"}],\"name\":\"StatusChange\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bondAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"status\",\"type\":\"uint8\"}],\"name\":\"StatusSigned\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumChatContract.MessageTag\",\"name\":\"_tag\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"_message\",\"type\":\"string\"}],\"name\":\"addMessage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"createBond\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"getBondSecureDetails\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"_security\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_appendix\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"}],\"name\":\"signBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"_principal\",\"type\":\"uint32\"},{\"internalType\":\"uint8\",\"name\":\"_couponRate\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"_couponDate\",\"type\":\"uint8\"},{\"internalType\":\"uint32\",\"name\":\"_maturityDate\",\"type\":\"uint32\"},{\"internalType\":\"enumBondContract.CurrencyType\",\"name\":\"_currency\",\"type\":\"uint8\"}],\"name\":\"updateBodyInfo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_holder\",\"type\":\"address\"}],\"name\":\"updateBondHolder\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_contract\",\"type\":\"address\"},{\"internalType\":\"enumBondContract.StatusChoice\",\"name\":\"_status\",\"type\":\"uint8\"}],\"name\":\"updateBondStatus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // ChatABI is the input ABI used to generate the binding from.
@@ -288,24 +288,24 @@ func (_Chat *ChatTransactorSession) SignBondStatus(_contract common.Address) (*t
 	return _Chat.Contract.SignBondStatus(&_Chat.TransactOpts, _contract)
 }
 
-// UpdateBodyInfo is a paid mutator transaction binding the contract method 0xac20a57e.
+// UpdateBodyInfo is a paid mutator transaction binding the contract method 0x845201c4.
 //
-// Solidity: function updateBodyInfo(address _contract, uint32 _principal, uint8 _couponRate, uint32 _couponDate, uint32 _maturityDate, uint8 _currency) returns()
-func (_Chat *ChatTransactor) UpdateBodyInfo(opts *bind.TransactOpts, _contract common.Address, _principal uint32, _couponRate uint8, _couponDate uint32, _maturityDate uint32, _currency uint8) (*types.Transaction, error) {
+// Solidity: function updateBodyInfo(address _contract, uint32 _principal, uint8 _couponRate, uint8 _couponDate, uint32 _maturityDate, uint8 _currency) returns()
+func (_Chat *ChatTransactor) UpdateBodyInfo(opts *bind.TransactOpts, _contract common.Address, _principal uint32, _couponRate uint8, _couponDate uint8, _maturityDate uint32, _currency uint8) (*types.Transaction, error) {
 	return _Chat.contract.Transact(opts, "updateBodyInfo", _contract, _principal, _couponRate, _couponDate, _maturityDate, _currency)
 }
 
-// UpdateBodyInfo is a paid mutator transaction binding the contract method 0xac20a57e.
+// UpdateBodyInfo is a paid mutator transaction binding the contract method 0x845201c4.
 //
-// Solidity: function updateBodyInfo(address _contract, uint32 _principal, uint8 _couponRate, uint32 _couponDate, uint32 _maturityDate, uint8 _currency) returns()
-func (_Chat *ChatSession) UpdateBodyInfo(_contract common.Address, _principal uint32, _couponRate uint8, _couponDate uint32, _maturityDate uint32, _currency uint8) (*types.Transaction, error) {
+// Solidity: function updateBodyInfo(address _contract, uint32 _principal, uint8 _couponRate, uint8 _couponDate, uint32 _maturityDate, uint8 _currency) returns()
+func (_Chat *ChatSession) UpdateBodyInfo(_contract common.Address, _principal uint32, _couponRate uint8, _couponDate uint8, _maturityDate uint32, _currency uint8) (*types.Transaction, error) {
 	return _Chat.Contract.UpdateBodyInfo(&_Chat.TransactOpts, _contract, _principal, _couponRate, _couponDate, _maturityDate, _currency)
 }
 
-// UpdateBodyInfo is a paid mutator transaction binding the contract method 0xac20a57e.
+// UpdateBodyInfo is a paid mutator transaction binding the contract method 0x845201c4.
 //
-// Solidity: function updateBodyInfo(address _contract, uint32 _principal, uint8 _couponRate, uint32 _couponDate, uint32 _maturityDate, uint8 _currency) returns()
-func (_Chat *ChatTransactorSession) UpdateBodyInfo(_contract common.Address, _principal uint32, _couponRate uint8, _couponDate uint32, _maturityDate uint32, _currency uint8) (*types.Transaction, error) {
+// Solidity: function updateBodyInfo(address _contract, uint32 _principal, uint8 _couponRate, uint8 _couponDate, uint32 _maturityDate, uint8 _currency) returns()
+func (_Chat *ChatTransactorSession) UpdateBodyInfo(_contract common.Address, _principal uint32, _couponRate uint8, _couponDate uint8, _maturityDate uint32, _currency uint8) (*types.Transaction, error) {
 	return _Chat.Contract.UpdateBodyInfo(&_Chat.TransactOpts, _contract, _principal, _couponRate, _couponDate, _maturityDate, _currency)
 }
 
@@ -423,15 +423,15 @@ type ChatBondBodyTerms struct {
 	BondAddress  common.Address
 	Principal    uint32
 	CouponRate   uint8
-	CouponDate   uint32
+	CouponDate   uint8
 	MaturityDate uint32
 	Currency     uint8
 	Raw          types.Log // Blockchain specific contextual infos
 }
 
-// FilterBondBodyTerms is a free log retrieval operation binding the contract event 0xe6f76c15f92de04f9874c9963972f0244d7957b298d1b1bd00ffc99ea8bc1794.
+// FilterBondBodyTerms is a free log retrieval operation binding the contract event 0x1a6ff5254e534bc26b357a4aee81c286f91e416c9c8224b6ec2e87173e044974.
 //
-// Solidity: event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint32 couponDate, uint32 maturityDate, uint8 currency)
+// Solidity: event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint8 couponDate, uint32 maturityDate, uint8 currency)
 func (_Chat *ChatFilterer) FilterBondBodyTerms(opts *bind.FilterOpts) (*ChatBondBodyTermsIterator, error) {
 
 	logs, sub, err := _Chat.contract.FilterLogs(opts, "BondBodyTerms")
@@ -441,9 +441,9 @@ func (_Chat *ChatFilterer) FilterBondBodyTerms(opts *bind.FilterOpts) (*ChatBond
 	return &ChatBondBodyTermsIterator{contract: _Chat.contract, event: "BondBodyTerms", logs: logs, sub: sub}, nil
 }
 
-// WatchBondBodyTerms is a free log subscription operation binding the contract event 0xe6f76c15f92de04f9874c9963972f0244d7957b298d1b1bd00ffc99ea8bc1794.
+// WatchBondBodyTerms is a free log subscription operation binding the contract event 0x1a6ff5254e534bc26b357a4aee81c286f91e416c9c8224b6ec2e87173e044974.
 //
-// Solidity: event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint32 couponDate, uint32 maturityDate, uint8 currency)
+// Solidity: event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint8 couponDate, uint32 maturityDate, uint8 currency)
 func (_Chat *ChatFilterer) WatchBondBodyTerms(opts *bind.WatchOpts, sink chan<- *ChatBondBodyTerms) (event.Subscription, error) {
 
 	logs, sub, err := _Chat.contract.WatchLogs(opts, "BondBodyTerms")
@@ -478,9 +478,9 @@ func (_Chat *ChatFilterer) WatchBondBodyTerms(opts *bind.WatchOpts, sink chan<- 
 	}), nil
 }
 
-// ParseBondBodyTerms is a log parse operation binding the contract event 0xe6f76c15f92de04f9874c9963972f0244d7957b298d1b1bd00ffc99ea8bc1794.
+// ParseBondBodyTerms is a log parse operation binding the contract event 0x1a6ff5254e534bc26b357a4aee81c286f91e416c9c8224b6ec2e87173e044974.
 //
-// Solidity: event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint32 couponDate, uint32 maturityDate, uint8 currency)
+// Solidity: event BondBodyTerms(address bondAddress, uint32 principal, uint8 couponRate, uint8 couponDate, uint32 maturityDate, uint8 currency)
 func (_Chat *ChatFilterer) ParseBondBodyTerms(log types.Log) (*ChatBondBodyTerms, error) {
 	event := new(ChatBondBodyTerms)
 	if err := _Chat.contract.UnpackLog(event, "BondBodyTerms", log); err != nil {
