@@ -6,6 +6,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -23,27 +24,28 @@ const (
 
 	// createVersionTable enables version tables preventing tables with
 	// incompatible schemas from being used.
-	createVersionTable = "CREATE TABLE IF NOT EXISTS tables_version(" +
+	createVersionTable = "CREATE TABLE IF NOT EXISTS tables_version (" +
 		"id SERIAL PRIMARY KEY," +
 		"sem_version VARCHAR(10) UNIQUE," +
-		"tables_created_on TIMESTAMPTZ ON DEFAULT CURRENT_TIMESTAMP)"
+		"tables_created_on TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP)"
 
 	// createTableBond is a prepared statement creating a table identified with the
 	// name table_bond if it doesn't exists.
 	createTableBond = "CREATE TABLE IF NOT EXISTS table_bond (" +
-		"bond_address VARCHAR(42) PRIMARY KEY," +
+		"id SERIAL PRIMARY KEY," +
+		"bond_address VARCHAR(42) UNIQUE NOT NULL," +
 		"issuer_address VARCHAR(42) NOT NULL," +
 		"holder_address VARCHAR(42)," +
 		"created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
 		"created_at_block INTEGER NOT NULL," +
 		"principal INTEGER," +
-		"coupon_rate SMALLINT CHECK (coupon_rate BETWEEN 1 AND 100)," +
-		"coupon_date SMALLINT (coupon_date BETWEEN 0 AND 50)," +
+		"coupon_rate SMALLINT CHECK (coupon_rate BETWEEN 0 AND 100)," +
+		"coupon_date SMALLINT CHECK (coupon_date BETWEEN 0 AND 50)," +
 		"maturity_date TIMESTAMPTZ," +
 		"currency SMALLINT CHECK (currency BETWEEN 0 AND 50)," +
 		"intro_msg TEXT," +
 		"last_status SMALLINT CHECK (last_status BETWEEN 0 AND 10)," +
-		"last_update TIMESTAMPTZ ON UPDATE CURRENT_TIMESTAMP," +
+		"last_update TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP," +
 		"last_synced_block INTEGER NOT NULL)"
 
 	// createTableBondStatus is a prepared statement creating a table identified
@@ -78,29 +80,29 @@ const (
 
 	// fetchBonds is a prepared statement that fetches all the bonds that owned
 	// by the bond party with the address or they are still in the negotiation stage.
-	fetchBonds = "SELECT (bond_address,issuer_address,created_at,coupon_rate,currency,last_status)" +
+	fetchBonds = "SELECT bond_address,issuer_address,created_at,coupon_rate,currency,last_status " +
 		"FROM table_bond WHERE issuer_address = $1 OR last_status = 0 " +
-		"Or holder_address = $2 ORDER BY last_update DESC LIMIT $3 OFFSET $4"
+		"OR holder_address = $2 ORDER BY last_update DESC LIMIT $3 OFFSET $4"
 
 	// fetchBondByAddress is a prepared statement that returns a bond identified by
 	// the provided address if the sender is a party to the bond or the bond
 	// is still in the negotiation stage.
-	fetchBondByAddress = "SELECT (bond_address,issuer_address,holder_address," +
+	fetchBondByAddress = "SELECT bond_address,issuer_address,holder_address," +
 		"created_at,created_at_block,principal,coupon_rate,coupon_date," +
-		"maturity_date,currency,intro_msg,last_status,last_update,last_synced_block)" +
+		"maturity_date,currency,intro_msg,last_status,last_update,last_synced_block " +
 		"FROM table_bond WHERE bond_address = $1 AND " +
 		"(last_status = 0 OR issuer_address = $2 OR holder_address = $3)"
 
 	// fetchChats is a prepared statement that fetches the conversation within
 	// the bond identified by the provided address if the sender is a bond party
 	// or its still in the negotiation stage.
-	fetchChats = "SELECT (c.sender, c.bond_address, c.chat_msg, c.created_at, c.last_synced_block)" +
+	fetchChats = "SELECT c.sender, c.bond_address, c.chat_msg, c.created_at, c.last_synced_block " +
 		"FROM table_chat as c LEFT JOIN table_bond as b WHERE c.bond_address = b.bond_address AND " +
 		"(b.issuer_address = $1 OR b.last_status = 0 Or b.holder_address = $2)" +
 		" ORDER BY c.created_at DESC LIMIT $3 OFFSET $4"
 
 	// fetchTableVersion fetches the last set tables version.
-	fetchTableVersion = "SELECT (sem_version,tables_created_on) " +
+	fetchTableVersion = "SELECT sem_version,tables_created_on " +
 		"FROM tables_version ORDER BY id DESC LIMIT 1"
 
 	// fetchLastSyncBlock returns the last block to be synced on the table_bond.
@@ -109,20 +111,20 @@ const (
 
 	// setBondBodyTerms updates the table_bond with data from the BondBodyTerms event.
 	setBondBodyTerms = "UPDATE table_bond SET principal = $1, coupon_rate = $2, " +
-		"coupon_date = $3, maturity_date = $4, currency = $5, " +
-		"last_synced_block = $6 WHERE bond_address = $7"
+		"coupon_date = $3, maturity_date = $4, currency = $5, last_update = $6" +
+		"last_synced_block = $7 WHERE bond_address = $8"
 
 	// setBondMotivation update the table_bond with data from BondMotivation event.
 	setBondMotivation = "UPDATE table_bond SET intro_msg = $1, last_synced_block = $2" +
 		" WHERE bond_address = $3"
 
 	// setHolder updates table_bond with data from HolderUpdate event.
-	setHolder = "UPDATE table_bond SET holder_address = $1, last_synced_block = $2" +
-		" WHERE bond_address = $3"
+	setHolder = "UPDATE table_bond SET holder_address = $1, last_update = $2" +
+		" last_synced_block = $3 WHERE bond_address = $4"
 
 	// setLastStatus updates table_bond with data from StatusChange event.
-	setLastStatus = "UPDATE table_bond SET last_status = $1, last_synced_block = $2" +
-		" WHERE bond_address = $3"
+	setLastStatus = "UPDATE table_bond SET last_status = $1, last_update = $2" +
+		" last_synced_block = $2 WHERE bond_address = $3"
 
 	// addNewBondCreated inserts into table_bond new data from event NewBondCreated.
 	addNewBondCreated = "INSERT INTO table_bond (bond_address, issuer_address, " +
@@ -130,7 +132,7 @@ const (
 
 	// ddNewChatMessage inserts into table_chat new data from event NewChatMessage.
 	addNewChatMessage = "INSERT INTO table_chat (sender, bond_address, " +
-		" chat_msg, last_synced_block) VALUES ($1, $2, $3, $4)"
+		"chat_msg, last_synced_block) VALUES ($1, $2, $3, $4)"
 
 	// addStatusChange inserts into table_status new data from event StatusChange.
 	addStatusChange = "INSERT INTO table_status (sender, bond_address, " +
@@ -248,11 +250,11 @@ func NewDB(ctx context.Context, connInfo string) (*DB, error) {
 	case "":
 		log.Infof("Versioning the newly created tables with version=%s", semVersion)
 
-		_, err = db.ExecContext(ctx, addTablesVersion, semVersion, time.Now().UTC())
-		if err != nil {
+		if _, err = db.ExecContext(ctx, addTablesVersion, semVersion); err != nil {
 			log.Errorf("unable version the newly created tables : %v", err)
 			return nil, err
 		}
+
 	case semVersion:
 		// The correct tables version was found.
 		log.Infof("Confirmed all the %d versioned tables exists", len(tablesSQLStmt))
@@ -280,18 +282,27 @@ func (d *DB) QueryLocalData(method utils.Method, r Reader, sender string,
 	}
 
 	switch method {
+	case utils.GetBondByAddress:
+		params = append(params, []interface{}{sender, sender}...)
+
 	case utils.GetBonds, utils.GetChats:
 		// The last two param values are always {limit, offset}.
 		// Append sender params before those two params.
 		n := len(params)
-		firstParams := params[:n-2]
-		lastParams := params[n-2:] // {limit, offset}.
-		params = append(firstParams, []interface{}{sender, sender}...)
-		params = append(params, lastParams...)
+		var data []interface{}
+		if len(params[:n-2]) > 0 {
+			data = append(data, params[:n-2]...)
+		}
+		data = append(data, []interface{}{sender, sender}...)
+		data = append(data, params[n-2:]...) // {limit, offset}.
+
+		params = data
 	}
 
-	rows, err := d.db.QueryContext(d.ctx, stmt, params)
+	rows, err := d.db.QueryContext(d.ctx, stmt, params...)
 	if err != nil {
+		dt, _ := json.Marshal(params)
+		fmt.Println(string(dt))
 		return nil, fmt.Errorf("fetching query for method %q failed: %v", method, err)
 	}
 

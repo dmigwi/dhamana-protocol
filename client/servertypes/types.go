@@ -131,20 +131,31 @@ func (msg *RPCMessage) PackServerResult(data interface{}) {
 // Reader interface implementation for type BondResp.
 func (r *BondResp) Read(fn func(fields ...any) error) (interface{}, error) {
 	var resp BondResp
-	err := fn(&resp.BondAddress, &resp.Issuer, &resp.CreatedTime, &resp.CouponRate,
+	var bondAddress, issuer string
+
+	err := fn(&bondAddress, &issuer, &resp.CreatedTime, &resp.CouponRate,
 		&resp.Currency, &resp.LastStatus,
 	)
+
+	resp.BondAddress = common.HexToAddress(bondAddress)
+	resp.Issuer = common.HexToAddress(issuer)
 	return &resp, err
 }
 
 // Reader interface implementation for type BondByAddressResp.
 func (r *BondByAddressResp) Read(fn func(fields ...any) error) (interface{}, error) {
 	var resp BondByAddressResp
-	err := fn(&resp.BondAddress, &resp.Issuer, &resp.Holder, &resp.CreatedTime,
+	var bondAddress, issuer, holder string
+
+	err := fn(&bondAddress, &issuer, &holder, &resp.CreatedTime,
 		&resp.CreatedAtBlock, &resp.Principal, &resp.CouponRate,
 		&resp.CouponDate, &resp.MaturityDate, &resp.Currency, &resp.IntroMessage,
 		&resp.LastStatus, &resp.LastUpdate, &resp.LastSyncedBlock,
 	)
+
+	resp.BondAddress = common.HexToAddress(bondAddress)
+	resp.Issuer = common.HexToAddress(issuer)
+	resp.Holder = common.HexToAddress(holder)
 	return &resp, err
 }
 
@@ -159,8 +170,13 @@ func (r *LastSyncedBlockResp) Read(fn func(fields ...any) error) (interface{}, e
 // Reader interface implementation for type ChatMsgsResp.
 func (r *ChatMsgsResp) Read(fn func(fields ...any) error) (interface{}, error) {
 	var resp ChatMsgsResp
-	err := fn(&resp.Sender, &resp.BondAddress, &resp.Message,
+	var sender, bondAddress string
+
+	err := fn(&sender, &bondAddress, &resp.Message,
 		&resp.CreatedTime, &resp.LastSyncedBlock,
 	)
+
+	resp.Sender = common.HexToAddress(sender)
+	resp.BondAddress = common.HexToAddress(bondAddress)
 	return &resp, err
 }

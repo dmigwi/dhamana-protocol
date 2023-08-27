@@ -255,7 +255,7 @@ func (s *ServerConfig) processEvents() {
 					params: []interface{}{
 						data.Principal, data.CouponRate, data.CouponDate,
 						time.Unix(int64(data.MaturityDate), 0).UTC(), data.Currency,
-						data.Raw.BlockNumber, data.BondAddress,
+						time.Now().UTC(), data.Raw.BlockNumber, data.BondAddress,
 					},
 				}
 
@@ -264,7 +264,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.UpdateBondMotivation,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Message, data.Raw.BlockNumber, data.BondAddress,
+						data.Message, time.Now().UTC(), data.Raw.BlockNumber,
+						data.BondAddress,
 					},
 				}
 
@@ -273,7 +274,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.UpdateHolder,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Holder, data.Raw.BlockNumber, data.BondAddress,
+						data.Holder, time.Now().UTC(), data.Raw.BlockNumber,
+						data.BondAddress,
 					},
 				}
 
@@ -310,7 +312,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.UpdateLastStatus,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Status, data.Raw.BlockNumber, data.BondAddress,
+						data.Status, time.Now().UTC(), data.Raw.BlockNumber,
+						data.BondAddress,
 					},
 				}
 
