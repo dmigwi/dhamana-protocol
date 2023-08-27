@@ -255,7 +255,7 @@ func (s *ServerConfig) processEvents() {
 					params: []interface{}{
 						data.Principal, data.CouponRate, data.CouponDate,
 						time.Unix(int64(data.MaturityDate), 0).UTC(), data.Currency,
-						time.Now().UTC(), data.Raw.BlockNumber, data.BondAddress,
+						time.Now().UTC(), data.Raw.BlockNumber, data.BondAddress.Hex(),
 					},
 				}
 
@@ -265,7 +265,7 @@ func (s *ServerConfig) processEvents() {
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
 						data.Message, time.Now().UTC(), data.Raw.BlockNumber,
-						data.BondAddress,
+						data.BondAddress.Hex(),
 					},
 				}
 
@@ -274,8 +274,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.UpdateHolder,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Holder, time.Now().UTC(), data.Raw.BlockNumber,
-						data.BondAddress,
+						data.Holder.Hex(), time.Now().UTC(), data.Raw.BlockNumber,
+						data.BondAddress.Hex(),
 					},
 				}
 
@@ -284,7 +284,7 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.InsertNewBondCreated,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.BondAddress, data.Sender, data.Raw.BlockNumber,
+						data.BondAddress.Hex(), data.Sender.Hex(), data.Raw.BlockNumber,
 					},
 				}
 
@@ -293,7 +293,7 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.InsertNewChatMessage,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Sender, data.BondAddress, data.Message,
+						data.Sender.Hex(), data.BondAddress.Hex(), data.Message,
 						data.Raw.BlockNumber,
 					},
 				}
@@ -303,7 +303,7 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.InsertStatusChange,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Sender, data.BondAddress, data.Status,
+						data.Sender.Hex(), data.BondAddress.Hex(), data.Status,
 						data.Raw.BlockNumber,
 					},
 				}
@@ -313,7 +313,7 @@ func (s *ServerConfig) processEvents() {
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
 						data.Status, time.Now().UTC(), data.Raw.BlockNumber,
-						data.BondAddress,
+						data.BondAddress.Hex(),
 					},
 				}
 
@@ -322,7 +322,7 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.InsertStatusSigned,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.Sender, data.BondAddress, data.Status,
+						data.Sender.Hex(), data.BondAddress.Hex(), data.Status,
 						data.Raw.BlockNumber,
 					},
 				}

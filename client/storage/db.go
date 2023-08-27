@@ -6,7 +6,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -96,10 +95,11 @@ const (
 	// fetchChats is a prepared statement that fetches the conversation within
 	// the bond identified by the provided address if the sender is a bond party
 	// or its still in the negotiation stage.
-	fetchChats = "SELECT c.sender, c.bond_address, c.chat_msg, c.created_at, c.last_synced_block " +
-		"FROM table_chat as c LEFT JOIN table_bond as b WHERE c.bond_address = b.bond_address AND " +
-		"(b.issuer_address = $1 OR b.last_status = 0 Or b.holder_address = $2)" +
-		" ORDER BY c.created_at DESC LIMIT $3 OFFSET $4"
+	fetchChats = "SELECT c.sender, c.bond_address, c.chat_msg, c.created_at, " +
+		"c.last_synced_block FROM table_chat as c LEFT JOIN table_bond as b " +
+		"ON c.bond_address = b.bond_address WHERE b.bond_address = $1 AND " +
+		"(b.issuer_address = $2 OR b.last_status = 0 OR b.holder_address = $3) " +
+		"ORDER BY c.created_at DESC LIMIT $4 OFFSET $5"
 
 	// fetchTableVersion fetches the last set tables version.
 	fetchTableVersion = "SELECT sem_version,tables_created_on " +
@@ -301,8 +301,6 @@ func (d *DB) QueryLocalData(method utils.Method, r Reader, sender string,
 
 	rows, err := d.db.QueryContext(d.ctx, stmt, params...)
 	if err != nil {
-		dt, _ := json.Marshal(params)
-		fmt.Println(string(dt))
 		return nil, fmt.Errorf("fetching query for method %q failed: %v", method, err)
 	}
 
@@ -329,8 +327,7 @@ func (d *DB) SetLocalData(method utils.Method, params ...interface{}) error {
 		return fmt.Errorf("missing query for method %q", method)
 	}
 
-	_, err := d.db.ExecContext(d.ctx, stmt, params...)
-	if err != nil {
+	if _, err := d.db.ExecContext(d.ctx, stmt, params...); err != nil {
 		err = fmt.Errorf("inserting data for method %q failed: %v", method, err)
 		return err
 	}
@@ -343,8 +340,7 @@ func (d *DB) SetLocalData(method utils.Method, params ...interface{}) error {
 func (d *DB) CleanUpLocalData(lastSyncedBlock uint64) {
 	for _, stmt := range cleanUpStmt {
 		// if an error in one query occurs, do no stop.
-		_, err := d.db.ExecContext(d.ctx, stmt, lastSyncedBlock)
-		if err != nil {
+		if _, err := d.db.ExecContext(d.ctx, stmt, lastSyncedBlock); err != nil {
 			log.Errorf("query %q failed: %v", stmt, err)
 		}
 	}

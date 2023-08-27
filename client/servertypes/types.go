@@ -68,7 +68,7 @@ type BondResp struct {
 // BondByAddressResp defines the complete bond details excluding the secure
 // details. Secure bond details require a separate request to access them.
 type BondByAddressResp struct {
-	*BondResp
+	BondResp
 	Holder          common.Address `json:"holder_address"`
 	CreatedAtBlock  uint64         `json:"created_at_block"`
 	Principal       uint64         `json:"principal"`
@@ -147,21 +147,21 @@ func (r *BondByAddressResp) Read(fn func(fields ...any) error) (interface{}, err
 	var resp BondByAddressResp
 	var bondAddress, issuer, holder string
 
-	err := fn(&bondAddress, &issuer, &holder, &resp.CreatedTime,
-		&resp.CreatedAtBlock, &resp.Principal, &resp.CouponRate,
-		&resp.CouponDate, &resp.MaturityDate, &resp.Currency, &resp.IntroMessage,
-		&resp.LastStatus, &resp.LastUpdate, &resp.LastSyncedBlock,
+	err := fn(&bondAddress, &issuer, &holder, &resp.BondResp.CreatedTime,
+		&resp.CreatedAtBlock, &resp.Principal, &resp.BondResp.CouponRate,
+		&resp.CouponDate, &resp.MaturityDate, &resp.BondResp.Currency, &resp.IntroMessage,
+		&resp.BondResp.LastStatus, &resp.LastUpdate, &resp.LastSyncedBlock,
 	)
 
-	resp.BondAddress = common.HexToAddress(bondAddress)
-	resp.Issuer = common.HexToAddress(issuer)
+	resp.BondResp.BondAddress = common.HexToAddress(bondAddress)
+	resp.BondResp.Issuer = common.HexToAddress(issuer)
 	resp.Holder = common.HexToAddress(holder)
 	return &resp, err
 }
 
 // Reader interface implementation for type LastSyncedBlockResp.
 func (r *LastSyncedBlockResp) Read(fn func(fields ...any) error) (interface{}, error) {
-	var resp uint32
+	var resp LastSyncedBlockResp
 
 	err := fn(&resp)
 	return &resp, err
