@@ -426,6 +426,7 @@ func TestSetLocalData(t *testing.T) {
 		utils.InsertNewBondCreated: {
 			"0xc61b9bb3a7a0767e317971000000000000001dbd", // bond_address
 			"0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6dbod", // issuer_address
+			80,  // created_at_block
 			100, // last_synced_block
 		},
 		utils.InsertNewChatMessage: {
@@ -506,8 +507,8 @@ func TestCleanUpLocalData(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if lastSyncedBlock > newLastSyncedBlock {
-			t.Fatalf("after cleaning data on block %d last block synced shouldn't be %d",
+		if lastSyncedBlock == newLastSyncedBlock {
+			t.Fatalf("expected block %d not to be equal to %d",
 				lastSyncedBlock, newLastSyncedBlock)
 		}
 	})

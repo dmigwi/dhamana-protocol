@@ -284,7 +284,8 @@ func (s *ServerConfig) processEvents() {
 					method:  utils.InsertNewBondCreated,
 					blockNo: data.Raw.BlockNumber,
 					params: []interface{}{
-						data.BondAddress.Hex(), data.Sender.Hex(), data.Raw.BlockNumber,
+						data.BondAddress.Hex(), data.Raw.BlockNumber,
+						data.Sender.Hex(), data.Raw.BlockNumber,
 					},
 				}
 
