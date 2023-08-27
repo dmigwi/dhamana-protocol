@@ -33,15 +33,7 @@ const (
 	// JSONRPCVersion defines the JSON version supportted for all the backend requests
 	// recieved by the server.
 	JSONRPCVersion = "2.0"
-
-	// PostgresDriverName defines the postgres driver name.
-	PostgresDriverName = "postgres"
 )
-
-// SupportedDbDrivers defines mappings of the supported db drivers.
-var SupportedDbDrivers = map[string]string{
-	PostgresDriverName: "", // regex expression
-}
 
 // PrivateKey is generated using elliptic curve diffie-hellman algorithm. This
 // is used to share sensitive information between the server and the client i.e

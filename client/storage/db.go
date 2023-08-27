@@ -235,7 +235,7 @@ func NewDB(ctx context.Context, connInfo string) (*DB, error) {
 		ctx: ctx,
 	}
 
-	// -- Confirm the semantic version match the required on --
+	// -- Confirm the semantic version matched the required one --
 
 	var tableversion string
 	var createdDate time.Time
