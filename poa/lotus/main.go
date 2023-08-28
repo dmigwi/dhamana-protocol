@@ -1,47 +1,69 @@
 // Copyright (c) 2023 Migwi Ndung'u
 // See LICENSE for details.
-
 package main
 
 import (
-	"crypto/tls"
-	"io"
+	"flag"
 	"log"
-	"net/http"
-	"time"
+	"os"
+
+	"gioui.org/app"
+	page "gioui.org/example/component/pages"
+	"gioui.org/example/component/pages/about"
+	"gioui.org/example/component/pages/appbar"
+	"gioui.org/example/component/pages/discloser"
+	"gioui.org/example/component/pages/menu"
+	"gioui.org/example/component/pages/navdrawer"
+	"gioui.org/example/component/pages/textfield"
+	"gioui.org/font/gofont"
+	"gioui.org/io/system"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/text"
+	"gioui.org/widget/material"
 )
 
-const (
-	clientCert    = "certs/client.crt"
-	clientKeyFile = "certs/client.key"
+type (
+	C = layout.Context
+	D = layout.Dimensions
 )
 
 func main() {
-	cert, err := tls.LoadX509KeyPair(clientCert, clientKeyFile)
-	if err != nil {
-		log.Fatalf("server: loadkeys: %s", err)
-	}
+	flag.Parse()
+	go func() {
+		w := app.NewWindow()
+		if err := loop(w); err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}()
+	app.Main()
+}
 
-	tr := &http.Transport{
-		MaxIdleConns:       10,
-		IdleConnTimeout:    30 * time.Second,
-		DisableCompression: true,
-		TLSClientConfig: &tls.Config{
-			Certificates:       []tls.Certificate{cert},
-			InsecureSkipVerify: true,
-		},
-	}
+func loop(w *app.Window) error {
+	th := material.NewTheme()
+	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
+	var ops op.Ops
 
-	client := &http.Client{Transport: tr}
-	resp, err := client.Get("https://127.0.0.1:30443")
-	if err != nil {
-		log.Fatalf("request err : %v", err)
-	}
+	router := page.NewRouter()
+	router.Register(0, appbar.New(&router))
+	router.Register(1, navdrawer.New(&router))
+	router.Register(2, textfield.New(&router))
+	router.Register(3, menu.New(&router))
+	router.Register(4, discloser.New(&router))
+	router.Register(5, about.New(&router))
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("reading the request body failed: %v", err)
+	for {
+		select {
+		case e := <-w.Events():
+			switch e := e.(type) {
+			case system.DestroyEvent:
+				return e.Err
+			case system.FrameEvent:
+				gtx := layout.NewContext(&ops, e)
+				router.Layout(gtx, th)
+				e.Frame(gtx.Ops)
+			}
+		}
 	}
-
-	log.Printf("client: %s", string(data))
 }
