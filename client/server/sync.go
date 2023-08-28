@@ -114,10 +114,20 @@ func (s *ServerConfig) SyncData() error {
 	// filterLogsFunc requests the filtered logs using the set filter query options.
 	// It returns a count of the processed filtered logs events.
 	filterLogsFunc := func() (int, error) {
+		// extract the current syncing window here.
+		fromBlock, toBlock := "**", "**"
+		if filterOpts.FromBlock != nil {
+			fromBlock = filterOpts.FromBlock.String()
+		}
+
+		if filterOpts.ToBlock != nil {
+			toBlock = filterOpts.ToBlock.String()
+		}
+
 		logs, err := s.backend.FilterLogs(s.ctx, filterOpts)
 		if err != nil {
-			return 0, fmt.Errorf("syncing between block %d and %d failed: %v",
-				filterOpts.FromBlock.Int64(), filterOpts.ToBlock.Int64(), err)
+			return 0, fmt.Errorf("syncing between block %s and %s failed: %v",
+				fromBlock, toBlock, err)
 		}
 
 		return len(logs), s.parseEvents(logs)
