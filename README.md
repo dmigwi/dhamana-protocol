@@ -1,4 +1,6 @@
-[![Contracts Tests](https://github.com/dmigwi/dhamana-protocol/actions/workflows/contract-tests.yaml/badge.svg)](https://github.com/dmigwi/dhamana-protocol/actions/workflows/contract-tests.yaml)
+
+[![Contracts Tests](https://github.com/dmigwi/dhamana-protocol/actions/workflows/contract-tests.yaml/badge.svg)](https://github.com/dmigwi/dhamana-protocol/actions/workflows/contract-tests.yaml) [![GitHub tag](https://img.shields.io/github/tag/dmigwi/dhamana-protocol?include_prereleases=&sort=semver&color=blue)](https://github.com/dmigwi/dhamana-protocol/releases/) [![License](https://img.shields.io/badge/License-ISC-blue)](/LICENSE) [![solidity - ^0.8.13](https://img.shields.io/static/v1?label=solidity&message=^0.8.13&color=2ea44f&logo=solidity)](/contracts/) [![Go Reference](https://pkg.go.dev/badge/github.com/dmigwi/dhamana-protocol/client.svg)](https://pkg.go.dev/github.com/dmigwi/dhamana-protocol/client)
+
 
 <h1 align="center"> Dhamana Protocol </h1>
 <p align="center">
@@ -197,7 +199,7 @@ And **Dhamana Protocol** is now live via **https://0.0.0.0:30443**
     - The vetting organisations get their trust penalised **heavily** for any malicious characters they vet and allow to join the platform.
 
 2. **Double-Data Encryption** 
-    - Communication between the POAs (Point Of Access) devices and the protocol backend is heavily encrypted. POAs enable users to securely access the protocol.
+    - Communication between the [PoAs (Point of Access)](./poa/README.md) devices and the protocol backend is heavily encrypted. PoAs enable users to securely access the protocol.
     - User will require certificates signed by this trust organisation for them to connect to the system via TLS handshake.
     - Data shared after the handshake is further encrypted with the help of Diffie-Hellman key exchange and AES algorithms.
 

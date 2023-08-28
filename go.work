@@ -4,4 +4,5 @@ use (
 	./client
 	./deployInfo
 	./client/utils
+	./poa/lotus
 )
