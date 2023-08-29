@@ -1,4 +1,7 @@
-package pages
+// Copyright (c) 2023 Migwi Ndung'u
+// See LICENSE for details.
+
+package signup
 
 import (
 	"gioui.org/layout"
@@ -7,8 +10,8 @@ import (
 	"gioui.org/x/component"
 
 	alo "gioui.org/example/component/applayout"
-	"gioui.org/example/component/icon"
-	page "gioui.org/example/component/pages"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/assets"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
 )
 
 type (
@@ -21,17 +24,17 @@ type (
 type Page struct {
 	nonModalDrawer widget.Bool
 	widget.List
-	*page.Router
+	*router.Router
 }
 
 // New constructs a Page with the provided router.
-func New(router *page.Router) *Page {
+func New(router *router.Router) *Page {
 	return &Page{
 		Router: router,
 	}
 }
 
-var _ page.Page = &Page{}
+var _ router.Page = &Page{}
 
 func (p *Page) Actions() []component.AppBarAction {
 	return []component.AppBarAction{}
@@ -44,7 +47,7 @@ func (p *Page) Overflow() []component.OverflowAction {
 func (p *Page) NavItem() component.NavItem {
 	return component.NavItem{
 		Name: "Nav Drawer Features",
-		Icon: icon.SettingsIcon,
+		Icon: assets.SettingsIcon,
 	}
 }
 

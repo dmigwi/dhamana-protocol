@@ -1,19 +1,21 @@
-package pages
+// Copyright (c) 2023 Migwi Ndung'u
+// See LICENSE for details.
+
+package feedback
 
 import (
 	"image/color"
 	"unicode"
 
+	// alo "gioui.org/example/component/applayout"
+	"gioui.org/example/component/icon"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/text"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
-
-	alo "gioui.org/example/component/applayout"
-	"gioui.org/example/component/icon"
-	page "gioui.org/example/component/pages"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
 )
 
 type (
@@ -28,17 +30,17 @@ type Page struct {
 	inputAlignmentEnum                                           widget.Enum
 	nameInput, addressInput, priceInput, tweetInput, numberInput component.TextField
 	widget.List
-	*page.Router
+	*router.Router
 }
 
 // New constructs a Page with the provided router.
-func New(router *page.Router) *Page {
+func New(router *router.Router) *Page {
 	return &Page{
 		Router: router,
 	}
 }
 
-var _ page.Page = &Page{}
+var _ router.Page = &Page{}
 
 func (p *Page) Actions() []component.AppBarAction {
 	return []component.AppBarAction{}
@@ -67,14 +69,14 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 				return p.nameInput.Layout(gtx, th, "Name")
 			}),
 			layout.Rigid(func(gtx C) D {
-				return alo.DefaultInset.Layout(gtx, material.Body2(th, "Responds to hover events.").Layout)
+				return layout.Inset{}.Layout(gtx, material.Body2(th, "Responds to hover events.").Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
 				p.addressInput.Alignment = p.inputAlignment
 				return p.addressInput.Layout(gtx, th, "Address")
 			}),
 			layout.Rigid(func(gtx C) D {
-				return alo.DefaultInset.Layout(gtx, material.Body2(th, "Label animates properly when you click to select the text field.").Layout)
+				return layout.Inset{}.Layout(gtx, material.Body2(th, "Label animates properly when you click to select the text field.").Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
 				p.priceInput.Prefix = func(gtx C) D {
@@ -92,7 +94,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 				return p.priceInput.Layout(gtx, th, "Price")
 			}),
 			layout.Rigid(func(gtx C) D {
-				return alo.DefaultInset.Layout(gtx, material.Body2(th, "Can have prefix and suffix elements.").Layout)
+				return layout.Inset{}.Layout(gtx, material.Body2(th, "Can have prefix and suffix elements.").Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if err := func() string {
@@ -112,7 +114,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 				return p.numberInput.Layout(gtx, th, "Number")
 			}),
 			layout.Rigid(func(gtx C) D {
-				return alo.DefaultInset.Layout(gtx, material.Body2(th, "Can be validated.").Layout)
+				return layout.Inset{}.Layout(gtx, material.Body2(th, "Can be validated.").Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if p.tweetInput.TextTooLong() {
@@ -126,7 +128,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 				return p.tweetInput.Layout(gtx, th, "Tweet")
 			}),
 			layout.Rigid(func(gtx C) D {
-				return alo.DefaultInset.Layout(gtx, material.Body2(th, "Can have a character counter and help text.").Layout)
+				return layout.Inset{}.Layout(gtx, material.Body2(th, "Can have a character counter and help text.").Layout)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if p.inputAlignmentEnum.Changed() {
@@ -142,7 +144,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 					}
 					op.InvalidateOp{}.Add(gtx.Ops)
 				}
-				return alo.DefaultInset.Layout(
+				return layout.Inset{}.Layout(
 					gtx,
 					func(gtx C) D {
 						return layout.Flex{
@@ -188,7 +190,7 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 				)
 			}),
 			layout.Rigid(func(gtx C) D {
-				return alo.DefaultInset.Layout(gtx, material.Body2(th, "This text field implementation was contributed by Jack Mordaunt. Thanks Jack!").Layout)
+				return layout.Inset{}.Layout(gtx, material.Body2(th, "This text field implementation was contributed by Jack Mordaunt. Thanks Jack!").Layout)
 			}),
 		)
 	})

@@ -1,14 +1,18 @@
-package pages
+// Copyright (c) 2023 Migwi Ndung'u
+// See LICENSE for details.
+
+package router
 
 import (
 	"log"
 	"time"
 
-	"gioui.org/example/component/icon"
 	"gioui.org/layout"
 	"gioui.org/op/paint"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
+
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/assets"
 )
 
 type Page interface {
@@ -35,7 +39,7 @@ func NewRouter() Router {
 	modalNav := component.ModalNavFrom(&nav, modal)
 
 	bar := component.NewAppBar(modal)
-	bar.NavigationIcon = icon.MenuIcon
+	bar.NavigationIcon = assets.MenuIcon
 
 	na := component.VisibilityAnimation{
 		State:    component.Invisible,

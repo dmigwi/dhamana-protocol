@@ -6,10 +6,10 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/assets"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
 
 	alo "gioui.org/example/component/applayout"
-	"gioui.org/example/component/icon"
-	page "gioui.org/example/component/pages"
 )
 
 type (
@@ -22,17 +22,17 @@ type (
 type Page struct {
 	eliasCopyButton, chrisCopyButtonGH, chrisCopyButtonLP widget.Clickable
 	widget.List
-	*page.Router
+	*router.Router
 }
 
 // New constructs a Page with the provided router.
-func New(router *page.Router) *Page {
+func New(router *router.Router) *Page {
 	return &Page{
 		Router: router,
 	}
 }
 
-var _ page.Page = &Page{}
+var _ router.Page = &Page{}
 
 func (p *Page) Actions() []component.AppBarAction {
 	return []component.AppBarAction{}
@@ -45,7 +45,7 @@ func (p *Page) Overflow() []component.OverflowAction {
 func (p *Page) NavItem() component.NavItem {
 	return component.NavItem{
 		Name: "About this library",
-		Icon: icon.OtherIcon,
+		Icon: assets.OtherIcon,
 	}
 }
 

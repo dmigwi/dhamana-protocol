@@ -1,4 +1,7 @@
-package pages
+// Copyright (c) 2023 Migwi Ndung'u
+// See LICENSE for details.
+
+package home
 
 import (
 	"fmt"
@@ -12,9 +15,8 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
-
-	"gioui.org/example/component/icon"
-	page "gioui.org/example/component/pages"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/assets"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
 )
 
 type (
@@ -35,17 +37,17 @@ type Page struct {
 	menuDemoListStates                       []component.ContextArea
 	widget.List
 
-	*page.Router
+	*router.Router
 }
 
 // New constructs a Page with the provided router.
-func New(router *page.Router) *Page {
+func New(router *router.Router) *Page {
 	return &Page{
 		Router: router,
 	}
 }
 
-var _ page.Page = &Page{}
+var _ router.Page = &Page{}
 
 func (p *Page) Actions() []component.AppBarAction {
 	return []component.AppBarAction{}
@@ -58,7 +60,7 @@ func (p *Page) Overflow() []component.OverflowAction {
 func (p *Page) NavItem() component.NavItem {
 	return component.NavItem{
 		Name: "Menu Features",
-		Icon: icon.RestaurantMenuIcon,
+		Icon: assets.RestaurantMenuIcon,
 	}
 }
 
@@ -95,19 +97,19 @@ func (p *Page) Layout(gtx C, th *material.Theme) D {
 			Options: []func(gtx C) D{
 				func(gtx C) D {
 					item := component.MenuItem(th, &p.balanceButton, "Balance")
-					item.Icon = icon.AccountBalanceIcon
+					item.Icon = assets.AccountBalanceIcon
 					item.Hint = component.MenuHintText(th, "Hint")
 					return item.Layout(gtx)
 				},
 				func(gtx C) D {
 					item := component.MenuItem(th, &p.accountButton, "Account")
-					item.Icon = icon.AccountBoxIcon
+					item.Icon = assets.AccountBoxIcon
 					item.Hint = component.MenuHintText(th, "Hint")
 					return item.Layout(gtx)
 				},
 				func(gtx C) D {
 					item := component.MenuItem(th, &p.cartButton, "Cart")
-					item.Icon = icon.CartIcon
+					item.Icon = assets.CartIcon
 					item.Hint = component.MenuHintText(th, "Hint")
 					return item.Layout(gtx)
 				},
