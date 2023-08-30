@@ -17,16 +17,23 @@ import (
 	"gioui.org/x/component"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/assets"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils/values"
 )
+
+// pageID defines the home page id.
+const pageID = utils.HOME_PAGE_ID
 
 type (
 	C = layout.Context
 	D = layout.Dimensions
 )
 
-// Page holds the state for a page demonstrating the features of
+// HomePage holds the state for a page demonstrating the features of
 // the Menu component.
-type Page struct {
+type HomePage struct {
+	*router.Router
+
 	redButton, greenButton, blueButton       widget.Clickable
 	balanceButton, accountButton, cartButton widget.Clickable
 	leftFillColor                            color.NRGBA
@@ -36,35 +43,41 @@ type Page struct {
 	menuDemoList                             widget.List
 	menuDemoListStates                       []component.ContextArea
 	widget.List
-
-	*router.Router
 }
 
 // New constructs a Page with the provided router.
-func New(router *router.Router) *Page {
-	return &Page{
+func New(router *router.Router) *HomePage {
+	return &HomePage{
 		Router: router,
 	}
 }
 
-var _ router.Page = &Page{}
+func (p *HomePage) ID() string {
+	return pageID
+}
 
-func (p *Page) Actions() []component.AppBarAction {
+func (p *HomePage) Actions() []component.AppBarAction {
 	return []component.AppBarAction{}
 }
 
-func (p *Page) Overflow() []component.OverflowAction {
+func (p *HomePage) Overflow() []component.OverflowAction {
 	return []component.OverflowAction{}
 }
 
-func (p *Page) NavItem() component.NavItem {
+func (p *HomePage) NavItem() component.NavItem {
 	return component.NavItem{
-		Name: "Menu Features",
-		Icon: assets.RestaurantMenuIcon,
+		Tag:  p.ID(),
+		Name: values.StrHome,
+		Icon: assets.HomeIcon,
 	}
 }
 
-func (p *Page) Layout(gtx C, th *material.Theme) D {
+func (p *HomePage) OnSwitchTo()   {}
+func (p *HomePage) OnSwitchFrom() {}
+
+func (p *HomePage) HandleEvents() {}
+
+func (p *HomePage) Layout(gtx C, th *material.Theme) D {
 	if !p.menuInit {
 		p.leftMenu = component.MenuState{
 			Options: []func(gtx C) D{

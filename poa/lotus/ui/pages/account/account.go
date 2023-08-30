@@ -12,46 +12,59 @@ import (
 	alo "gioui.org/example/component/applayout"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/assets"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils/values"
 )
+
+// pageID defines the account page id.
+const pageID = utils.ACCOUNT_PAGE_ID
 
 type (
 	C = layout.Context
 	D = layout.Dimensions
 )
 
-// Page holds the state for a page demonstrating the features of
+// AccountPage holds the state for a page demonstrating the features of
 // the NavDrawer component.
-type Page struct {
+type AccountPage struct {
 	nonModalDrawer widget.Bool
 	widget.List
 	*router.Router
 }
 
-// New constructs a Page with the provided router.
-func New(router *router.Router) *Page {
-	return &Page{
+// New constructs a AccountPage with the provided router.
+func New(router *router.Router) *AccountPage {
+	return &AccountPage{
 		Router: router,
 	}
 }
 
-var _ router.Page = &Page{}
+func (p *AccountPage) ID() string {
+	return pageID
+}
 
-func (p *Page) Actions() []component.AppBarAction {
+func (p *AccountPage) Actions() []component.AppBarAction {
 	return []component.AppBarAction{}
 }
 
-func (p *Page) Overflow() []component.OverflowAction {
+func (p *AccountPage) Overflow() []component.OverflowAction {
 	return []component.OverflowAction{}
 }
 
-func (p *Page) NavItem() component.NavItem {
+func (p *AccountPage) NavItem() component.NavItem {
 	return component.NavItem{
-		Name: "Nav Drawer Features",
+		Tag:  p.ID(),
+		Name: values.StrAccount,
 		Icon: assets.SettingsIcon,
 	}
 }
 
-func (p *Page) Layout(gtx C, th *material.Theme) D {
+func (p *AccountPage) OnSwitchTo()   {}
+func (p *AccountPage) OnSwitchFrom() {}
+
+func (p *AccountPage) HandleEvents() {}
+
+func (p *AccountPage) Layout(gtx C, th *material.Theme) D {
 	p.List.Axis = layout.Vertical
 	return material.List(th, &p.List).Layout(gtx, 1, func(gtx C, _ int) D {
 		return layout.Flex{

@@ -8,46 +8,59 @@ import (
 	"gioui.org/x/component"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/assets"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils/values"
 
 	alo "gioui.org/example/component/applayout"
 )
+
+// pageID defines the about page id.
+const pageID = utils.ABOUT_PAGE_ID
 
 type (
 	C = layout.Context
 	D = layout.Dimensions
 )
 
-// Page holds the state for a page demonstrating the features of
+// AboutPage holds the state for a page demonstrating the features of
 // the AppBar component.
-type Page struct {
+type AboutPage struct {
 	eliasCopyButton, chrisCopyButtonGH, chrisCopyButtonLP widget.Clickable
 	widget.List
 	*router.Router
 }
 
-// New constructs a Page with the provided router.
-func New(router *router.Router) *Page {
-	return &Page{
+// New constructs an AboutPage with the provided router.
+func New(router *router.Router) *AboutPage {
+	return &AboutPage{
 		Router: router,
 	}
 }
 
-var _ router.Page = &Page{}
+func (p *AboutPage) ID() string {
+	return pageID
+}
 
-func (p *Page) Actions() []component.AppBarAction {
+func (p *AboutPage) Actions() []component.AppBarAction {
 	return []component.AppBarAction{}
 }
 
-func (p *Page) Overflow() []component.OverflowAction {
+func (p *AboutPage) Overflow() []component.OverflowAction {
 	return []component.OverflowAction{}
 }
 
-func (p *Page) NavItem() component.NavItem {
+func (p *AboutPage) NavItem() component.NavItem {
 	return component.NavItem{
-		Name: "About this library",
+		Tag:  p.ID(),
+		Name: values.StrAbout,
 		Icon: assets.OtherIcon,
 	}
 }
+
+func (p *AboutPage) OnSwitchTo()   {}
+func (p *AboutPage) OnSwitchFrom() {}
+
+func (p *AboutPage) HandleEvents() {}
 
 const (
 	sponsorEliasURL          = "https://github.com/sponsors/eliasnaur"
@@ -55,7 +68,7 @@ const (
 	sponsorChrisURLLiberapay = "https://liberapay.com/whereswaldon/"
 )
 
-func (p *Page) Layout(gtx C, th *material.Theme) D {
+func (p *AboutPage) Layout(gtx C, th *material.Theme) D {
 	p.List.Axis = layout.Vertical
 	return material.List(th, &p.List).Layout(gtx, 1, func(gtx C, _ int) D {
 		return layout.Flex{

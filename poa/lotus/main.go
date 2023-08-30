@@ -22,6 +22,7 @@ func main() {
 	flag.Parse()
 	go func() {
 		w := app.NewWindow()
+		w.Option(app.Title("LOTUS"))
 		if err := pages.Loop(w); err != nil {
 			log.Fatal(err)
 		}

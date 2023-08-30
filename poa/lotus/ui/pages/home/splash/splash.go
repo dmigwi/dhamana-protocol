@@ -1,7 +1,7 @@
 // Copyright (c) 2023 Migwi Ndung'u
 // See LICENSE for details.
 
-package signup
+package splash
 
 import (
 	"gioui.org/layout"
@@ -33,8 +33,6 @@ func New(router *router.Router) *Page {
 		Router: router,
 	}
 }
-
-var _ router.Page = &Page{}
 
 func (p *Page) Actions() []component.AppBarAction {
 	return []component.AppBarAction{}

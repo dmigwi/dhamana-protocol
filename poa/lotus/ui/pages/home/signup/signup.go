@@ -1,7 +1,7 @@
 // Copyright (c) 2023 Migwi Ndung'u
 // See LICENSE for details.
 
-package splash
+package signup
 
 import (
 	"gioui.org/layout"
@@ -13,6 +13,9 @@ import (
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/assets"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
 )
+
+// pageID defines the home page id.
+const pageID = "HOME_PAGE"
 
 type (
 	C = layout.Context
@@ -33,8 +36,6 @@ func New(router *router.Router) *Page {
 		Router: router,
 	}
 }
-
-var _ router.Page = &Page{}
 
 func (p *Page) Actions() []component.AppBarAction {
 	return []component.AppBarAction{}

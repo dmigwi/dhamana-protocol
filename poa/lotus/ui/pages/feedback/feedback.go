@@ -16,16 +16,21 @@ import (
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils/values"
 )
+
+// pageID defines the feedback page id.
+const pageID = utils.FEEDBACK_PAGE_ID
 
 type (
 	C = layout.Context
 	D = layout.Dimensions
 )
 
-// Page holds the state for a page demonstrating the features of
+// FeedbackPage holds the state for a page demonstrating the features of
 // the TextField component.
-type Page struct {
+type FeedbackPage struct {
 	inputAlignment                                               text.Alignment
 	inputAlignmentEnum                                           widget.Enum
 	nameInput, addressInput, priceInput, tweetInput, numberInput component.TextField
@@ -33,31 +38,39 @@ type Page struct {
 	*router.Router
 }
 
-// New constructs a Page with the provided router.
-func New(router *router.Router) *Page {
-	return &Page{
+// New constructs a FeedbackPage with the provided router.
+func New(router *router.Router) *FeedbackPage {
+	return &FeedbackPage{
 		Router: router,
 	}
 }
 
-var _ router.Page = &Page{}
+func (p *FeedbackPage) ID() string {
+	return pageID
+}
 
-func (p *Page) Actions() []component.AppBarAction {
+func (p *FeedbackPage) Actions() []component.AppBarAction {
 	return []component.AppBarAction{}
 }
 
-func (p *Page) Overflow() []component.OverflowAction {
+func (p *FeedbackPage) Overflow() []component.OverflowAction {
 	return []component.OverflowAction{}
 }
 
-func (p *Page) NavItem() component.NavItem {
+func (p *FeedbackPage) NavItem() component.NavItem {
 	return component.NavItem{
-		Name: "Text Field Features",
+		Tag:  p.ID(),
+		Name: values.StrFeedback,
 		Icon: icon.EditIcon,
 	}
 }
 
-func (p *Page) Layout(gtx C, th *material.Theme) D {
+func (p *FeedbackPage) OnSwitchTo()   {}
+func (p *FeedbackPage) OnSwitchFrom() {}
+
+func (p *FeedbackPage) HandleEvents() {}
+
+func (p *FeedbackPage) Layout(gtx C, th *material.Theme) D {
 	p.List.Axis = layout.Vertical
 	return material.List(th, &p.List).Layout(gtx, 1, func(gtx C, _ int) D {
 		return layout.Flex{

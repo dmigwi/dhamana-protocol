@@ -26,14 +26,11 @@ type (
 
 func Loop(w *app.Window) error {
 	th := material.NewTheme()
-	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
+	th.Shaper = text.NewShaper(text.WithCollection(gofont.Regular()))
 	var ops op.Ops
 
 	pg := router.NewRouter()
-	pg.Register(0, home.New(&pg))
-	pg.Register(1, account.New(&pg))
-	pg.Register(2, feedback.New(&pg))
-	pg.Register(3, about.New(&pg))
+	pg.Register(home.New(pg), account.New(pg), feedback.New(pg), about.New(pg))
 
 	for {
 		select {
@@ -41,8 +38,11 @@ func Loop(w *app.Window) error {
 			switch e := e.(type) {
 			case system.DestroyEvent:
 				return e.Err
+
 			case system.FrameEvent:
+				pg.ProcessEvents()
 				gtx := layout.NewContext(&ops, e)
+
 				pg.Layout(gtx, th)
 				e.Frame(gtx.Ops)
 			}
