@@ -4,13 +4,11 @@
 package feedback
 
 import (
-
-	// alo "gioui.org/example/component/applayout"
-	"gioui.org/example/component/icon"
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/assets"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils/values"
@@ -46,7 +44,7 @@ func (p *FeedbackPage) NavItem() component.NavItem {
 	return component.NavItem{
 		Tag:  p.ID(),
 		Name: values.StrFeedback,
-		Icon: icon.EditIcon,
+		Icon: assets.EditIcon,
 	}
 }
 
