@@ -4,7 +4,6 @@
 package router
 
 import (
-	"log"
 	"time"
 
 	"gioui.org/layout"
@@ -50,32 +49,26 @@ type Router struct {
 
 	backbutton *widget.Clickable
 
-	*component.ModalNavDrawer
-	NavAnim component.VisibilityAnimation
-	menuBar *component.AppBar
-	*component.ModalLayer
-	NonModalDrawer, BottomBar bool
+	navDrawer  *component.ModalNavDrawer
+	menuBar    *component.AppBar
+	modalLayer *component.ModalLayer
 }
+
+type (
+	C = layout.Context
+	D = layout.Dimensions
+)
 
 func NewRouter() *Router {
 	modal := component.NewModal()
-
-	nav := component.NewNav(utils.AppName, values.StrAppDescription)
-	modalNav := component.ModalNavFrom(&nav, modal)
-
 	bar := component.NewAppBar(modal)
 	bar.NavigationIcon = assets.MenuIcon
-
-	na := component.VisibilityAnimation{
-		State:    component.Invisible,
-		Duration: time.Millisecond * 250,
-	}
+	nav := component.NewNav(utils.AppName, values.StrAppDescription)
 
 	return &Router{
-		ModalLayer:     modal,
-		ModalNavDrawer: modalNav,
-		menuBar:        bar,
-		NavAnim:        na,
+		modalLayer: modal,
+		navDrawer:  component.ModalNavFrom(&nav, modal),
+		menuBar:    bar,
 	}
 }
 
@@ -89,23 +82,12 @@ func (r *Router) Register(pages ...Page) {
 	for _, p := range pages {
 		if r.currentPage == nil {
 			r.currentPage = p
-			r.menuBar.Title = p.NavItem().Name
 		}
+
 		r.registeredPages[p.ID()] = p
-		r.ModalNavDrawer.AddNavItem(p.NavItem())
+		r.navDrawer.AddNavItem(p.NavItem())
 	}
 }
-
-// func (r *Router) SwitchTo(tag string) {
-// 	p, ok := r.pages[tag]
-// 	if !ok {
-// 		return
-// 	}
-// 	navItem := p.NavItem()
-// 	r.current = tag
-// 	r.AppBar.Title = navItem.Name
-// 	r.AppBar.SetActions(p.Actions(), p.Overflow())
-// }
 
 func (r *Router) SetBackNavButton() {
 	r.menuBar.NavigationIcon = assets.BackIcon
@@ -151,11 +133,21 @@ func (r *Router) ProcessEvents() {
 		return
 	}
 
-	if r.ModalNavDrawer.NavDestinationChanged() {
-		p, ok := r.registeredPages[r.ModalNavDrawer.CurrentNavDestination()]
+	if r.menuBar.NavigationButton.Clicked() {
+		if r.menuBar.NavigationIcon == assets.BackIcon {
+			count := len(r.pageStack)
+			if count > 0 {
+				r.currentPage = r.pageStack[count-1]
+			}
+		} else {
+			r.navDrawer.Appear(time.Now())
+		}
+	}
+
+	if r.navDrawer.NavDestinationChanged() {
+		p, ok := r.registeredPages[r.navDrawer.CurrentNavDestination()]
 		if ok {
 			r.currentPage = p
-			r.menuBar.Title = p.NavItem().Name
 		}
 	}
 
@@ -163,54 +155,31 @@ func (r *Router) ProcessEvents() {
 }
 
 func (r *Router) AddBackButton() {
-	// r.AppBar.NavigationIcon = assets.BackButton
+	r.menuBar.NavigationIcon = assets.BackIcon
 }
 
 // Layout handles ploting the componnets of the current page by calling the
 // actual page Layout method.
-func (r *Router) Layout(gtx layout.Context, th *material.Theme) layout.Dimensions {
-	for _, event := range r.menuBar.Events(gtx) {
-		switch event := event.(type) {
-		case component.AppBarNavigationClicked:
-			if r.NonModalDrawer {
-				r.NavAnim.ToggleVisibility(gtx.Now)
-			} else {
-				r.ModalNavDrawer.Appear(gtx.Now)
-				r.NavAnim.Disappear(gtx.Now)
-			}
-		case component.AppBarContextMenuDismissed:
-			log.Printf("Context menu dismissed: %v", event)
-		case component.AppBarOverflowActionClicked:
-			log.Printf("Overflow action selected: %v", event)
-		}
-	}
-
+func (r *Router) Layout(gtx C, th *material.Theme) D {
 	paint.Fill(gtx.Ops, th.Palette.Bg)
-	content := layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-		return layout.Flex{}.Layout(gtx,
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				gtx.Constraints.Max.X /= 2
-				return r.NavDrawer.Layout(gtx, th, &r.NavAnim)
-			}),
-			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-				if r.currentPage == nil {
-					return layout.Dimensions{}
-				}
-				return r.currentPage.Layout(gtx, th)
-			}),
-		)
-	})
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		// Top bar
+		layout.Rigid(func(gtx C) D {
+			r.menuBar.Title = r.currentPage.NavItem().Name
+			return r.menuBar.Layout(gtx, th, "Menu", "Actions")
+		}),
 
-	bar := layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-		return r.menuBar.Layout(gtx, th, "Menu", "Actions")
-	})
+		// Navigation bar
+		layout.Rigid(func(gtx C) D {
+			return r.modalLayer.Layout(gtx, th)
+		}),
 
-	flex := layout.Flex{Axis: layout.Vertical}
-	if r.BottomBar {
-		flex.Layout(gtx, content, bar)
-	} else {
-		flex.Layout(gtx, bar, content)
-	}
-	r.ModalLayer.Layout(gtx, th)
-	return layout.Dimensions{Size: gtx.Constraints.Max}
+		// Page content.
+		layout.Flexed(1, func(gtx C) D {
+			if r.currentPage == nil {
+				return D{}
+			}
+			return r.currentPage.Layout(gtx, th)
+		}),
+	)
 }
