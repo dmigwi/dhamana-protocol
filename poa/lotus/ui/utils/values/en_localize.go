@@ -9,5 +9,5 @@ const (
 	strHome           = "Home"
 	strAbout          = "About this library"
 	strFeedback       = "Feedback"
-	strLoading        = "Loading the Application..."
+	strLoading        = "Loading the Application"
 )

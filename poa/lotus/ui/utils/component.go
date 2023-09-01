@@ -28,14 +28,14 @@ var AppVersion = &version{
 
 var (
 	// Application colour scheme.
-	PrimaryColor   = color.NRGBA{R: 98, G: 0, B: 238, A: 255}
-	DarkPriColor   = color.NRGBA{R: 55, G: 0, B: 179, A: 255}
-	SecondaryColor = color.NRGBA{R: 3, G: 218, B: 198, A: 255}
-	DarkSecColor   = color.NRGBA{R: 1, G: 135, B: 134, A: 255}
-	ErrorColor     = color.NRGBA{R: 176, G: 0, B: 32, A: 255}
-	SurfaceColor   = color.White
-	BlackColor     = color.Black
-	HighlightColor = color.NRGBA{R: 187, G: 134, B: 252}
+	PrimaryColor   = color.NRGBA{R: 98, G: 0, B: 238, A: 255}  // #6200EE
+	DarkPriColor   = color.NRGBA{R: 55, G: 0, B: 179, A: 255}  // #3700B3
+	SecondaryColor = color.NRGBA{R: 3, G: 218, B: 198, A: 255} // #03DAC6
+	DarkSecColor   = color.NRGBA{R: 1, G: 135, B: 134, A: 255} // #018786
+	ErrorColor     = color.NRGBA{R: 176, G: 0, B: 32, A: 255}  // #B00020
+	SurfaceColor   = color.White                               // #FFFFFF
+	BlackColor     = color.Black                               // #000000
+	HighlightColor = color.NRGBA{R: 187, G: 134, B: 252}       // #BB86FC
 )
 
 type version struct {
