@@ -4,6 +4,8 @@
 package router
 
 import (
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"gioui.org/layout"
@@ -15,6 +17,10 @@ import (
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils/values"
 )
+
+// layoutRunner prevents execution of the Router.Layout() method if it is currently
+// executing. The previous instance need to complete before starting on new onces.
+var layoutRunner uint32
 
 // Page defines the interface all pages should implement to navigation from on
 // page to another one.
@@ -53,9 +59,20 @@ type Router struct {
 
 	backbutton *widget.Clickable
 
-	navDrawer  *component.ModalNavDrawer
-	menuBar    *component.AppBar
+	// navDrawer defines the component holding the navigation bar title and fields.
+	navDrawer *component.ModalNavDrawer
+	// menuBar implements the top bar as defined in material UI guidelines.
+	// https://m2.material.io/components/app-bars-top
+	// It enables attaching the navigation bar to the current page.
+	menuBar *component.AppBar
+
+	// modalLayer is drawn on top of the normal UI allowing it to display extra
+	// components like the navigation bar UI or Modals.
 	modalLayer *component.ModalLayer
+
+	// mu controls the read and write access to the router fields preventing
+	// multipe write that could eventually lead to app crash.
+	mu sync.RWMutex
 }
 
 type (
@@ -63,6 +80,7 @@ type (
 	D = layout.Dimensions
 )
 
+// NewRouter returns a new instance of the router pointer.
 func NewRouter() *Router {
 	modal := component.NewModal()
 	bar := component.NewAppBar(modal)
@@ -81,18 +99,25 @@ func NewRouter() *Router {
 // page stack.
 func (r *Router) SetTemporaryPage(p Page) {
 	if p != nil {
+		r.mu.Lock()
 		r.tempPage = p
+		r.mu.Unlock()
 	}
 }
 
 // DisableTemporaryPage disables the currently set temporary page enabling the
 // regular pages already registered to be displayed.
 func (r *Router) DisableTemporaryPage() {
+	r.mu.Lock()
 	r.tempPage = nil
+	r.mu.Unlock()
 }
 
 // Register receives all the pages that will be regulary accessed.
 func (r *Router) Register(pages ...Page) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if r.pageStack != nil {
 		// Page stack has already been populated
 		return
@@ -113,42 +138,56 @@ func (r *Router) Register(pages ...Page) {
 }
 
 func (r *Router) SetBackNavButton() {
+	r.mu.Lock()
 	r.menuBar.NavigationIcon = assets.BackIcon
+	r.mu.Unlock()
 }
 
 // OnDisplay appends the passed page onto of the current page stack. It helps
 // maintain page access history for future backtracking if need be.
 func (r *Router) OnDisplay(pageID interface{}) {
+	r.mu.RLock()
 	str, _ := pageID.(string)
 	p, ok := r.registeredPages[str]
 	if !ok {
+		r.mu.RUnlock()
 		return
 	}
 
 	if r.currentPage != nil && p.ID() == r.currentPage.ID() {
+		r.mu.RUnlock()
 		return
 	}
 
-	// execute the previous page OnSwitchFrom() method.
-	r.currentPage.OnSwitchFrom()
+	previousPage := r.currentPage
+	currentPage := p
+	r.mu.RUnlock()
 
+	r.mu.Lock()
 	r.currentPage = p
 	r.pageStack = append(r.pageStack, p.ID())
+	r.mu.Unlock()
 
-	// execute the current page OnSwitchTo() method.
-	r.currentPage.OnSwitchTo()
+	// execute the previous page OnSwitchFrom() method without mutex protection.
+	previousPage.OnSwitchFrom()
+
+	// execute the current page OnSwitchTo() method without mutex protection.
+	currentPage.OnSwitchTo()
 }
 
 // OnDisplayNew clears the current page stuck before pushing the passed page
 // as the only one in the stack.
 func (r *Router) OnDisplayNew(pageID interface{}) {
+	r.mu.Lock()
 	// empty out the previous pages.
 	r.pageStack = r.pageStack[:0]
+	r.mu.Unlock()
 
 	r.OnDisplay(pageID)
 }
 
 func (r *Router) ProcessEvents() {
+	r.mu.Lock()
 	// if current page isn't sent ignore processing the events.
 	if r.currentPage == nil {
 		return
@@ -173,17 +212,38 @@ func (r *Router) ProcessEvents() {
 			r.currentPage = p
 		}
 	}
+	currentPage := r.currentPage
+	r.mu.Unlock()
 
-	r.currentPage.HandleEvents()
+	// execute the HandleEvents() method without mutex protection.
+	currentPage.HandleEvents()
 }
 
+// AddBackButton set the bar navigation button to back arrow enabling pages
+// backtracking.
 func (r *Router) AddBackButton() {
+	r.mu.Lock()
 	r.menuBar.NavigationIcon = assets.BackIcon
+	r.mu.Unlock()
 }
 
 // Layout handles ploting the componnets of the current page by calling the
 // actual page Layout method.
 func (r *Router) Layout(gtx C, th *material.Theme) D {
+	// Before we enter into a mutex lock state, check that all the previous
+	// Layout() instance are not running. If affirmative return an empty page.
+	if !atomic.CompareAndSwapUint32(&layoutRunner, 0, 1) {
+		return D{}
+	}
+
+	r.mu.Lock()
+	defer func() {
+		r.mu.Unlock()
+
+		// Reset the layout runner allowing other layout updates to proceed.
+		atomic.StoreUint32(&layoutRunner, 0)
+	}()
+
 	// If a temporary page is set display it instead.
 	if r.tempPage != nil {
 		return r.tempPage.Layout(gtx, th)
