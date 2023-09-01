@@ -11,9 +11,6 @@ import (
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils/values"
 )
 
-// pageID defines the about page id.
-const pageID = utils.ABOUT_PAGE_ID
-
 type (
 	C = layout.Context
 	D = layout.Dimensions
@@ -34,11 +31,11 @@ func New(router *router.Router) *AboutPage {
 }
 
 func (p *AboutPage) ID() string {
-	return pageID
+	return utils.ABOUT_PAGE_ID
 }
 
-func (p *AboutPage) NavItem() component.NavItem {
-	return component.NavItem{
+func (p *AboutPage) NavItem() *component.NavItem {
+	return &component.NavItem{
 		Tag:  p.ID(),
 		Name: values.StrAbout,
 		Icon: assets.OtherIcon,

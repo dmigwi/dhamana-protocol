@@ -1,2 +1,3 @@
 # Keep apk files local
 *.apk*
+*trace*

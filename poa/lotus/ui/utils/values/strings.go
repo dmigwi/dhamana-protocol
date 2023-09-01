@@ -9,4 +9,5 @@ const (
 	StrAccount        = strAccount
 	StrAbout          = strAbout
 	StrFeedback       = strFeedback
+	StrLoading        = strLoading
 )

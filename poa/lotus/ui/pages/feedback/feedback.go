@@ -14,9 +14,6 @@ import (
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils/values"
 )
 
-// pageID defines the feedback page id.
-const pageID = utils.FEEDBACK_PAGE_ID
-
 type (
 	C = layout.Context
 	D = layout.Dimensions
@@ -37,11 +34,11 @@ func New(router *router.Router) *FeedbackPage {
 }
 
 func (p *FeedbackPage) ID() string {
-	return pageID
+	return utils.FEEDBACK_PAGE_ID
 }
 
-func (p *FeedbackPage) NavItem() component.NavItem {
-	return component.NavItem{
+func (p *FeedbackPage) NavItem() *component.NavItem {
+	return &component.NavItem{
 		Tag:  p.ID(),
 		Name: values.StrFeedback,
 		Icon: assets.EditIcon,

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"gioui.org/layout"
-	"gioui.org/op/paint"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
@@ -33,19 +32,24 @@ type Page interface {
 	HandleEvents()
 	// Layout arranges the ui components in the current page.
 	Layout(gtx layout.Context, th *material.Theme) layout.Dimensions
-	NavItem() component.NavItem
+	// NavItem returns the navigation fields linked to each page.
+	NavItem() *component.NavItem
 }
 
 type Router struct {
 	// current defines the page ID of the current page in view.
 	currentPage Page
+	// tempPage defines a page that is used until the window is invalidated
+	// moving to the regular pages. They include but not limited to: splash and
+	// sign up pages.
+	tempPage Page
 	// pageStack track of the order in which pages are visited for the purpose
 	// of backtracking to a previous page in the order in which they were
-	// accessed.
-	pageStack []Page
+	// accessed. It holds the page ID strings.
+	pageStack []string
 	// registeredPages maintains references to already initialised pages mapped
 	// to their respective page IDs
-	registeredPages map[interface{}]Page
+	registeredPages map[string]Page
 
 	backbutton *widget.Clickable
 
@@ -72,20 +76,39 @@ func NewRouter() *Router {
 	}
 }
 
+// SetTemporaryPage sets a one-time-use then throw-away page after the current
+// window is invalidated. Temp pages should not be registered or pushed to the
+// page stack.
+func (r *Router) SetTemporaryPage(p Page) {
+	if p != nil {
+		r.tempPage = p
+	}
+}
+
+// DisableTemporaryPage disables the currently set temporary page enabling the
+// regular pages already registered to be displayed.
+func (r *Router) DisableTemporaryPage() {
+	r.tempPage = nil
+}
+
+// Register receives all the pages that will be regulary accessed.
 func (r *Router) Register(pages ...Page) {
 	if r.pageStack != nil {
 		// Page stack has already been populated
 		return
 	}
 
-	r.registeredPages = make(map[interface{}]Page, len(pages))
+	r.registeredPages = make(map[string]Page, len(pages))
 	for _, p := range pages {
 		if r.currentPage == nil {
 			r.currentPage = p
 		}
 
 		r.registeredPages[p.ID()] = p
-		r.navDrawer.AddNavItem(p.NavItem())
+		navItem := p.NavItem()
+		if navItem != nil {
+			r.navDrawer.AddNavItem(*navItem)
+		}
 	}
 }
 
@@ -96,7 +119,8 @@ func (r *Router) SetBackNavButton() {
 // OnDisplay appends the passed page onto of the current page stack. It helps
 // maintain page access history for future backtracking if need be.
 func (r *Router) OnDisplay(pageID interface{}) {
-	p, ok := r.registeredPages[pageID]
+	str, _ := pageID.(string)
+	p, ok := r.registeredPages[str]
 	if !ok {
 		return
 	}
@@ -105,26 +129,23 @@ func (r *Router) OnDisplay(pageID interface{}) {
 		return
 	}
 
+	// execute the previous page OnSwitchFrom() method.
+	r.currentPage.OnSwitchFrom()
+
 	r.currentPage = p
-	r.pageStack = append(r.pageStack, p)
+	r.pageStack = append(r.pageStack, p.ID())
+
+	// execute the current page OnSwitchTo() method.
+	r.currentPage.OnSwitchTo()
 }
 
 // OnDisplayNew clears the current page stuck before pushing the passed page
 // as the only one in the stack.
 func (r *Router) OnDisplayNew(pageID interface{}) {
-	p, ok := r.registeredPages[pageID]
-	if !ok {
-		return
-	}
-
-	if r.currentPage != nil && p.ID() == r.currentPage.ID() {
-		// Do not push the current page onto itself.
-		return
-	}
-
-	r.currentPage = p
 	// empty out the previous pages.
-	r.pageStack = append(r.pageStack[:0], p)
+	r.pageStack = r.pageStack[:0]
+
+	r.OnDisplay(pageID)
 }
 
 func (r *Router) ProcessEvents() {
@@ -137,7 +158,8 @@ func (r *Router) ProcessEvents() {
 		if r.menuBar.NavigationIcon == assets.BackIcon {
 			count := len(r.pageStack)
 			if count > 0 {
-				r.currentPage = r.pageStack[count-1]
+				strPageID := r.pageStack[count-1]
+				r.currentPage = r.registeredPages[strPageID]
 			}
 		} else {
 			r.navDrawer.Appear(time.Now())
@@ -145,7 +167,8 @@ func (r *Router) ProcessEvents() {
 	}
 
 	if r.navDrawer.NavDestinationChanged() {
-		p, ok := r.registeredPages[r.navDrawer.CurrentNavDestination()]
+		strPageID, _ := r.navDrawer.CurrentNavDestination().(string)
+		p, ok := r.registeredPages[strPageID]
 		if ok {
 			r.currentPage = p
 		}
@@ -161,7 +184,11 @@ func (r *Router) AddBackButton() {
 // Layout handles ploting the componnets of the current page by calling the
 // actual page Layout method.
 func (r *Router) Layout(gtx C, th *material.Theme) D {
-	paint.Fill(gtx.Ops, th.Palette.Bg)
+	// If a temporary page is set display it instead.
+	if r.tempPage != nil {
+		return r.tempPage.Layout(gtx, th)
+	}
+
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		// Top bar
 		layout.Rigid(func(gtx C) D {

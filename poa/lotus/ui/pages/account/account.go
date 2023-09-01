@@ -15,9 +15,6 @@ import (
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils/values"
 )
 
-// pageID defines the account page id.
-const pageID = utils.ACCOUNT_PAGE_ID
-
 type (
 	C = layout.Context
 	D = layout.Dimensions
@@ -38,11 +35,11 @@ func New(router *router.Router) *AccountPage {
 }
 
 func (p *AccountPage) ID() string {
-	return pageID
+	return utils.ACCOUNT_PAGE_ID
 }
 
-func (p *AccountPage) NavItem() component.NavItem {
-	return component.NavItem{
+func (p *AccountPage) NavItem() *component.NavItem {
+	return &component.NavItem{
 		Tag:  p.ID(),
 		Name: values.StrAccount,
 		Icon: assets.SettingsIcon,

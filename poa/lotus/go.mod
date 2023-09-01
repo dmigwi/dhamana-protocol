@@ -5,6 +5,7 @@ go 1.21.0
 require (
 	gioui.org v0.2.0
 	gioui.org/x v0.2.0
+	github.com/tanema/gween v0.0.0-20221212145351-621cc8a459d1
 	golang.org/x/exp/shiny v0.0.0-20230817173708-d852ddb80c63
 )
 
