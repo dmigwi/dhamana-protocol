@@ -5,7 +5,6 @@ package main
 import (
 	"log"
 	"os"
-	"runtime/trace"
 
 	"gioui.org/app"
 	"gioui.org/unit"
@@ -30,24 +29,10 @@ func main() {
 		app.StatusColor(utils.DarkPriColor),
 	)
 
-	file := "file.trace"
-	f, err := os.Create(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	trace.Start(f)
-
-	cleanUp := func() {
-		f.Close()
-		trace.Stop()
-	}
-
 	go func() {
 		if err := pages.Loop(w); err != nil {
 			log.Fatal(err)
 		}
-		cleanUp()
 		os.Exit(0)
 	}()
 

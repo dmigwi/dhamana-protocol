@@ -249,10 +249,16 @@ func (r *Router) Layout(gtx C, th *material.Theme) D {
 		return r.tempPage.Layout(gtx, th)
 	}
 
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+	return layout.Flex{
+		Axis:    layout.Vertical,
+		Spacing: layout.SpaceSides,
+	}.Layout(gtx,
 		// Top bar
 		layout.Rigid(func(gtx C) D {
-			r.menuBar.Title = r.currentPage.NavItem().Name
+			navItem := r.currentPage.NavItem()
+			if navItem != nil {
+				r.menuBar.Title = navItem.Name
+			}
 			return r.menuBar.Layout(gtx, th, "Menu", "Actions")
 		}),
 

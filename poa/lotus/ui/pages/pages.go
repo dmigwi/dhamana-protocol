@@ -18,6 +18,7 @@ import (
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/pages/account"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/pages/feedback"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/pages/home"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/pages/signup"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/pages/splash"
 	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/router"
 )
@@ -63,11 +64,11 @@ func Loop(w *app.Window) error {
 	var ops op.Ops
 
 	pg := router.NewRouter()
-	pg.Register(home.New(pg), account.New(pg), feedback.New(pg), about.New(pg))
+	pg.Register(signup.New(pg), home.New(pg), account.New(pg), feedback.New(pg), about.New(pg))
 
 	// Load the splash page and set it as the current.
 	splashPg := splash.New()
-	pg.SetTemporaryPage(splashPg)
+	// pg.SetTemporaryPage(splashPg)
 
 	go func() {
 		select {
