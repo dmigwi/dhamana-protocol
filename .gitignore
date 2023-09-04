@@ -19,3 +19,5 @@ ssl.sh
 *client/deployment/sapphiremainnet/deployment.go
 
 *go.work.sum
+
+*trace*

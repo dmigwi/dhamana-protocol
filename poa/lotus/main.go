@@ -1,47 +1,40 @@
 // Copyright (c) 2023 Migwi Ndung'u
 // See LICENSE for details.
-
 package main
 
 import (
-	"crypto/tls"
-	"io"
 	"log"
-	"net/http"
-	"time"
-)
+	"os"
 
-const (
-	clientCert    = "certs/client.crt"
-	clientKeyFile = "certs/client.key"
+	"gioui.org/app"
+	"gioui.org/unit"
+
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/pages"
+	"github.com/dmigwi/dhamana-protocol/poa/lotus/ui/utils"
 )
 
 func main() {
-	cert, err := tls.LoadX509KeyPair(clientCert, clientKeyFile)
-	if err != nil {
-		log.Fatalf("server: loadkeys: %s", err)
-	}
+	minSizeX := unit.Dp(375)
+	minSizeY := unit.Dp(600)
+	maxSizeX := unit.Dp(500)
+	maxSizeY := unit.Dp(1000)
 
-	tr := &http.Transport{
-		MaxIdleConns:       10,
-		IdleConnTimeout:    30 * time.Second,
-		DisableCompression: true,
-		TLSClientConfig: &tls.Config{
-			Certificates:       []tls.Certificate{cert},
-			InsecureSkipVerify: true,
-		},
-	}
+	w := app.NewWindow(
+		app.Title(utils.AppName),
+		app.MinSize(minSizeX, minSizeY),
+		app.Size(minSizeX, minSizeY),
+		app.MaxSize(maxSizeX, maxSizeY),
+		app.PortraitOrientation.Option(),
+		app.NavigationColor(utils.HighlightColor),
+		app.StatusColor(utils.DarkPriColor),
+	)
 
-	client := &http.Client{Transport: tr}
-	resp, err := client.Get("https://127.0.0.1:30443")
-	if err != nil {
-		log.Fatalf("request err : %v", err)
-	}
+	go func() {
+		if err := pages.Loop(w); err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}()
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("reading the request body failed: %v", err)
-	}
-
-	log.Printf("client: %s", string(data))
+	app.Main()
 }
